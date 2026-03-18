@@ -218,11 +218,18 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <button onclick="exportXLSX()" style="padding:7px 14px;font-size:12px;border:.5px solid var(--border-md);border-radius:var(--rx);background:transparent;color:var(--sub);cursor:pointer">엑셀 저장</button>
   </div>
   <!-- 필터 -->
-  <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px">
+  <div style="display:flex;gap:6px;margin-bottom:6px;overflow-x:auto;padding-bottom:2px">
     <button class="ftab on" onclick="setFilter('전체',this)">전체</button>
     <button class="ftab" onclick="setFilter('지출',this)">지출</button>
     <button class="ftab" onclick="setFilter('수입',this)">수입</button>
     <button class="ftab" onclick="setFilter('이동',this)">이동</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px">
+    <button class="ftab" onclick="setFilter('card:롯카',this)">롯카</button>
+    <button class="ftab" onclick="setFilter('card:삼카',this)">삼카</button>
+    <button class="ftab" onclick="setFilter('card:신카',this)">신카</button>
+    <button class="ftab" onclick="setFilter('card:국카k',this)">국카k</button>
+    <button class="ftab" onclick="setFilter('card:국카1',this)">국카1</button>
   </div>
   <!-- 검색 -->
   <div style="margin-bottom:10px">
@@ -602,6 +609,15 @@ function addEntry(){
 }
 function delEntry(id){entries=entries.filter(e=>e.id!==id);try{localStorage.setItem('gb_v3',JSON.stringify(entries));}catch(e){}renderHist();renderHome();}
 
+// 카드 그룹 키 매핑
+const CARD_GROUP_KEYS={
+  'card:롯카':['롯카','롯카!','롯카!실미','롯카-'],
+  'card:삼카':['삼카','삼카!','삼카!실미'],
+  'card:신카':['신카','신카!','신카!실미'],
+  'card:국카k':['국카k','국카k!','국카k!실미','국카k-'],
+  'card:국카1':['국카1'],
+};
+
 function setFilter(f,btn){
   histFilter=f;
   document.querySelectorAll('.ftab').forEach(b=>b.classList.remove('on'));
@@ -614,7 +630,12 @@ function renderHist(){
   const q=(searchEl?searchEl.value.trim().toLowerCase():'');
   let es=me();
   // 필터
-  if(histFilter!=='전체')es=es.filter(e=>e.type===histFilter);
+  if(histFilter.startsWith('card:')){
+    const keys=CARD_GROUP_KEYS[histFilter]||[];
+    es=es.filter(e=>keys.includes(e.outAcct)||keys.includes(e.inAcct));
+  } else if(histFilter!=='전체'){
+    es=es.filter(e=>e.type===histFilter);
+  }
   // 검색
   if(q)es=es.filter(e=>
     (e.major+e.sub+e.memo+e.inAcct+e.outAcct).toLowerCase().includes(q)
