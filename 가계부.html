@@ -102,6 +102,13 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 .tw{background:var(--amber-lt);color:var(--amber)}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap;z-index:999}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.acct-wrap{position:relative}
+.acct-input{width:100%;padding:10px 11px;font-size:15px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);font-family:inherit}
+.acct-drop{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:.5px solid var(--border-md);border-radius:var(--rs);z-index:50;max-height:180px;overflow-y:auto;display:none}
+.acct-drop.open{display:block}
+.acct-item{padding:10px 12px;font-size:14px;cursor:pointer;border-bottom:.5px solid var(--border)}
+.acct-item:last-child{border-bottom:none}
+.acct-item:active{background:var(--bg)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:flex-end;justify-content:center}
 .modal-bg.hidden{display:none}
 .modal{background:var(--surface);border-radius:var(--r) var(--r) 0 0;width:100%;max-width:480px;padding:20px 16px 40px;max-height:90vh;overflow-y:auto}
@@ -148,6 +155,31 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <button class="mb" onclick="changeMonth(-1)">‹</button>
     <div class="ml" id="month-label"></div>
     <button class="mb" onclick="changeMonth(1)">›</button>
+  </div>
+  <!-- 엑셀 가져오기 -->
+  <div id="import-banner" style="background:var(--amber-bg);border:.5px solid var(--amber-lt);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:12px;color:var(--amber)">📂 기존 내역을 불러오세요</span>
+    <label style="padding:6px 12px;background:var(--amber);color:#fff;border-radius:var(--rx);font-size:12px;font-weight:700;cursor:pointer">
+      엑셀 가져오기
+      <input type="file" accept=".xlsx" multiple style="display:none" onchange="importXLSX(this)"/>
+    </label>
+  </div>
+
+  <!-- 엑셀 가져오기 배너 (데이터 없을 때만) -->
+  <div id="import-banner" style="display:none;background:var(--amber-bg);border:.5px solid var(--amber-lt);border-radius:var(--rs);padding:12px 14px;margin-bottom:12px">
+    <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:6px">📂 기존 내역을 불러오세요</div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:10px">엑셀 파일을 가져오면 이전 내역이 바로 반영돼요</div>
+    <label style="display:block;width:100%;padding:10px;background:var(--amber);color:#fff;border-radius:var(--rx);font-size:13px;font-weight:700;text-align:center;cursor:pointer">
+      📥 엑셀 파일 가져오기
+      <input type="file" accept=".xlsx" onchange="importXLSX(this)" style="display:none"/>
+    </label>
+  </div>
+
+  <div id="import-banner" style="display:none;background:#fffbeb;border:.5px solid #fef3c7;border-radius:var(--rs);padding:12px;margin-bottom:12px;text-align:center">
+    <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px">📂 기존 내역을 불러오세요</div>
+    <div style="font-size:11px;color:#b45309;margin-bottom:8px">앱에서 저장한 엑셀 파일을 선택하면 내역이 복원돼요</div>
+    <input type="file" id="import-file" accept=".xlsx" style="display:none" onchange="importXLSX(this)"/>
+    <button onclick="document.getElementById('import-file').click()" style="padding:8px 16px;background:#d97706;color:#fff;border:none;border-radius:var(--rx);font-size:13px;font-weight:700;cursor:pointer">엑셀 파일 가져오기</button>
   </div>
   <div class="sgrid">
     <div class="sc"><div class="sl">수입</div><div class="sv" style="color:var(--green)" id="h-in">₩0</div></div>
@@ -206,8 +238,18 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <div id="sub-sec" style="display:none"><div class="sl2">소분류</div><div class="sgrid2" id="sub-grid"></div></div></div>
     <div class="field"><label>내용</label><input type="text" id="f-memo" placeholder="메모 (선택)"/></div>
     <div class="field"><label>금액</label><input type="number" id="f-amount" placeholder="0" inputmode="numeric"/></div>
-    <div class="field" id="f-in-wrap"><label>입금계좌</label><select id="f-in-acct"></select></div>
-    <div class="field" id="f-out-wrap"><label>출금계좌</label><select id="f-out-acct"></select></div>
+    <div class="field" id="f-in-wrap"><label>입금계좌</label>
+      <div class="acct-wrap">
+        <input class="acct-input" id="f-in-acct" type="text" placeholder="계좌 검색 또는 입력" autocomplete="off" oninput="acctSearch('in',this.value)" onfocus="acctSearch('in',this.value)" onblur="setTimeout(()=>closeAcctDrop('in'),200)"/>
+        <div class="acct-drop" id="drop-in"></div>
+      </div>
+    </div>
+    <div class="field" id="f-out-wrap"><label>출금계좌</label>
+      <div class="acct-wrap">
+        <input class="acct-input" id="f-out-acct" type="text" placeholder="계좌 검색 또는 입력" autocomplete="off" oninput="acctSearch('out',this.value)" onfocus="acctSearch('out',this.value)" onblur="setTimeout(()=>closeAcctDrop('out'),200)"/>
+        <div class="acct-drop" id="drop-out"></div>
+      </div>
+    </div>
     <button class="add-btn" onclick="addEntry()">+ 추가하기</button>
   </div>
 </div>
@@ -321,8 +363,18 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <div class="field"><label>날짜</label><input type="date" id="edit-date"/></div>
     <div class="field"><label>금액</label><input type="number" id="edit-amount" inputmode="numeric"/></div>
     <div class="field"><label>내용 (메모)</label><input type="text" id="edit-memo" placeholder="메모"/></div>
-    <div class="field"><label>출금계좌</label><select id="edit-out-acct"></select></div>
-    <div class="field"><label>입금계좌</label><select id="edit-in-acct"></select></div>
+    <div class="field"><label>출금계좌</label>
+      <div class="acct-wrap">
+        <input class="acct-input" id="edit-out-acct" type="text" placeholder="계좌 검색 또는 입력" autocomplete="off" oninput="acctSearch('edit-out',this.value)" onfocus="acctSearch('edit-out',this.value)" onblur="setTimeout(()=>closeAcctDrop('edit-out'),200)"/>
+        <div class="acct-drop" id="drop-edit-out"></div>
+      </div>
+    </div>
+    <div class="field"><label>입금계좌</label>
+      <div class="acct-wrap">
+        <input class="acct-input" id="edit-in-acct" type="text" placeholder="계좌 검색 또는 입력" autocomplete="off" oninput="acctSearch('edit-in',this.value)" onfocus="acctSearch('edit-in',this.value)" onblur="setTimeout(()=>closeAcctDrop('edit-in'),200)"/>
+        <div class="acct-drop" id="drop-edit-in"></div>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
       <button onclick="saveEdit()" style="padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">저장</button>
       <button onclick="deleteAndClose()" style="padding:12px;background:var(--red-bg);color:var(--red);border:.5px solid var(--red-lt);border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">삭제</button>
@@ -369,10 +421,17 @@ const CAT={
     '목적2':['비상금','덕질']
   }
 };
-const BUDGET={'🏠 주거비':904890,'🗃️ 보험':393130,'📞 통신비':48300,'🍀 곗돈':100000,'☀️ 엄마':772187,'🍽️ 식비':300000,'🛒 생활용품':30000,'👗 꾸밈비':30000,'👩‍🎓 자기계발':50000,'😷 건강':50000,'🚌 교통비':60000,'🎁 경조사':0,'📺 문화생활':0,'✔️ 기타':50000};
-const SUB_BUDGET={"🏠 주거비": {"전세대출이자": 640000, "관리비": 120000, "전기세": 60000, "도시가스": 50000, "상수도비": 15000, "기타세금": 12000, "구독비": 7890, "TV수신료": 0}, "🗃️ 보험": {"우체국보험": 74220, "메리츠화재": 87160, "메리츠화재2": 102940, "삼성화재": 128810}, "📞 통신비": {"LGU+": 40800, "삼케": 7500, "LG알뜰(우릉교)": 0}, "🍀 곗돈": {"가족곗돈": 50000, "대딩곗돈": 50000, "친척곗돈": 20000}, "☀️ 엄마": {"엄마대출원금": 0, "엄마대출이자": 0, "엄마생활비": 350000, "엄마보험(삼성생명)": 201157, "엄마보험(DB 손해)": 30250, "엄마보험(보람상조)": 8000, "엄마보험(라이나)": 42280, "엄마핸드폰(LGU+)": 13000, "엄마핸드폰(삼케)": 7500, "엄마건강": 120000}, "🍽️ 식비": {"식자재": 50000, "배달식비": 0, "외식": 100000, "카페류": 50000, "가족식비": 100000}, "🛒 생활용품": {"생활소모품": 30000, "가전/가구": 0, "침구/인테리어": 0}, "👗 꾸밈비": {"의류/잡화": 30000, "미용/헤어": 0, "세탁/수선": 0}, "👩\u200d🎓 자기계발": {"스터디/수강": 50000, "운동": 0, "도서": 0}, "😷 건강": {"병원/약국": 50000, "건강보조": 0, "예방/검진": 0, "목욕": 0}, "🚌 교통비": {"대중교통": 60000, "택시비": 0, "기차": 0}, "🎁 경조사": {"가족/친척": 0, "지인/동료": 0}, "📺 문화생활": {"공연/전시": 0, "OTT": 0, "기타 입장료": 0, "덕질": 0}, "✔️ 기타": {"회비": 0, "기타2": 50000, "집 관련 지출": 0}};
-const CARD_BUDGET={'롯카':318910,'롯카!':0,'롯카-':13000,'삼카':284237,'삼카!':0,'신카':60000,'신카!':240000,'국카1':161140,'국카k':111140,'국카k!':188860,'국카k!실미':60000,'국카k-':15000};
-const SAVE_GOALS=[{n:'전세대출원금',g:600000,mk:'전세대출원금'},{n:'집계약용',g:1000000,mk:'집계약용통장'},{n:'개인연금',g:400000,mk:'개인연금입금'},{n:'ISA',g:500000,mk:'ISA입금'},{n:'비상금',g:200000,mk:'비상금통장'},{n:'덕질통장',g:50000,mk:'덕질통장'}];
+const BUDGET_DEFAULT={'🏠 주거비':904890,'🗃️ 보험':393130,'📞 통신비':48300,'🍀 곗돈':100000,'☀️ 엄마':772187,'🍽️ 식비':300000,'🛒 생활용품':30000,'👗 꾸밈비':30000,'👩‍🎓 자기계발':50000,'😷 건강':50000,'🚌 교통비':60000,'🎁 경조사':0,'📺 문화생활':0,'✔️ 기타':50000};
+let BUDGET=Object.assign({},BUDGET_DEFAULT);
+try{const _b=localStorage.getItem('gb_budget');if(_b)BUDGET=JSON.parse(_b);}catch(e){}
+const SUB_BUDGET={};
+
+const CARD_BUDGET_DEFAULT={'롯카':318910,'롯카!':0,'롯카-':13000,'삼카':284237,'삼카!':0,'신카':60000,'신카!':240000,'국카1':161140,'국카k':111140,'국카k!':188860,'국카k!실미':60000,'국카k-':15000};
+let CARD_BUDGET=Object.assign({},CARD_BUDGET_DEFAULT);
+try{const _cb=localStorage.getItem('gb_card_budget');if(_cb)CARD_BUDGET=JSON.parse(_cb);}catch(e){}
+const SAVE_GOALS_DEFAULT=[{n:'전세대출원금',g:600000,mk:'전세대출원금'},{n:'집계약용',g:1000000,mk:'집계약용통장'},{n:'개인연금',g:400000,mk:'개인연금입금'},{n:'ISA',g:500000,mk:'ISA입금'},{n:'비상금',g:200000,mk:'비상금통장'},{n:'덕질통장',g:50000,mk:'덕질통장'}];
+let SAVE_GOALS=SAVE_GOALS_DEFAULT.slice();
+try{const _sg=localStorage.getItem('gb_save_goals');if(_sg)SAVE_GOALS=JSON.parse(_sg);}catch(e){}
 const ACCOUNTS=['KB뱅크','NH뱅크','케이-덕질','케이-비상금','케이-임시','케이뱅크','하나은행','KB 펀드','케이-집계약용','신한은행','전세 보증금','토스증권','미래에셋','삼성증권','우리IRP','농카','농카!','농카!실미','농카-','롯카','롯카!','롯카!실미','롯카-','신카','신카!','신카!실미','삼카','삼카!','국카1','국카k','국카k!','국카k!실미','국카k-','전세자금대출 원금(국민)','전세자금대출 원금(농협)','엄마신용대출 원금'];
 const CMAP=[{k:['롯카!실미'],v:'롯카!실미'},{k:['롯카!'],v:'롯카!'},{k:['롯카-'],v:'롯카-'},{k:['롯데카드','로카','롯카'],v:'롯카'},{k:['신카!실미'],v:'신카!실미'},{k:['신카!'],v:'신카!'},{k:['신한카드','신카','FBS'],v:'신카'},{k:['삼카!'],v:'삼카!'},{k:['삼성카드','삼카'],v:'삼카'},{k:['국카k!실미'],v:'국카k!실미'},{k:['국카k!'],v:'국카k!'},{k:['국카k-'],v:'국카k-'},{k:['국카k'],v:'국카k'},{k:['국카1'],v:'국카1'},{k:['국민카드','KB카드','KB Pay','KB국민'],v:'국카k'},{k:['농카!실미'],v:'농카!실미'},{k:['농카!'],v:'농카!'},{k:['농카-'],v:'농카-'},{k:['농협카드','NH카드','농카'],v:'농카'},{k:['케이뱅크'],v:'케이뱅크'},{k:['KB뱅크','KB은행'],v:'KB뱅크'},{k:['NH뱅크','농협은행'],v:'NH뱅크'},{k:['하나은행','하나카드'],v:'하나은행'},{k:['신한은행'],v:'신한은행'}];
 
@@ -383,7 +442,7 @@ try{
   if(s) entries=JSON.parse(s);
   else {
     // 기존 시트 데이터 (1~3월)
-    const seed=[{"id": 1, "date": "2026-03-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "비상금통장", "amount": 117, "inAcct": "케이-비상금", "outAcct": ""}, {"id": 2, "date": "2026-03-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "덕질통장", "amount": 354, "inAcct": "케이-덕질", "outAcct": ""}, {"id": 3, "date": "2026-03-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 809, "inAcct": "케이-임시", "outAcct": ""}, {"id": 4, "date": "2026-03-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 2052, "inAcct": "케이-집계약용", "outAcct": ""}, {"id": 5, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "국카k납부", "memo": "", "amount": 57800, "inAcct": "국카k!실미", "outAcct": "KB뱅크"}, {"id": 6, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "국카k납부", "memo": "", "amount": 242300, "inAcct": "국카k!", "outAcct": "KB뱅크"}, {"id": 7, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "국카k납부", "memo": "", "amount": 171050, "inAcct": "국카k", "outAcct": "KB뱅크"}, {"id": 8, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "국카1납부", "memo": "", "amount": 188991, "inAcct": "국카1", "outAcct": "KB뱅크"}, {"id": 9, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "신카!납부", "memo": "", "amount": 238240, "inAcct": "신카!", "outAcct": "KB뱅크"}, {"id": 10, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "신카납부", "memo": "", "amount": 71170, "inAcct": "신카", "outAcct": "KB뱅크"}, {"id": 11, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "삼카납부", "memo": "", "amount": 284347, "inAcct": "삼카", "outAcct": "케이-임시"}, {"id": 12, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "롯카-납부", "memo": "", "amount": 12700, "inAcct": "롯카-", "outAcct": "KB뱅크"}, {"id": 13, "date": "2026-03-16", "type": "이동", "major": "💳 카드납부", "sub": "롯카납부", "memo": "", "amount": 318910, "inAcct": "롯카", "outAcct": "KB뱅크"}, {"id": 14, "date": "2026-03-10", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(보람상조)", "memo": "", "amount": 8000, "inAcct": "케이뱅크", "outAcct": "국카k"}, {"id": 15, "date": "2026-03-10", "type": "수입", "major": "💰 기타소득", "sub": "기타1", "memo": "카카오 환불", "amount": 21600, "inAcct": "케이뱅크", "outAcct": ""}, {"id": 16, "date": "2026-03-09", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "", "amount": 3600, "inAcct": "", "outAcct": "국카k!"}, {"id": 17, "date": "2026-03-08", "type": "지출", "major": "😷 건강", "sub": "목욕", "memo": "해오름", "amount": 20000, "inAcct": "", "outAcct": "국카k!"}, {"id": 18, "date": "2026-03-08", "type": "지출", "major": "🛒 생활용품", "sub": "생활소모품", "memo": "샴프, 음료", "amount": 6500, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 19, "date": "2026-03-06", "type": "지출", "major": "🏠 주거비", "sub": "도시가스", "memo": "2월 가스", "amount": 94120, "inAcct": "", "outAcct": "국카k"}, {"id": 20, "date": "2026-03-06", "type": "지출", "major": "🚌 교통비", "sub": "기차", "memo": "KTX(서울->대구)", "amount": 23700, "inAcct": "", "outAcct": "국카k!"}, {"id": 21, "date": "2026-03-06", "type": "지출", "major": "", "sub": "", "memo": "학회 (입금 예정)", "amount": 60000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 22, "date": "2026-03-05", "type": "지출", "major": "📞 통신비", "sub": "삼케", "memo": "", "amount": 7500, "inAcct": "", "outAcct": "국카k"}, {"id": 23, "date": "2026-03-05", "type": "지출", "major": "☀️ 엄마", "sub": "엄마핸드폰(삼케)", "memo": "", "amount": 7500, "inAcct": "", "outAcct": "국카k"}, {"id": 24, "date": "2026-03-04", "type": "지출", "major": "🚌 교통비", "sub": "기차", "memo": "KTX(대전->대구)", "amount": 18300, "inAcct": "", "outAcct": "국카k!"}, {"id": 25, "date": "2026-03-04", "type": "지출", "major": "✔️ 기타", "sub": "회비", "memo": "덕질통장에서 사용_ISA 추가 이체", "amount": 200000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 26, "date": "2026-03-04", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엔드림콘2  입금 완", "amount": 193500, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 27, "date": "2026-03-03", "type": "지출", "major": "🏠 주거비", "sub": "전기세", "memo": "02 전기", "amount": 71330, "inAcct": "", "outAcct": "신카"}, {"id": 28, "date": "2026-03-03", "type": "지출", "major": "✔️ 기타", "sub": "회비", "memo": "덕질통장에서 사용_ISA 추가 이체", "amount": 200000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 29, "date": "2026-03-01", "type": "지출", "major": "☀️ 엄마", "sub": "엄마생활비", "memo": "", "amount": 350000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 30, "date": "2026-03-01", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "엄마 덕질(정산해주기로 함)", "amount": 59000, "inAcct": "", "outAcct": "국카k!"}, {"id": 31, "date": "2026-02-28", "type": "이동", "major": "", "sub": "", "memo": "우체국보험비 이체", "amount": 74220, "inAcct": "KB뱅크", "outAcct": "케이-임시"}, {"id": 32, "date": "2026-02-28", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 109, "inAcct": "케이뱅크", "outAcct": ""}, {"id": 33, "date": "2026-02-28", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "비상금통장", "amount": 300, "inAcct": "케이-비상금", "outAcct": ""}, {"id": 34, "date": "2026-02-28", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "덕질통장", "amount": 1219, "inAcct": "케이-덕질", "outAcct": ""}, {"id": 35, "date": "2026-02-28", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 4669, "inAcct": "케이-임시", "outAcct": ""}, {"id": 36, "date": "2026-02-28", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 4156, "inAcct": "케이-집계약용", "outAcct": ""}, {"id": 37, "date": "2026-02-28", "type": "지출", "major": "🏠 주거비", "sub": "관리비", "memo": "", "amount": 120000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 38, "date": "2026-02-28", "type": "지출", "major": "🍀 곗돈", "sub": "대딩곗돈", "memo": "", "amount": 50000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 39, "date": "2026-02-28", "type": "지출", "major": "🍽️ 식비", "sub": "가족식비", "memo": "족발", "amount": 30000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 40, "date": "2026-02-28", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "슈프림(정산 완료)", "amount": 20000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 41, "date": "2026-02-28", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "맥주(정산 완료)", "amount": 9900, "inAcct": "", "outAcct": "국카1"}, {"id": 42, "date": "2026-02-28", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "슈프림/맥주 정산 완", "amount": 23747, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 43, "date": "2026-02-28", "type": "지출", "major": "🚌 교통비", "sub": "대중교통", "memo": "02월 교통카드", "amount": 57800, "inAcct": "", "outAcct": "국카k!실미"}, {"id": 44, "date": "2026-02-27", "type": "지출", "major": "🚌 교통비", "sub": "대중교통", "memo": "01월 k패스 환급", "amount": 32490, "inAcct": "", "outAcct": "KB뱅크"}, {"id": 45, "date": "2026-02-27", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "툽 배송 관련", "amount": 5000, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 46, "date": "2026-02-27", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "툽 배송 관련", "amount": 50, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 47, "date": "2026-02-27", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "툽 배송 관련", "amount": 3830, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 48, "date": "2026-02-27", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "툽 배송 관련(캐시백)", "amount": 22, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 49, "date": "2026-02-27", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "여권발급비용", "amount": 51480, "inAcct": "", "outAcct": "국카1"}, {"id": 50, "date": "2026-02-26", "type": "지출", "major": "🗃️ 보험", "sub": "우체국보험", "memo": "127우02", "amount": 74220, "inAcct": "", "outAcct": "KB뱅크"}, {"id": 51, "date": "2026-02-26", "type": "이동", "major": "", "sub": "", "memo": "개인연금입금", "amount": 400000, "inAcct": "미래에셋", "outAcct": "케이-임시"}, {"id": 52, "date": "2026-02-26", "type": "이동", "major": "", "sub": "", "memo": "ISA입금", "amount": 500000, "inAcct": "미래에셋", "outAcct": "케이-임시"}, {"id": 53, "date": "2026-02-26", "type": "지출", "major": "🍽️ 식비", "sub": "가족식비", "memo": "중국집", "amount": 26900, "inAcct": "", "outAcct": "신카!"}, {"id": 54, "date": "2026-02-26", "type": "지출", "major": "✔️ 기타", "sub": "회비", "memo": "엄마 여행용 통장에 이체", "amount": 400000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 55, "date": "2026-02-25", "type": "이동", "major": "", "sub": "", "memo": "연말정산 이체", "amount": 2500000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 56, "date": "2026-02-25", "type": "지출", "major": "🗃️ 보험", "sub": "메리츠화재", "memo": "", "amount": 87160, "inAcct": "", "outAcct": "롯카"}, {"id": 57, "date": "2026-02-25", "type": "지출", "major": "🗃️ 보험", "sub": "메리츠화재2", "memo": "", "amount": 102940, "inAcct": "", "outAcct": "롯카"}, {"id": 58, "date": "2026-02-25", "type": "지출", "major": "🍽️ 식비", "sub": "카페류", "memo": "바나프레소", "amount": 3900, "inAcct": "", "outAcct": "신카!"}, {"id": 59, "date": "2026-02-25", "type": "지출", "major": "👩‍🎓 자기계발", "sub": "도서", "memo": "주식책", "amount": 19800, "inAcct": "", "outAcct": "신카!"}, {"id": 60, "date": "2026-02-25", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "여권사진 예약", "amount": 20000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 61, "date": "2026-02-24", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "공모주(케이뱅크) 추가 이체", "amount": 16600, "inAcct": "", "outAcct": "케이-임시"}, {"id": 62, "date": "2026-02-24", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "공모주(케이뱅크) 수수료", "amount": 4000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 63, "date": "2026-02-24", "type": "지출", "major": "📺 문화생활", "sub": "공연/전시", "memo": "엖 영화 예약", "amount": 30000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 64, "date": "2026-02-24", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "추카추 정산", "amount": 15700, "inAcct": "", "outAcct": "케이-임시"}, {"id": 65, "date": "2026-02-24", "type": "이동", "major": "", "sub": "", "memo": "우리카드비 여분으로 임시 이체", "amount": 20000, "inAcct": "하나은행", "outAcct": "케이-임시"}, {"id": 66, "date": "2026-02-23", "type": "지출", "major": "🗃️ 보험", "sub": "삼성화재", "memo": "", "amount": 128810, "inAcct": "", "outAcct": "롯카"}, {"id": 67, "date": "2026-02-23", "type": "지출", "major": "📞 통신비", "sub": "LGU+", "memo": "", "amount": 40910, "inAcct": "", "outAcct": "삼카"}, {"id": 68, "date": "2026-02-23", "type": "지출", "major": "🍀 곗돈", "sub": "가족곗돈", "memo": "", "amount": 50000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 69, "date": "2026-02-23", "type": "이동", "major": "예적금", "sub": "", "memo": "전세대출원금", "amount": 600000, "inAcct": "전세자금대출 원금(국민)", "outAcct": "케이-임시"}, {"id": 70, "date": "2026-02-23", "type": "지출", "major": "🏠 주거비", "sub": "전세대출이자", "memo": "전세대출원금의 이자", "amount": 4334, "inAcct": "", "outAcct": "KB뱅크"}, {"id": 71, "date": "2026-02-23", "type": "지출", "major": "🏠 주거비", "sub": "전세대출이자", "memo": "보증료 입금", "amount": 890, "inAcct": "", "outAcct": "KB뱅크"}, {"id": 72, "date": "2026-02-23", "type": "이동", "major": "목적2", "sub": "", "memo": "비상금통장", "amount": 200000, "inAcct": "케이-비상금", "outAcct": "케이-임시"}, {"id": 73, "date": "2026-02-23", "type": "이동", "major": "목적2", "sub": "", "memo": "덕질통장", "amount": 50000, "inAcct": "케이-덕질", "outAcct": "케이-임시"}, {"id": 74, "date": "2026-02-23", "type": "이동", "major": "목적", "sub": "", "memo": "집계약용통장", "amount": 1000000, "inAcct": "케이-집계약용", "outAcct": "케이-임시"}, {"id": 75, "date": "2026-02-23", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "투바투콘 취소 환불", "amount": 138600, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 76, "date": "2026-02-21", "type": "지출", "major": "🎁 경조사", "sub": "지인/동료", "memo": "소아언니 생선", "amount": 25900, "inAcct": "", "outAcct": "신카!"}, {"id": 77, "date": "2026-02-21", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "공모주(케이뱅크)", "amount": 83000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 78, "date": "2026-02-20", "type": "수입", "major": "👷 근로소득", "sub": "월급", "memo": "", "amount": 5583790, "inAcct": "하나은행", "outAcct": ""}, {"id": 79, "date": "2026-02-20", "type": "수입", "major": "👷 근로소득", "sub": "보너스", "memo": "귀향여비", "amount": 400000, "inAcct": "하나은행", "outAcct": ""}, {"id": 80, "date": "2026-02-20", "type": "수입", "major": "👷 근로소득", "sub": "보너스", "memo": "연말정산", "amount": 2522420, "inAcct": "하나은행", "outAcct": ""}, {"id": 81, "date": "2026-02-20", "type": "이동", "major": "", "sub": "", "memo": "급여 이체", "amount": 8406210, "inAcct": "케이-임시", "outAcct": "하나은행"}, {"id": 82, "date": "2026-02-20", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(라이나)", "memo": "", "amount": 42280, "inAcct": "", "outAcct": "삼카"}, {"id": 83, "date": "2026-02-20", "type": "지출", "major": "👗 꾸밈비", "sub": "미용/헤어", "memo": "속눈썹 뷰러", "amount": 7000, "inAcct": "", "outAcct": "신카!"}, {"id": 84, "date": "2026-02-20", "type": "지출", "major": "👗 꾸밈비", "sub": "의류/잡화", "memo": "가디건, 치마", "amount": 78900, "inAcct": "", "outAcct": "신카!"}, {"id": 85, "date": "2026-02-19", "type": "지출", "major": "🏠 주거비", "sub": "전세대출이자", "memo": "전세대출이자", "amount": 600541, "inAcct": "", "outAcct": "KB뱅크"}, {"id": 86, "date": "2026-02-19", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(삼성생명)", "memo": "", "amount": 201157, "inAcct": "", "outAcct": "삼카"}, {"id": 87, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_롯카", "amount": 318910, "inAcct": "롯카", "outAcct": "KB뱅크"}, {"id": 88, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_롯카", "amount": 42810, "inAcct": "롯카-", "outAcct": "KB뱅크"}, {"id": 89, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_신카", "amount": 410100, "inAcct": "신카!", "outAcct": "KB뱅크"}, {"id": 90, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 1493050, "inAcct": "국카1", "outAcct": "KB뱅크"}, {"id": 91, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 130510, "inAcct": "국카k", "outAcct": "KB뱅크"}, {"id": 92, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 417814, "inAcct": "국카k!", "outAcct": "KB뱅크"}, {"id": 93, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 113640, "inAcct": "국카k!실미", "outAcct": "KB뱅크"}, {"id": 94, "date": "2026-02-19", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 29940, "inAcct": "국카k-", "outAcct": "KB뱅크"}, {"id": 95, "date": "2026-02-19", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "2/16 식비 정산 완료(from 징교릉교)", "amount": 38427, "inAcct": "", "outAcct": "케이-임시"}, {"id": 96, "date": "2026-02-19", "type": "지출", "major": "🍽️ 식비", "sub": "카페류", "memo": "", "amount": 3900, "inAcct": "", "outAcct": "국카k!"}, {"id": 97, "date": "2026-02-18", "type": "이동", "major": "", "sub": "", "memo": "전월 카드비 이체", "amount": 2956774, "inAcct": "KB뱅크", "outAcct": "케이-임시"}, {"id": 98, "date": "2026-02-18", "type": "이동", "major": "", "sub": "", "memo": "대출이자 이체1", "amount": 600541, "inAcct": "KB뱅크", "outAcct": "케이-임시"}, {"id": 99, "date": "2026-02-16", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "두쫀쿠", "amount": 7623, "inAcct": "", "outAcct": "국카1"}, {"id": 100, "date": "2026-02-16", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "까사아지오(정산필요)", "amount": 36927, "inAcct": "", "outAcct": "국카1"}, {"id": 101, "date": "2026-02-16", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "투썸(정산필요)", "amount": 19740, "inAcct": "", "outAcct": "신카!"}, {"id": 102, "date": "2026-02-16", "type": "지출", "major": "🛒 생활용품", "sub": "생활소모품", "memo": "다이소(화장품, 봉지, 서랍장)", "amount": 62000, "inAcct": "", "outAcct": "국카k!"}, {"id": 103, "date": "2026-02-16", "type": "지출", "major": "😷 건강", "sub": "목욕", "memo": "목욕", "amount": 20000, "inAcct": "", "outAcct": "국카k!"}, {"id": 104, "date": "2026-02-14", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 163, "inAcct": "KB뱅크", "outAcct": ""}, {"id": 105, "date": "2026-02-13", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(DB 손해)", "memo": "", "amount": 30250, "inAcct": "", "outAcct": "국카k"}, {"id": 106, "date": "2026-02-13", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_삼카", "amount": 284347, "inAcct": "삼카", "outAcct": "케이-임시"}, {"id": 107, "date": "2026-02-13", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_삼카", "amount": 21650, "inAcct": "삼카!", "outAcct": "케이-임시"}, {"id": 108, "date": "2026-02-13", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "서브웨이", "amount": 5900, "inAcct": "", "outAcct": "국카k!"}, {"id": 109, "date": "2026-02-13", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "놀 (자리 안잡히면 환불 예정)", "amount": 1000, "inAcct": "", "outAcct": "국카k!"}, {"id": 110, "date": "2026-02-12", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "엄마 찬원콘", "amount": 172700, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 111, "date": "2026-02-12", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "엄마 찬원콘", "amount": 172700, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 112, "date": "2026-02-12", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "찰리팝", "amount": 5000, "inAcct": "", "outAcct": "국카k!"}, {"id": 113, "date": "2026-02-11", "type": "수입", "major": "💰 기타소득", "sub": "기타1", "memo": "퀴즈 이벤트", "amount": 3659, "inAcct": "케이-임시", "outAcct": ""}, {"id": 114, "date": "2026-02-11", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "엄마가 용돈주심", "amount": 200000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 115, "date": "2026-02-10", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(보람상조)", "memo": "", "amount": 8000, "inAcct": "", "outAcct": "국카k"}, {"id": 116, "date": "2026-02-10", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "카톡환불", "amount": 30060, "inAcct": "", "outAcct": "케이-임시"}, {"id": 117, "date": "2026-02-09", "type": "지출", "major": "☀️ 엄마", "sub": "엄마핸드폰(LGU+)", "memo": "", "amount": 12700, "inAcct": "", "outAcct": "롯카-"}, {"id": 118, "date": "2026-02-09", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "엔진모임 정산 이체 from 불사, 옹뇸,리얼", "amount": 143650, "inAcct": "", "outAcct": "케이-임시"}, {"id": 119, "date": "2026-02-08", "type": "지출", "major": "🍽️ 식비", "sub": "가족식비", "memo": "족발", "amount": 50000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 120, "date": "2026-02-08", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "곤약", "amount": 10000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 121, "date": "2026-02-07", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "용산삼계탕(정산필요)", "amount": 62000, "inAcct": "", "outAcct": "국카k!"}, {"id": 122, "date": "2026-02-07", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "피자(정산필요)", "amount": 51500, "inAcct": "", "outAcct": "국카k!"}, {"id": 123, "date": "2026-02-07", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "비밀기지(정산필요)", "amount": 77220, "inAcct": "", "outAcct": "국카1"}, {"id": 124, "date": "2026-02-07", "type": "지출", "major": "🍽️ 식비", "sub": "카페류", "memo": "키드문", "amount": 6500, "inAcct": "", "outAcct": "국카k!"}, {"id": 125, "date": "2026-02-07", "type": "지출", "major": "🍽️ 식비", "sub": "카페류", "memo": "물", "amount": 1600, "inAcct": "", "outAcct": "국카k!"}, {"id": 126, "date": "2026-02-06", "type": "지출", "major": "🏠 주거비", "sub": "도시가스", "memo": "1월 가스", "amount": 117800, "inAcct": "", "outAcct": "국카k"}, {"id": 127, "date": "2026-02-06", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "추카추 방청 계약금(추카추 정산이랑 같이 입금 완)", "amount": 20000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 128, "date": "2026-02-05", "type": "지출", "major": "📞 통신비", "sub": "삼케", "memo": "", "amount": 7500, "inAcct": "", "outAcct": "국카k"}, {"id": 129, "date": "2026-02-05", "type": "지출", "major": "☀️ 엄마", "sub": "엄마핸드폰(삼케)", "memo": "", "amount": 7500, "inAcct": "", "outAcct": "국카k"}, {"id": 130, "date": "2026-02-05", "type": "지출", "major": "🍽️ 식비", "sub": "카페류", "memo": "바나프레소", "amount": 3900, "inAcct": "", "outAcct": "국카k!"}, {"id": 131, "date": "2026-02-04", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "비뇨", "amount": 40500, "inAcct": "", "outAcct": "신카!"}, {"id": 132, "date": "2026-02-04", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "비뇨-약국", "amount": 5600, "inAcct": "", "outAcct": "신카!"}, {"id": 133, "date": "2026-02-04", "type": "지출", "major": "🍽️ 식비", "sub": "가족식비", "memo": "닭볶음탕", "amount": 19000, "inAcct": "", "outAcct": "국카k!"}, {"id": 134, "date": "2026-02-04", "type": "지출", "major": "🛒 생활용품", "sub": "생활소모품", "memo": "물티슈", "amount": 5841, "inAcct": "", "outAcct": "국카1"}, {"id": 135, "date": "2026-02-04", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "복권", "amount": 10000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 136, "date": "2026-02-04", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "투바투콘", "amount": 156000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 137, "date": "2026-02-03", "type": "이동", "major": "", "sub": "", "memo": "덕질통장에서 사용_엔드림/방탄콘 카드비 이체", "amount": 734919, "inAcct": "케이-임시", "outAcct": "케이-덕질"}, {"id": 138, "date": "2026-02-03", "type": "지출", "major": "☀️ 엄마", "sub": "엄마생활비", "memo": "", "amount": 350000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 139, "date": "2026-02-02", "type": "지출", "major": "🏠 주거비", "sub": "전기세", "memo": "01 전기", "amount": 71170, "inAcct": "", "outAcct": "신카"}, {"id": 140, "date": "2026-02-02", "type": "이동", "major": "", "sub": "", "memo": "주식 이체", "amount": 3000000, "inAcct": "미래에셋", "outAcct": "케이-집계약용"}, {"id": 141, "date": "2026-02-01", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "해오름", "amount": 10000, "inAcct": "", "outAcct": "신카!"}, {"id": 142, "date": "2026-01-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 1, "inAcct": "KB뱅크", "outAcct": ""}, {"id": 143, "date": "2026-01-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 197, "inAcct": "케이뱅크", "outAcct": ""}, {"id": 144, "date": "2026-01-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "비상금통장", "amount": 304, "inAcct": "케이-비상금", "outAcct": ""}, {"id": 145, "date": "2026-01-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "덕질통장", "amount": 4102, "inAcct": "케이-덕질", "outAcct": ""}, {"id": 146, "date": "2026-01-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 3659, "inAcct": "케이-임시", "outAcct": ""}, {"id": 147, "date": "2026-01-31", "type": "수입", "major": "💵 금융소득", "sub": "이자소득", "memo": "", "amount": 8287, "inAcct": "케이-집계약용", "outAcct": ""}, {"id": 148, "date": "2026-01-31", "type": "지출", "major": "🏠 주거비", "sub": "관리비", "memo": "", "amount": 120000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 149, "date": "2026-01-31", "type": "지출", "major": "🍀 곗돈", "sub": "대딩곗돈", "memo": "", "amount": 50000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 150, "date": "2026-01-31", "type": "이동", "major": "", "sub": "", "memo": "개인연금입금", "amount": 400000, "inAcct": "미래에셋", "outAcct": "케이-임시"}, {"id": 151, "date": "2026-01-30", "type": "수입", "major": "💰 기타소득", "sub": "기타1", "memo": "카톡선물하기 환불", "amount": 1800, "inAcct": "케이-임시", "outAcct": ""}, {"id": 152, "date": "2026-01-30", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "청춘청과", "amount": 11000, "inAcct": "", "outAcct": "신카!"}, {"id": 153, "date": "2026-01-30", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "청춘청과", "amount": 7000, "inAcct": "", "outAcct": "신카!"}, {"id": 154, "date": "2026-01-30", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "폴바셋", "amount": 11682, "inAcct": "", "outAcct": "국카1"}, {"id": 155, "date": "2026-01-30", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "밥", "amount": 21780, "inAcct": "", "outAcct": "국카1"}, {"id": 156, "date": "2026-01-30", "type": "지출", "major": "🚌 교통비", "sub": "대중교통", "memo": "01월 교통카드", "amount": 113640, "inAcct": "", "outAcct": "국카k!실미"}, {"id": 157, "date": "2026-01-30", "type": "지출", "major": "🚌 교통비", "sub": "대중교통", "memo": "25년 12월 k패스 환급", "amount": 16810, "inAcct": "", "outAcct": "케이-임시"}, {"id": 158, "date": "2026-01-30", "type": "지출", "major": "🚌 교통비", "sub": "대중교통", "memo": "지하철1회", "amount": 1650, "inAcct": "", "outAcct": "삼카!"}, {"id": 159, "date": "2026-01-29", "type": "지출", "major": "🗃️ 보험", "sub": "우체국보험", "memo": "127우01", "amount": 74220, "inAcct": "", "outAcct": "KB뱅크"}, {"id": 160, "date": "2026-01-29", "type": "지출", "major": "👗 꾸밈비", "sub": "미용/헤어", "memo": "머리 컷", "amount": 24750, "inAcct": "", "outAcct": "국카1"}, {"id": 161, "date": "2026-01-28", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "징교 제베원 티켓 이체", "amount": 206000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 162, "date": "2026-01-27", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "비뇨기", "amount": 78200, "inAcct": "", "outAcct": "신카!"}, {"id": 163, "date": "2026-01-27", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "비뇨기 약국", "amount": 15300, "inAcct": "", "outAcct": "신카!"}, {"id": 164, "date": "2026-01-27", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "마라샹궈", "amount": 16286, "inAcct": "", "outAcct": "국카1"}, {"id": 165, "date": "2026-01-27", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "까미언니 뮤지컬 티켓", "amount": 134000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 166, "date": "2026-01-27", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "징교 제베원 티켓", "amount": 205700, "inAcct": "", "outAcct": "국카k!"}, {"id": 167, "date": "2026-01-26", "type": "이동", "major": "", "sub": "", "memo": "우체국보험비 이체", "amount": 50000, "inAcct": "KB뱅크", "outAcct": "케이-임시"}, {"id": 168, "date": "2026-01-26", "type": "지출", "major": "🗃️ 보험", "sub": "메리츠화재", "memo": "", "amount": 87160, "inAcct": "", "outAcct": "롯카"}, {"id": 169, "date": "2026-01-26", "type": "지출", "major": "🗃️ 보험", "sub": "메리츠화재2", "memo": "", "amount": 102940, "inAcct": "", "outAcct": "롯카"}, {"id": 170, "date": "2026-01-26", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "3끼&커피", "amount": 42067, "inAcct": "", "outAcct": "케이-임시"}, {"id": 171, "date": "2026-01-26", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "까미언니 뮤지컬 티켓(입금 완료)", "amount": 132660, "inAcct": "", "outAcct": "국카1"}, {"id": 172, "date": "2026-01-26", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "대리비 이체 from 경해", "amount": 150000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 173, "date": "2026-01-26", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "택시(from 경해)", "amount": 5950, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 174, "date": "2026-01-26", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "삼각대/스케치북", "amount": 16830, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 175, "date": "2026-01-25", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "하딜/설빙 정산 이체 to 릉교", "amount": 33600, "inAcct": "", "outAcct": "케이-임시"}, {"id": 176, "date": "2026-01-25", "type": "지출", "major": "🍽️ 식비", "sub": "카페류", "memo": "감식초", "amount": 4500, "inAcct": "", "outAcct": "케이-임시"}, {"id": 177, "date": "2026-01-25", "type": "지출", "major": "😷 건강", "sub": "목욕", "memo": "해오름", "amount": 20000, "inAcct": "", "outAcct": "신카!"}, {"id": 178, "date": "2026-01-23", "type": "지출", "major": "🏠 주거비", "sub": "상수도비", "memo": "", "amount": 29940, "inAcct": "", "outAcct": "국카k-"}, {"id": 179, "date": "2026-01-23", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "콜라", "amount": 2277, "inAcct": "", "outAcct": "국카1"}, {"id": 180, "date": "2026-01-23", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "대리비", "amount": 150000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 181, "date": "2026-01-23", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "대리비(정산 완료 from 경해)", "amount": 150000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 182, "date": "2026-01-22", "type": "이동", "major": "예적금", "sub": "", "memo": "전세대출원금", "amount": 700000, "inAcct": "전세자금대출 원금(국민)", "outAcct": "케이-임시"}, {"id": 183, "date": "2026-01-22", "type": "지출", "major": "🏠 주거비", "sub": "전세대출이자", "memo": "전세대출원금의 이자", "amount": 5225, "inAcct": "", "outAcct": "케이-임시"}, {"id": 184, "date": "2026-01-22", "type": "지출", "major": "🏠 주거비", "sub": "전세대출이자", "memo": "보증료 입금", "amount": 1100, "inAcct": "", "outAcct": "케이-임시"}, {"id": 185, "date": "2026-01-22", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "소혜언니 티켓팅 도와줌", "amount": 30000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 186, "date": "2026-01-22", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "방탄콘", "amount": 222000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 187, "date": "2026-01-22", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "서울이벤트 응모용3", "amount": 16750, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 188, "date": "2026-01-21", "type": "수입", "major": "👷 근로소득", "sub": "월급", "memo": "", "amount": 5686650, "inAcct": "케이-임시", "outAcct": ""}, {"id": 189, "date": "2026-01-21", "type": "지출", "major": "🍀 곗돈", "sub": "가족곗돈", "memo": "", "amount": 50000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 190, "date": "2026-01-21", "type": "이동", "major": "목적2", "sub": "", "memo": "비상금통장", "amount": 200000, "inAcct": "케이-비상금", "outAcct": "케이-임시"}, {"id": 191, "date": "2026-01-21", "type": "이동", "major": "목적2", "sub": "", "memo": "덕질통장", "amount": 50000, "inAcct": "케이-덕질", "outAcct": "케이-임시"}, {"id": 192, "date": "2026-01-21", "type": "이동", "major": "목적", "sub": "", "memo": "집계약용통장", "amount": 1400000, "inAcct": "케이-집계약용", "outAcct": "케이-임시"}, {"id": 193, "date": "2026-01-21", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "라세느 등 정산 이체", "amount": 470711, "inAcct": "", "outAcct": "케이-임시"}, {"id": 194, "date": "2026-01-21", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "복권", "amount": 10000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 195, "date": "2026-01-21", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엔드림 멤버십", "amount": 30000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 196, "date": "2026-01-21", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "서울이벤트 응모용2", "amount": 15050, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 197, "date": "2026-01-21", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엔드림콘1", "amount": 170973, "inAcct": "", "outAcct": "국카1"}, {"id": 198, "date": "2026-01-21", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엔드림콘2", "amount": 170973, "inAcct": "", "outAcct": "국카1"}, {"id": 199, "date": "2026-01-21", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엔드림콘3", "amount": 170973, "inAcct": "", "outAcct": "국카1"}, {"id": 200, "date": "2026-01-20", "type": "지출", "major": "📞 통신비", "sub": "LGU+", "memo": "", "amount": 40910, "inAcct": "", "outAcct": "삼카"}, {"id": 201, "date": "2026-01-20", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "비뇨기", "amount": 104700, "inAcct": "", "outAcct": "신카!"}, {"id": 202, "date": "2026-01-20", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "비뇨기 약국", "amount": 5500, "inAcct": "", "outAcct": "신카!"}, {"id": 203, "date": "2026-01-20", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "기차(from 경해)", "amount": 52000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 204, "date": "2026-01-20", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "택시(from 용백, 모도)", "amount": 12000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 205, "date": "2026-01-20", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "서울이벤트 응모용1", "amount": 17000, "inAcct": "", "outAcct": "신카!"}, {"id": 206, "date": "2026-01-20", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "멍충비용지출(팬싸응모 ㅎㅎㅎ)", "amount": 80300, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 207, "date": "2026-01-19", "type": "지출", "major": "🗃️ 보험", "sub": "삼성화재", "memo": "", "amount": 128810, "inAcct": "", "outAcct": "롯카"}, {"id": 208, "date": "2026-01-19", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "청춘청과", "amount": 30000, "inAcct": "", "outAcct": "신카!"}, {"id": 209, "date": "2026-01-19", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "곤약", "amount": 10000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 210, "date": "2026-01-19", "type": "지출", "major": "👗 꾸밈비", "sub": "미용/헤어", "memo": "샴푸", "amount": 20000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 211, "date": "2026-01-19", "type": "지출", "major": "👗 꾸밈비", "sub": "미용/헤어", "memo": "염색약", "amount": 18500, "inAcct": "", "outAcct": "신카!"}, {"id": 212, "date": "2026-01-18", "type": "지출", "major": "😷 건강", "sub": "목욕", "memo": "해오름", "amount": 20000, "inAcct": "", "outAcct": "신카!"}, {"id": 213, "date": "2026-01-17", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "기차-경해", "amount": 43500, "inAcct": "", "outAcct": "신카!"}, {"id": 214, "date": "2026-01-17", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "기차 반환 수수료-경해", "amount": 8000, "inAcct": "", "outAcct": "신카!"}, {"id": 215, "date": "2026-01-17", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "택시-경해,용백,모도", "amount": 23562, "inAcct": "", "outAcct": "국카1"}, {"id": 216, "date": "2026-01-16", "type": "지출", "major": "🍀 곗돈", "sub": "친척곗돈", "memo": "", "amount": 20000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 217, "date": "2026-01-16", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "호두", "amount": 6000, "inAcct": "", "outAcct": "국카k!"}, {"id": 218, "date": "2026-01-16", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "저녁", "amount": 8316, "inAcct": "", "outAcct": "국카1"}, {"id": 219, "date": "2026-01-16", "type": "지출", "major": "🛒 생활용품", "sub": "생활소모품", "memo": "샴푸", "amount": 2800, "inAcct": "", "outAcct": "국카k!"}, {"id": 220, "date": "2026-01-16", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "피씨방", "amount": 4950, "inAcct": "", "outAcct": "국카1"}, {"id": 221, "date": "2026-01-16", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "삼성카드연회비", "amount": 20000, "inAcct": "", "outAcct": "삼카!"}, {"id": 222, "date": "2026-01-16", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "공방대리(ks)", "amount": 100000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 223, "date": "2026-01-15", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(라이나)", "memo": "", "amount": 42280, "inAcct": "", "outAcct": "삼카"}, {"id": 224, "date": "2026-01-15", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(DB 손해)", "memo": "", "amount": 30250, "inAcct": "", "outAcct": "국카k"}, {"id": 225, "date": "2026-01-15", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(삼성생명)", "memo": "", "amount": 201157, "inAcct": "", "outAcct": "삼카"}, {"id": 226, "date": "2026-01-15", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "롯카 매니저", "amount": 30000, "inAcct": "", "outAcct": "롯카-"}, {"id": 227, "date": "2026-01-15", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엖 앨범 구매(공방도전용)", "amount": 31400, "inAcct": "", "outAcct": "신카!"}, {"id": 228, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월 카드비 이체", "amount": 2928264, "inAcct": "KB뱅크", "outAcct": "케이-임시"}, {"id": 229, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "대출이자 이체1", "amount": 283528, "inAcct": "KB뱅크", "outAcct": "케이-임시"}, {"id": 230, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "덕질통장에서 사용_대출이자 이체 2", "amount": 320000, "inAcct": "KB뱅크", "outAcct": "케이-덕질"}, {"id": 231, "date": "2026-01-14", "type": "지출", "major": "🏠 주거비", "sub": "전세대출이자", "memo": "전세대출이자", "amount": 602824, "inAcct": "", "outAcct": "KB뱅크"}, {"id": 232, "date": "2026-01-14", "type": "지출", "major": "✔️ 기타", "sub": "기타2", "memo": "롯카 매니저", "amount": 30000, "inAcct": "KB뱅크", "outAcct": "KB뱅크"}, {"id": 233, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_삼카", "amount": 284237, "inAcct": "삼카", "outAcct": "KB뱅크"}, {"id": 234, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_삼카", "amount": 21000, "inAcct": "삼카!", "outAcct": "KB뱅크"}, {"id": 235, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 2170797, "inAcct": "국카1", "outAcct": "KB뱅크"}, {"id": 236, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 76420, "inAcct": "국카k", "outAcct": "KB뱅크"}, {"id": 237, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 309450, "inAcct": "국카k!", "outAcct": "KB뱅크"}, {"id": 238, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 67400, "inAcct": "국카k!실미", "outAcct": "KB뱅크"}, {"id": 239, "date": "2026-01-14", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_국카", "amount": 145510, "inAcct": "국카k-", "outAcct": "KB뱅크"}, {"id": 240, "date": "2026-01-14", "type": "지출", "major": "✔️ 기타", "sub": "회비", "memo": "ra 본부 회비", "amount": 10000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 241, "date": "2026-01-13", "type": "이동", "major": "", "sub": "", "memo": "급여 이체", "amount": 500000, "inAcct": "KB뱅크", "outAcct": "케이-임시"}, {"id": 242, "date": "2026-01-13", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_롯카", "amount": 318910, "inAcct": "롯카", "outAcct": "KB뱅크"}, {"id": 243, "date": "2026-01-13", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_롯카", "amount": 38500, "inAcct": "롯카!", "outAcct": "KB뱅크"}, {"id": 244, "date": "2026-01-13", "type": "이동", "major": "", "sub": "", "memo": "전월카드결제_롯카", "amount": 12810, "inAcct": "롯카-", "outAcct": "KB뱅크"}, {"id": 245, "date": "2026-01-13", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "보리 등", "amount": 40000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 246, "date": "2026-01-12", "type": "지출", "major": "☀️ 엄마", "sub": "엄마보험(보람상조)", "memo": "", "amount": 8000, "inAcct": "", "outAcct": "국카k"}, {"id": 247, "date": "2026-01-12", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "소아진미(우체국)", "amount": 2852, "inAcct": "", "outAcct": "국카1"}, {"id": 248, "date": "2026-01-12", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "변 정산 완료", "amount": 50250, "inAcct": "", "outAcct": "케이-임시"}, {"id": 249, "date": "2026-01-12", "type": "지출", "major": "👗 꾸밈비", "sub": "미용/헤어", "memo": "퀵비/헤어에센스", "amount": 20200, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 250, "date": "2026-01-12", "type": "지출", "major": "👗 꾸밈비", "sub": "미용/헤어", "memo": "퀵비/헤어에센스", "amount": 10000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 251, "date": "2026-01-12", "type": "지출", "major": "👗 꾸밈비", "sub": "의류/잡화", "memo": "바지", "amount": 24240, "inAcct": "", "outAcct": "국카k!"}, {"id": 252, "date": "2026-01-12", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엖 쇼케 팔이", "amount": 300000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 253, "date": "2026-01-12", "type": "지출", "major": "📺 문화생활", "sub": "덕질", "memo": "엖 쇼케 팔이", "amount": 300000, "inAcct": "", "outAcct": "케이-덕질"}, {"id": 254, "date": "2026-01-11", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "소아진미(뷔페)", "amount": 482328, "inAcct": "", "outAcct": "국카1"}, {"id": 255, "date": "2026-01-11", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "소아진미(커피빈)", "amount": 19107, "inAcct": "", "outAcct": "국카1"}, {"id": 256, "date": "2026-01-10", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "빵", "amount": 9009, "inAcct": "", "outAcct": "국카1"}, {"id": 257, "date": "2026-01-10", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "변(점심)", "amount": 71000, "inAcct": "", "outAcct": "국카k!"}, {"id": 258, "date": "2026-01-10", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "변(카페)", "amount": 18500, "inAcct": "", "outAcct": "국카k!"}, {"id": 259, "date": "2026-01-10", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "변(카페2)", "amount": 10890, "inAcct": "", "outAcct": "국카1"}, {"id": 260, "date": "2026-01-09", "type": "지출", "major": "☀️ 엄마", "sub": "엄마핸드폰(LGU+)", "memo": "", "amount": 12810, "inAcct": "", "outAcct": "롯카-"}, {"id": 261, "date": "2026-01-09", "type": "수입", "major": "💰 기타소득", "sub": "부수입", "memo": "tictok 이체", "amount": 130000, "inAcct": "케이-임시", "outAcct": "케이-임시"}, {"id": 262, "date": "2026-01-08", "type": "지출", "major": "🏠 주거비", "sub": "도시가스", "memo": "", "amount": 77260, "inAcct": "", "outAcct": "국카k"}, {"id": 263, "date": "2026-01-08", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "", "amount": 50000, "inAcct": "", "outAcct": "케이-비상금"}, {"id": 264, "date": "2026-01-08", "type": "지출", "major": "🍽️ 식비", "sub": "식자재", "memo": "쌀", "amount": 56174, "inAcct": "", "outAcct": "국카k!"}, {"id": 265, "date": "2026-01-07", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "분당서울대(약)", "amount": 185526, "inAcct": "", "outAcct": "국카1"}, {"id": 266, "date": "2026-01-07", "type": "지출", "major": "☀️ 엄마", "sub": "엄마건강", "memo": "분당서울대", "amount": 21384, "inAcct": "", "outAcct": "국카1"}, {"id": 267, "date": "2026-01-05", "type": "지출", "major": "📞 통신비", "sub": "삼케", "memo": "", "amount": 7500, "inAcct": "", "outAcct": "국카k"}, {"id": 268, "date": "2026-01-05", "type": "지출", "major": "☀️ 엄마", "sub": "엄마핸드폰(삼케)", "memo": "", "amount": 7500, "inAcct": "", "outAcct": "국카k"}, {"id": 269, "date": "2026-01-05", "type": "지출", "major": "🍽️ 식비", "sub": "카페류", "memo": "", "amount": 3900, "inAcct": "", "outAcct": "국카k!"}, {"id": 270, "date": "2026-01-03", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "까미언니유미 정산(to 까미언니)", "amount": 16000, "inAcct": "", "outAcct": "케이-임시"}, {"id": 271, "date": "2026-01-02", "type": "지출", "major": "🍽️ 식비", "sub": "외식", "memo": "릉교징교 정산(12월 지출)", "amount": 49667, "inAcct": "", "outAcct": "케이-임시"}, {"id": 272, "date": "2026-01-01", "type": "지출", "major": "☀️ 엄마", "sub": "엄마생활비", "memo": "", "amount": 350000, "inAcct": "", "outAcct": "케이뱅크"}, {"id": 273, "date": "2026-01-01", "type": "지출", "major": "🍽️ 식비", "sub": "", "memo": "", "amount": 2772, "inAcct": "", "outAcct": "국카1"}, {"id": 274, "date": "2026-01-01", "type": "지출", "major": "🎁 경조사", "sub": "가족/친척", "memo": "고모집들이", "amount": 29500, "inAcct": "", "outAcct": "국카k!"}, {"id": 275, "date": "2026-01-01", "type": "이동", "major": "", "sub": "", "memo": "", "amount": 412571, "inAcct": "케이뱅크", "outAcct": "케이-임시"}, {"id": 276, "date": "2026-01-01", "type": "이동", "major": "", "sub": "", "memo": "", "amount": 320000, "inAcct": "케이-임시", "outAcct": "케이뱅크"}, {"id": 277, "date": "2026-01-01", "type": "이동", "major": "", "sub": "", "memo": "덕질통장에서 사용", "amount": 500000, "inAcct": "케이-임시", "outAcct": "케이-덕질"}];
+    const seed=[];
     entries=seed;
     localStorage.setItem('gb_v3',JSON.stringify(entries));
   }
@@ -391,8 +450,32 @@ try{
 
 const today=new Date().toISOString().split('T')[0];
 document.getElementById('f-date').value=today;
-function buildSel(el){el.innerHTML='<option value="">선택</option>'+ACCOUNTS.map(a=>`<option value="${a}">${a}</option>`).join('');}
-buildSel(document.getElementById('f-in-acct'));buildSel(document.getElementById('f-out-acct'));
+function buildSel(el){} // legacy - 자동완성으로 대체
+
+function acctSearch(key, q){
+  const dropId='drop-'+key;
+  const drop=document.getElementById(dropId);
+  if(!drop)return;
+  const filtered=q?ACCOUNTS.filter(a=>a.toLowerCase().includes(q.toLowerCase())):ACCOUNTS;
+  if(!filtered.length){drop.classList.remove('open');return;}
+  drop.innerHTML=filtered.map(a=>`<div class="acct-item" onmousedown="pickAcct('${key}','${a}')">${a}</div>`).join('');
+  drop.classList.add('open');
+}
+function closeAcctDrop(key){
+  const drop=document.getElementById('drop-'+key);
+  if(drop)drop.classList.remove('open');
+}
+function pickAcct(key,val){
+  const input=document.getElementById('f-'+key+'-acct')||document.getElementById('edit-'+key.replace('edit-','')+'-acct');
+  if(input)input.value=val;
+  closeAcctDrop(key);
+  // 카드납부 자동세팅
+  if(selMaj==='💳 카드납부'&&key==='out'){
+    const inEl=document.getElementById('f-in-acct');
+    if(inEl)inEl.value=val;
+  }
+}
+// 계좌 자동완성 초기화 완료
 
 function goPage(n,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -489,7 +572,7 @@ function renderHome(){
   varHtml+=budgetRow('엄마건강','☀️ 엄마건강',120000,mamaVar,
     [['엄마건강',mamaVar,120000]],'엄마건강');
   ['🍽️ 식비','🛒 생활용품','👗 꾸밈비','👩‍🎓 자기계발','😷 건강','🚌 교통비','🎁 경조사','📺 문화생활','✔️ 기타'].forEach(c=>{
-    const id=c.replace(/[^가-힣a-zA-Z]/g,'');
+    const id=c.replace(/[^\uAC00-\uD7A3a-zA-Z]/g,'');
     varHtml+=budgetRow(id,c,BUDGET[c],majT[c]||0,subList(c),id);
   });
 
@@ -679,35 +762,30 @@ function renderHist(){
 
 // ── 초기 잔고 데이터 ──
 const ACCOUNTS_DEF = [
-  // 현금·예금
-  {key:'KB뱅크',       label:'KB뱅크',       group:'cash',   init:16770},
+  {key:'KB뱅크',       label:'KB뱅크',       group:'cash',   init:0},
   {key:'NH뱅크',       label:'NH뱅크',       group:'cash',   init:0},
-  {key:'케이-임시',    label:'케이-임시',    group:'cash',   init:3143618},
-  {key:'케이뱅크',     label:'케이뱅크',     group:'cash',   init:280262},
-  {key:'케이-비상금',  label:'케이-비상금',  group:'cash',   init:217595},
-  {key:'케이-덕질',    label:'케이-덕질',    group:'cash',   init:2492267},
+  {key:'케이-임시',    label:'케이-임시',    group:'cash',   init:0},
+  {key:'케이뱅크',     label:'케이뱅크',     group:'cash',   init:0},
+  {key:'케이-비상금',  label:'케이-비상금',  group:'cash',   init:0},
+  {key:'케이-덕질',    label:'케이-덕질',    group:'cash',   init:0},
   {key:'하나은행',     label:'하나은행',     group:'cash',   init:0},
-  // 저축·투자
-  {key:'케이-집계약용',label:'집계약용',     group:'invest', init:6133692, goal:1000000},
-  {key:'신한은행',     label:'주택청약(신한)',group:'invest', init:8950000, goal:0},
-  {key:'미래에셋',     label:'개인연금(미래에셋)',group:'invest',init:4300000,goal:400000},
-  {key:'우리IRP',      label:'우리IRP',      group:'invest', init:3795540, goal:0},
-  {key:'토스증권',     label:'ISA(토스)',     group:'invest', init:0,       goal:500000},
-  {key:'삼성증권',     label:'삼성증권',     group:'invest', init:0,       goal:0},
-  // 부동산
-  {key:'전세 보증금',  label:'전세 보증금',  group:'estate', init:330500000},
-  // 카드 부채 (음수)
-  {key:'롯카',         label:'롯카',         group:'debt',   init:-318910},
-  {key:'롯카-',        label:'롯카-',        group:'debt',   init:-12810},
-  {key:'삼카',         label:'삼카',         group:'debt',   init:-284237},
+  {key:'케이-집계약용',label:'집계약용',     group:'invest', init:0, goal:1000000},
+  {key:'신한은행',     label:'주택청약(신한)',group:'invest', init:0, goal:0},
+  {key:'미래에셋',     label:'개인연금(미래에셋)',group:'invest',init:0,goal:400000},
+  {key:'우리IRP',      label:'우리IRP',      group:'invest', init:0, goal:0},
+  {key:'토스증권',     label:'ISA(토스)',     group:'invest', init:0, goal:500000},
+  {key:'삼성증권',     label:'삼성증권',     group:'invest', init:0, goal:0},
+  {key:'전세 보증금',  label:'전세 보증금',  group:'estate', init:0},
+  {key:'롯카',         label:'롯카',         group:'debt',   init:0},
+  {key:'롯카-',        label:'롯카-',        group:'debt',   init:0},
+  {key:'삼카',         label:'삼카',         group:'debt',   init:0},
   {key:'신카!',        label:'신카!',        group:'debt',   init:0},
-  {key:'국카1',        label:'국카1',        group:'debt',   init:-2170797},
-  {key:'국카k',        label:'국카k',        group:'debt',   init:-76420},
-  {key:'국카k!',       label:'국카k!',       group:'debt',   init:-309450},
-  {key:'국카k!실미',   label:'국카k!실미',   group:'debt',   init:-67400},
-  {key:'국카k-',       label:'국카k-',       group:'debt',   init:-145510},
-  // 장기부채
-  {key:'전세자금대출 원금(국민)', label:'전세대출(국민)', group:'longdebt', init:-184837860},
+  {key:'국카1',        label:'국카1',        group:'debt',   init:0},
+  {key:'국카k',        label:'국카k',        group:'debt',   init:0},
+  {key:'국카k!',       label:'국카k!',       group:'debt',   init:0},
+  {key:'국카k!실미',   label:'국카k!실미',   group:'debt',   init:0},
+  {key:'국카k-',       label:'국카k-',       group:'debt',   init:0},
+  {key:'전세자금대출 원금(국민)', label:'전세대출(국민)', group:'longdebt', init:0},
 ];
 
 function getInitBal(){
@@ -717,7 +795,7 @@ function getInitBal(){
 function saveInitBal(){
   const d={};
   ACCOUNTS_DEF.forEach(a=>{
-    const el=document.getElementById('ibal-'+a.key.replace(/[^a-zA-Z가-힣0-9]/g,'_'));
+    const el=document.getElementById('ibal-'+a.key.replace(/[^a-zA-Z\uAC00-\uD7A30-9]/g,'_'));
     if(el)d[a.key]=parseInt(el.value.replace(/,/g,''))||0;
   });
   try{localStorage.setItem('initBal',JSON.stringify(d));}catch(e){}
@@ -737,7 +815,7 @@ function toggleInitBal(){
     container.innerHTML=ACCOUNTS_DEF.filter(a=>a.group!=='longdebt').map(a=>`
       <div class="field" style="margin-bottom:6px">
         <label style="font-size:11px">${a.label}</label>
-        <input type="number" id="ibal-${a.key.replace(/[^a-zA-Z가-힣0-9]/g,'_')}"
+        <input type="number" id="ibal-${a.key.replace(/[^a-zA-Z\uAC00-\uD7A30-9]/g,'_')}"
           value="${init[a.key]||0}" inputmode="numeric"
           style="padding:7px 9px;font-size:13px;width:100%;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text)"/>
       </div>`).join('');
@@ -915,6 +993,45 @@ function apCard(c){
 }
 function clearNotif(){document.getElementById('notif-input').value='';const p=document.getElementById('nprev');p.style.display='none';p.innerHTML='';}
 
+function importXLSX(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=new Uint8Array(e.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const imported=[];
+      let maxId=entries.length?Math.max(...entries.map(x=>x.id)):0;
+      for(let i=1;i<rows.length;i++){
+        const r=rows[i];
+        const date=String(r[0]||'').trim();
+        const type=String(r[1]||'').trim();
+        const major=String(r[2]||'').trim();
+        const sub=String(r[3]||'').trim();
+        const memo=String(r[4]||'').trim();
+        const amt=Math.abs(parseInt(String(r[5]||'0').replace(/[^0-9-]/g,''))||0);
+        const inAcct=String(r[6]||'').trim();
+        const outAcct=String(r[7]||'').trim();
+        if(!date.startsWith('2026')||!['지출','수입','이동'].includes(type)||amt===0)continue;
+        maxId++;
+        imported.push({id:maxId,date,type,major,sub,memo,amount:amt,inAcct,outAcct});
+      }
+      if(imported.length===0){showToast('가져올 내역이 없어요');return;}
+      // 기존 + 신규 병합 (중복 제거)
+      const keys=new Set(entries.map(x=>x.date+'|'+x.type+'|'+x.major+'|'+x.sub+'|'+x.memo+'|'+x.amount));
+      const newOnes=imported.filter(x=>!keys.has(x.date+'|'+x.type+'|'+x.major+'|'+x.sub+'|'+x.memo+'|'+x.amount));
+      entries=[...entries,...newOnes];
+      entries.sort((a,b)=>b.date.localeCompare(a.date));
+      try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,1000)));}catch(e){}
+      document.getElementById('import-banner').style.display='none';
+      showToast('✅ '+newOnes.length+'건 가져왔어요!');
+      renderHome();renderHist();
+    }catch(err){showToast('파일 읽기 실패: '+err.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
 function exportXLSX(){
   const es=me();if(!es.length){showToast('내역이 없어요');return;}
   const rows=[['날짜','구분','대분류','소분류','내용','금액','입금계좌','출금계좌','9열'],...es.map(e=>[e.date,e.type,e.major,e.sub,e.memo,e.type==='지출'?-e.amount:e.amount,e.inAcct,e.outAcct,''])];
@@ -977,8 +1094,6 @@ function openEditModal(id) {
   document.getElementById('edit-amount').value = e.amount;
   document.getElementById('edit-memo').value = e.memo || '';
   // 계좌 셀렉트 빌드
-  buildSel(document.getElementById('edit-out-acct'));
-  buildSel(document.getElementById('edit-in-acct'));
   document.getElementById('edit-out-acct').value = e.outAcct || '';
   document.getElementById('edit-in-acct').value = e.inAcct || '';
   document.getElementById('edit-modal').classList.remove('hidden');
@@ -1043,12 +1158,115 @@ function collapseAll(group){
     if(arr)arr.classList.remove('open');
   });
 }
+function importXLSX(input){
+  const files=Array.from(input.files);
+  if(!files.length) return;
+  let processed=0;
+  const allNew=[];
+
+  files.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      const data=new Uint8Array(ev.target.result);
+      const wb=XLSX.read(data,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+
+      const existKeys=new Set(entries.map(e=>e.date+'|'+e.type+'|'+e.major+'|'+e.sub+'|'+e.memo+'|'+e.amount));
+      let maxId=entries.length>0?Math.max(...entries.map(e=>e.id)):0;
+
+      rows.forEach(r=>{
+        const date=String(r[0]||'').trim();
+        if(!date.startsWith('2026')&&!date.startsWith('2025')) return;
+        const type=String(r[1]||'').trim();
+        if(!['지출','수입','이동'].includes(type)) return;
+        const major=String(r[2]||'').replace(/[ -]/g,'').trim();
+        const sub=String(r[3]||'').replace(/[ -]/g,'').trim();
+        const memo=String(r[4]||'').trim();
+        const amt=Math.abs(parseFloat(String(r[5]||'0').replace(/[,\u20A9]/g,''))||0);
+        if(!amt) return;
+        const inAcct=String(r[6]||'').trim();
+        const outAcct=String(r[7]||'').trim();
+        const key=date+'|'+type+'|'+major+'|'+sub+'|'+memo+'|'+amt;
+        if(!existKeys.has(key)){
+          maxId++;
+          allNew.push({id:maxId,date,type,major,sub,memo,amount:amt,inAcct,outAcct});
+          existKeys.add(key);
+        }
+      });
+
+      processed++;
+      if(processed===files.length){
+        if(allNew.length===0){showToast('새 내역이 없어요');return;}
+        entries=[...entries,...allNew];
+        entries.sort((a,b)=>b.date.localeCompare(a.date));
+        entries.forEach((e,i)=>e.id=i+1);
+        try{localStorage.setItem('gb_v3',JSON.stringify(entries));}catch(e){}
+        // 배너 숨기기
+        if(entries.length>0){const b=document.getElementById('import-banner');if(b)b.style.display='none';}
+        showToast(`✅ ${allNew.length}건 추가됐어요!`);
+        renderHome();renderHist();
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function importXLSX(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      const wb=XLSX.read(ev.target.result,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      const newEntries=[];let maxId=entries.reduce((m,e)=>Math.max(m,e.id||0),0);
+      const existKeys=new Set(entries.map(e=>e.date+'|'+e.type+'|'+e.major+'|'+e.sub+'|'+e.memo+'|'+e.amount));
+      rows.forEach(row=>{
+        if(!row[0]||!String(row[0]).startsWith('2026'))return;
+        const date=String(row[0]).slice(0,10);
+        const type=String(row[1]||'').trim();
+        const major=String(row[2]||'').replace(/[ -]|_x000[0-9a-fA-F]_/g,'').trim();
+        const sub=String(row[3]||'').replace(/[ -]|_x000[0-9a-fA-F]_/g,'').trim();
+        const memo=String(row[4]||'').trim();
+        const amount=Math.abs(parseInt(String(row[5]||0).replace(/[^0-9-]/g,''))||0);
+        const inAcct=String(row[6]||'').trim();
+        const outAcct=String(row[7]||'').trim();
+        if(!['지출','수입','이동'].includes(type)||amount===0)return;
+        const key=date+'|'+type+'|'+major+'|'+sub+'|'+memo+'|'+amount;
+        if(!existKeys.has(key)){
+          maxId++;
+          newEntries.push({id:maxId,date,type,major,sub,memo,amount,inAcct,outAcct});
+          existKeys.add(key);
+        }
+      });
+      if(newEntries.length===0){showToast('새 내역이 없어요');return;}
+      entries=[...entries,...newEntries];
+      entries.sort((a,b)=>b.date.localeCompare(a.date));
+      try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,2000)));}catch(e){}
+      const banner=document.getElementById('import-banner');
+      if(banner)banner.style.display='none';
+      showToast('✅ '+newEntries.length+'건 가져왔어요!');
+      renderHome();
+    }catch(e){showToast('❌ 파일 오류: '+e.message);}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function fmt(n){return'₩'+Math.abs(n).toLocaleString('ko-KR');}
 function fmtK(n){return n>=10000?(n/10000).toFixed(n%10000===0?0:1)+'만':n.toLocaleString();}
 let tt;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2000);}
 
 setType('지출');renderHome();updateSheetStatus();initMemo();
+// 데이터 없으면 import 배너 표시
+if(entries.length===0){
+  const b=document.getElementById('import-banner');
+  if(b)b.style.display='block';
+}
+// 배너 표시
+const banner=document.getElementById('import-banner');
+if(banner) banner.style.display=entries.length===0?'block':'none';if(entries.length>0){const b=document.getElementById('import-banner');if(b)b.style.display='none';}
 </script>
 </body>
 </html>
