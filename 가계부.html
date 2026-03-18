@@ -214,61 +214,85 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 </div>
 
 <div class="page" id="page-balance">
-  <!-- 순자산 요약 -->
+  <!-- 현금 총액 -->
   <div class="sgrid" style="margin-bottom:12px">
-    <div class="sc"><div class="sl">총 자산</div><div class="sv" style="color:var(--blue)" id="bal-total-asset">₩0</div></div>
-    <div class="sc"><div class="sl">총 부채</div><div class="sv" style="color:var(--red)" id="bal-total-debt">₩0</div></div>
-    <div class="sc"><div class="sl">순자산</div><div class="sv" id="bal-net">₩0</div></div>
+    <div class="sc" style="grid-column:span 2"><div class="sl">현금·예금 합계</div><div class="sv" style="color:var(--blue)" id="bal-cash-total">₩0</div></div>
+    <div class="sc"><div class="sl">카드 미결제</div><div class="sv" style="color:var(--red)" id="bal-debt-total">₩0</div></div>
   </div>
 
   <!-- 초기잔고 설정 -->
-  <div class="card" id="init-bal-card">
+  <div class="card">
     <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
-      💰 초기 잔고 설정
+      ⚙️ 초기 잔고 설정
       <button onclick="toggleInitBal()" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer" id="init-bal-tog">설정 ▾</button>
     </div>
     <div id="init-bal-body" style="display:none">
-      <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.7">25년 말 기준 잔고를 한 번만 입력하세요. 이후 입력한 내역으로 자동 계산돼요.</div>
+      <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.7">25년 말 기준 잔고 한 번만 입력 → 이후 자동계산</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="init-bal-inputs"></div>
       <button onclick="saveInitBal()" style="margin-top:10px;width:100%;padding:10px;border:.5px solid var(--blue);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">저장</button>
     </div>
   </div>
 
-  <!-- 현금·예금 -->
+  <!-- 현금 계좌 -->
   <div class="card">
-    <div class="ct">💰 현금·예금</div>
+    <div class="ct">💰 현금·예금 계좌</div>
     <div id="bal-cash"></div>
   </div>
 
-  <!-- 저축·투자 -->
+  <!-- 카드 미결제 -->
+  <div class="card">
+    <div class="ct" style="color:var(--red)">💳 카드 미결제</div>
+    <div id="bal-card-debt"></div>
+    <div class="div"></div>
+    <div class="trow"><span class="tlbl">전세대출 (장기)</span><span id="bal-longdebt" class="tval" style="color:var(--red)">₩0</span></div>
+  </div>
+</div>
+
+<!-- 자산 페이지 -->
+<div class="page" id="page-asset">
+  <!-- 자산 요약 -->
+  <div class="sgrid" style="margin-bottom:12px">
+    <div class="sc"><div class="sl">투자 자산</div><div class="sv" style="color:var(--blue)" id="ast-invest-total">₩0</div></div>
+    <div class="sc"><div class="sl">부동산</div><div class="sv" style="color:var(--blue)" id="ast-estate-total">₩0</div></div>
+    <div class="sc"><div class="sl">저축률</div><div class="sv" id="ast-sav-rate">0%</div></div>
+  </div>
+
+  <!-- 이달 납입 현황 -->
   <div class="card">
     <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
-      📈 저축·투자
-      <span style="font-size:11px;color:var(--sub)">이달 저축 <span id="bal-sav-month" style="font-weight:700;color:var(--blue)">₩0</span></span>
+      🎯 이달 납입 현황
+      <span style="font-size:11px;color:var(--sub)" id="ast-month-lbl"></span>
     </div>
-    <div id="bal-invest"></div>
+    <div id="ast-monthly"></div>
     <div class="div"></div>
-    <div id="bal-sav-goals"></div>
+    <div class="trow"><span class="tlbl">이달 납입 합계</span><span class="tval" style="color:var(--blue)" id="ast-sav-sum">₩0</span></div>
+  </div>
+
+  <!-- 월별 저축 추이 -->
+  <div class="card">
+    <div class="ct">📊 월별 저축 추이</div>
+    <div id="ast-trend"></div>
+  </div>
+
+  <!-- 누적 자산 현황 -->
+  <div class="card">
+    <div class="ct">📈 저축·투자 누적</div>
+    <div id="ast-invest"></div>
   </div>
 
   <!-- 부동산 -->
   <div class="card">
     <div class="ct">🏡 부동산</div>
-    <div id="bal-estate"></div>
-  </div>
-
-  <!-- 카드 미결제 -->
-  <div class="card">
-    <div class="ct" style="color:var(--red)">💳 카드 미결제 (부채)</div>
-    <div id="bal-card-debt"></div>
+    <div id="ast-estate"></div>
   </div>
 </div>
 
-<nav class="nav">
+<nav class="nav" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
   <button class="nb active" onclick="goPage('home',this)"><span class="ni">🏠</span>홈</button>
   <button class="nb" onclick="goPage('input',this)"><span class="ni">✏️</span>입력</button>
   <button class="nb" onclick="goPage('history',this)"><span class="ni">📋</span>내역</button>
   <button class="nb" onclick="goPage('balance',this)"><span class="ni">💵</span>잔고</button>
+  <button class="nb" onclick="goPage('asset',this)"><span class="ni">📈</span>자산</button>
 </nav>
 <div class="toast" id="toast"></div>
 
@@ -331,7 +355,7 @@ function goPage(n,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+n).classList.add('active');btn.classList.add('active');
-  if(n==='home')renderHome();if(n==='history')renderHist();if(n==='balance')renderBalance();
+  if(n==='home')renderHome();if(n==='history')renderHist();if(n==='balance')renderBalance();if(n==='asset')renderAsset();
 }
 function changeMonth(d){
   const[y,m]=curMon.split('-').map(Number);
@@ -609,9 +633,9 @@ function toggleInitBal(){
   }
 }
 
-function renderBalance(){
+// ── 공통: 누적 잔고 계산 ──
+function calcBalances(){
   const init=getInitBal();
-  // 전체 내역으로 누적 계산 (월 무관)
   const allIn={},allOut={};
   entries.forEach(e=>{
     if(e.type==='이동'){
@@ -621,97 +645,134 @@ function renderBalance(){
     if(e.type==='지출'&&e.outAcct)allOut[e.outAcct]=(allOut[e.outAcct]||0)+e.amount;
     if(e.type==='수입'&&e.inAcct)allIn[e.inAcct]=(allIn[e.inAcct]||0)+e.amount;
   });
-
   function curBal(key){return(init[key]||0)+(allIn[key]||0)-(allOut[key]||0);}
+  return {curBal};
+}
 
+function renderBalance(){
+  const {curBal}=calcBalances();
   const cashAccs=ACCOUNTS_DEF.filter(a=>a.group==='cash');
-  const investAccs=ACCOUNTS_DEF.filter(a=>a.group==='invest');
-  const estateAccs=ACCOUNTS_DEF.filter(a=>a.group==='estate');
   const debtAccs=ACCOUNTS_DEF.filter(a=>a.group==='debt');
   const longDebtAccs=ACCOUNTS_DEF.filter(a=>a.group==='longdebt');
 
-  function balRow(a){
-    const v=curBal(a.key);
-    const color=v>=0?'var(--text)':'var(--red)';
-    return`<div class="srow"><span class="sname">${a.label}</span>
-      <span class="samt" style="color:${color}">${v>=0?'':'-'}${fmt(Math.abs(v))}</span></div>`;
-  }
-  function balRowGoal(a){
-    const v=curBal(a.key);
-    const es=me();
-    const monthSav=es.filter(e=>e.type==='이동'&&(e.inAcct===a.key)).reduce((s,e)=>s+e.amount,0);
-    const ok=a.goal===0||monthSav>=a.goal;
-    return`<div class="srow">
-      <div><div class="sname">${a.label}</div>
-        ${a.goal>0?`<div style="font-size:10px;color:var(--sub)">이달 ${fmt(monthSav)} / 목표 ${fmt(a.goal)}</div>`:''}
-      </div>
-      <span class="samt" style="color:var(--blue)">${fmt(v)}</span>
-    </div>`;
-  }
-
   const cashTotal=cashAccs.reduce((s,a)=>s+curBal(a.key),0);
-  const investTotal=investAccs.reduce((s,a)=>s+curBal(a.key),0);
-  const estateTotal=estateAccs.reduce((s,a)=>s+curBal(a.key),0);
-  const debtTotal=debtAccs.reduce((s,a)=>s+curBal(a.key),0);
+  const debtTotal=debtAccs.reduce((s,a)=>s+Math.min(0,curBal(a.key)),0);
   const longDebtTotal=longDebtAccs.reduce((s,a)=>s+curBal(a.key),0);
-  const totalAsset=cashTotal+investTotal+estateTotal;
-  const totalDebt=Math.abs(debtTotal)+Math.abs(longDebtTotal);
-  const netAsset=totalAsset-totalDebt;
 
-  document.getElementById('bal-total-asset').textContent=fmt(totalAsset);
-  document.getElementById('bal-total-debt').textContent=fmt(totalDebt);
-  const netEl=document.getElementById('bal-net');
-  netEl.textContent=(netAsset<0?'-':'')+fmt(Math.abs(netAsset));
-  netEl.style.color=netAsset>=0?'var(--blue)':'var(--red)';
+  document.getElementById('bal-cash-total').textContent=fmt(cashTotal);
+  document.getElementById('bal-debt-total').textContent=fmt(Math.abs(debtTotal));
 
-  // 현금
+  // 현금 계좌 목록
   document.getElementById('bal-cash').innerHTML=
-    cashAccs.map(balRow).join('')+
-    `<div class="div"></div><div class="trow"><span class="tlbl">소계</span><span class="tval" style="color:var(--blue)">${fmt(cashTotal)}</span></div>`;
-
-  // 저축·투자
-  const es=me();
-  const monthSavTotal=investAccs.reduce((s,a)=>{
-    return s+es.filter(e=>e.type==='이동'&&e.inAcct===a.key).reduce((ss,e)=>ss+e.amount,0);
-  },0);
-  document.getElementById('bal-sav-month').textContent=fmt(monthSavTotal);
-  document.getElementById('bal-invest').innerHTML=
-    investAccs.map(balRowGoal).join('')+
-    `<div class="div"></div><div class="trow"><span class="tlbl">소계</span><span class="tval" style="color:var(--blue)">${fmt(investTotal)}</span></div>`;
-
-  // 저축 목표 진행
-  const savGoals=SAVE_GOALS.map(g=>{
-    const monthAmt=es.filter(e=>e.type==='이동'&&e.memo&&e.memo.includes(g.mk)).reduce((s,e)=>s+e.amount,0);
-    const ok=g.g===0||monthAmt>=g.g;
-    return`<div class="srow">
-      <div><div class="sname" style="font-size:12px">${g.n}</div></div>
-      <div class="sright">
-        <div class="samt" style="font-size:13px;color:${ok?'var(--green)':'var(--amber)'}">
-          ${fmt(monthAmt)}${g.g>0?` / ${fmt(g.g)}`:''}
-        </div>
-        ${g.g>0?`<div class="sgoal">${ok?'✅ 달성':'📌 미달성'}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-  document.getElementById('bal-sav-goals').innerHTML=
-    `<div style="font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px">이달 저축 목표</div>`+savGoals;
-
-  // 부동산
-  document.getElementById('bal-estate').innerHTML=
-    estateAccs.map(balRow).join('');
+    cashAccs.map(a=>{
+      const v=curBal(a.key);
+      return`<div class="srow">
+        <span class="sname">${a.label}</span>
+        <span class="samt" style="color:${v>=0?'var(--text)':'var(--red)'}">${v<0?'-':''}${fmt(Math.abs(v))}</span>
+      </div>`;
+    }).join('')+
+    `<div class="div"></div>
+    <div class="trow"><span class="tlbl">합계</span><span class="tval" style="color:var(--blue)">${fmt(cashTotal)}</span></div>`;
 
   // 카드 미결제
   document.getElementById('bal-card-debt').innerHTML=
     debtAccs.map(a=>{
       const v=curBal(a.key);
-      return`<div class="srow"><span class="sname">${a.label}</span>
-        <span class="samt" style="color:${v<0?'var(--red)':'var(--sub)'}">
-          ${v<0?fmt(Math.abs(v)):'-'}
-        </span></div>`;
+      const debt=Math.abs(Math.min(0,v));
+      return`<div class="srow">
+        <span class="sname">${a.label}</span>
+        <span class="samt" style="color:${debt>0?'var(--red)':'var(--hint)'}">${debt>0?fmt(debt):'-'}</span>
+      </div>`;
+    }).join('');
+
+  document.getElementById('bal-longdebt').textContent=fmt(Math.abs(longDebtTotal));
+}
+
+function renderAsset(){
+  const {curBal}=calcBalances();
+  const investAccs=ACCOUNTS_DEF.filter(a=>a.group==='invest');
+  const estateAccs=ACCOUNTS_DEF.filter(a=>a.group==='estate');
+
+  const investTotal=investAccs.reduce((s,a)=>s+curBal(a.key),0);
+  const estateTotal=estateAccs.reduce((s,a)=>s+curBal(a.key),0);
+
+  document.getElementById('ast-invest-total').textContent=fmt(investTotal);
+  document.getElementById('ast-estate-total').textContent=fmt(estateTotal);
+
+  // 저축률 계산 (전체 기간 수입 대비 이동)
+  const allEntryInc=entries.filter(e=>e.type==='수입').reduce((s,e)=>s+e.amount,0);
+  const allSav=entries.filter(e=>e.type==='이동'&&investAccs.some(a=>a.key===e.inAcct)).reduce((s,e)=>s+e.amount,0);
+  const savRate=allEntryInc>0?Math.round(allSav/allEntryInc*100):0;
+  const rateEl=document.getElementById('ast-sav-rate');
+  rateEl.textContent=savRate+'%';
+  rateEl.style.color=savRate>=30?'var(--green)':'var(--amber)';
+
+  // 이달 납입 현황
+  const es=me();
+  const [y,m]=curMon.split('-');
+  document.getElementById('ast-month-lbl').textContent=`${y}년 ${parseInt(m)}월`;
+
+  let monthSavSum=0;
+  const monthlyHtml=SAVE_GOALS.map(g=>{
+    const monthAmt=entries.filter(e=>e.date&&e.date.startsWith(curMon)&&e.type==='이동'&&e.memo&&e.memo.includes(g.mk)).reduce((s,e)=>s+e.amount,0);
+    monthSavSum+=monthAmt;
+    const ok=g.g===0||monthAmt>=g.g;
+    const pct=g.g>0?Math.min(Math.round(monthAmt/g.g*100),100):0;
+    const gc=ok?'go':monthAmt>0?'gw':'';
+    return`<div class="brow-wrap">
+      <div style="display:flex;align-items:center;gap:4px">
+        <span class="bn" style="flex:1">${g.n}</span>
+        <span style="font-size:10px;color:var(--sub);white-space:nowrap">${fmt(monthAmt)}${g.g>0?' / '+fmt(g.g):''}</span>
+        ${g.g>0?`<span style="font-size:10px;font-weight:700;min-width:26px;text-align:right;color:${ok?'var(--green)':'var(--amber)'}">${pct}%</span>`:''}
+        ${g.g>0?`<div class="gb" style="width:32px"><div class="gf ${gc}" style="width:${pct}%"></div></div>`:''}
+        <span style="font-size:11px">${ok?'✅':'📌'}</span>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('ast-monthly').innerHTML=monthlyHtml;
+  document.getElementById('ast-sav-sum').textContent=fmt(monthSavSum);
+
+  // 월별 저축 추이 (막대 차트 — 텍스트 기반)
+  const months=['2026-01','2026-02','2026-03'].filter(m=>entries.some(e=>e.date&&e.date.startsWith(m)));
+  const trendHtml=months.map(mon=>{
+    const monInc=entries.filter(e=>e.date&&e.date.startsWith(mon)&&e.type==='수입').reduce((s,e)=>s+e.amount,0);
+    const monSav=entries.filter(e=>e.date&&e.date.startsWith(mon)&&e.type==='이동'&&investAccs.some(a=>a.key===e.inAcct)).reduce((s,e)=>s+e.amount,0);
+    const monRate=monInc>0?Math.round(monSav/monInc*100):0;
+    const [,mm]=mon.split('-');
+    const barW=Math.min(monRate*2,100);
+    const col=monRate>=30?'var(--green)':monRate>=15?'var(--amber)':'var(--red)';
+    return`<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--border)">
+      <span style="font-size:12px;font-weight:600;min-width:28px">${parseInt(mm)}월</span>
+      <div style="flex:1;height:8px;background:var(--bg);border-radius:99px;overflow:hidden">
+        <div style="height:100%;width:${barW}%;background:${col};border-radius:99px"></div>
+      </div>
+      <span style="font-size:11px;font-weight:700;color:${col};min-width:32px">${monRate}%</span>
+      <span style="font-size:11px;color:var(--sub);min-width:60px;text-align:right">${fmtK(monSav)}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('ast-trend').innerHTML=trendHtml||'<div class="empty">데이터 없음</div>';
+
+  // 누적 저축·투자 계좌
+  document.getElementById('ast-invest').innerHTML=
+    investAccs.map(a=>{
+      const v=curBal(a.key);
+      return`<div class="srow">
+        <div>
+          <div class="sname">${a.label}</div>
+          ${a.goal>0?`<div style="font-size:10px;color:var(--sub)">월 목표 ${fmt(a.goal)}</div>`:''}
+        </div>
+        <span class="samt" style="color:var(--blue)">${fmt(v)}</span>
+      </div>`;
     }).join('')+
     `<div class="div"></div>
-    <div class="trow"><span class="tlbl">전세대출 (장기부채)</span><span class="tval" style="color:var(--red)">${fmt(Math.abs(longDebtTotal))}</span></div>
-    <div class="trow"><span class="tlbl">부채 합계</span><span class="tval" style="color:var(--red)">${fmt(totalDebt)}</span></div>`;
+    <div class="trow"><span class="tlbl">투자 합계</span><span class="tval" style="color:var(--blue)">${fmt(investTotal)}</span></div>`;
+
+  // 부동산
+  document.getElementById('ast-estate').innerHTML=
+    estateAccs.map(a=>{
+      const v=curBal(a.key);
+      return`<div class="srow"><span class="sname">${a.label}</span><span class="samt" style="color:var(--blue)">${fmt(v)}</span></div>`;
+    }).join('');
 }
 
 function parseNotif(v){
