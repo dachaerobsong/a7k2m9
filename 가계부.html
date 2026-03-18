@@ -102,6 +102,20 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 .tw{background:var(--amber-lt);color:var(--amber)}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap;z-index:999}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.memo-box{background:var(--surface);border-radius:var(--r);border:.5px solid var(--border);padding:12px;margin-bottom:12px}
+.memo-box textarea{width:100%;border:none;background:transparent;font-size:13px;font-family:inherit;color:var(--text);resize:none;outline:none;line-height:1.7;min-height:80px}
+.memo-box textarea::placeholder{color:var(--hint)}
+.memo-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.memo-lbl{font-size:12px;font-weight:700;color:var(--sub)}
+.memo-saved{font-size:10px;color:var(--hint)}
+.sheets-box{background:var(--surface);border-radius:var(--r);border:.5px solid var(--border);padding:12px;margin-bottom:12px}
+.sheets-hd{display:flex;justify-content:space-between;align-items:center}
+.sheets-title{font-size:12px;font-weight:700;color:var(--sub);display:flex;align-items:center;gap:6px}
+.sheets-dot{width:7px;height:7px;border-radius:50%;background:var(--hint)}
+.sheets-dot.on{background:var(--green)}
+.sheets-body{display:none;margin-top:10px}
+.sheets-body.open{display:block}
+.sheets-tog{font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer}
 .sec-div{display:flex;align-items:center;gap:7px;margin:10px 0 7px}
 .sec-div span{font-size:11px;font-weight:700;color:var(--sub);white-space:nowrap}
 .sec-div::after{content:'';flex:1;height:.5px;background:var(--border)}
@@ -132,6 +146,37 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <div class="sc"><div class="sl">수입</div><div class="sv" style="color:var(--green)" id="h-in">₩0</div></div>
     <div class="sc"><div class="sl">지출</div><div class="sv" style="color:var(--red)" id="h-out">₩0</div></div>
     <div class="sc"><div class="sl">잔액</div><div class="sv" id="h-bal">₩0</div></div>
+  </div>
+
+  <!-- 메모장 -->
+  <div class="memo-box">
+    <div class="memo-hd">
+      <span class="memo-lbl">📝 메모</span>
+      <span class="memo-saved" id="memo-saved"></span>
+    </div>
+    <textarea id="quick-memo" placeholder="이달 메모, 할 일, 체크리스트 등 자유롭게..."></textarea>
+  </div>
+
+  <!-- 구글 시트 연동 -->
+  <div class="sheets-box">
+    <div class="sheets-hd">
+      <div class="sheets-title">
+        <div class="sheets-dot" id="sheets-dot"></div>
+        📊 구글 시트 연동
+      </div>
+      <button class="sheets-tog" onclick="toggleSheets()">설정 ▾</button>
+    </div>
+    <div class="sheets-body" id="sheets-body">
+      <div class="field" style="margin-top:10px">
+        <label>시트 ID</label>
+        <input type="text" id="sheet-id" placeholder="스프레드시트 URL의 /d/ 뒤 ID"/>
+      </div>
+      <div class="field">
+        <label>Apps Script URL</label>
+        <input type="text" id="script-url" placeholder="https://script.google.com/macros/s/.../exec"/>
+      </div>
+      <button onclick="saveSheetConfig()" style="padding:9px 16px;border:.5px solid var(--blue);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer;width:100%">저장 & 연결</button>
+    </div>
   </div>
   <div class="card"><div class="ct" style="display:flex;justify-content:space-between;align-items:center">📊 카테고리 예산<div style="display:flex;gap:6px"><button onclick="expandAll('budget')" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 펴기</button><button onclick="collapseAll('budget')" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 접기</button></div></div><div id="budget-list"></div></div>
   <div class="card"><div class="ct" style="display:flex;justify-content:space-between;align-items:center">💳 카드 현황<div style="display:flex;gap:6px"><button onclick="expandAll('card')" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 펴기</button><button onclick="collapseAll('card')" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 접기</button></div></div><div id="card-list"></div></div>
@@ -168,20 +213,62 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   <div id="entry-list"><div class="empty">아직 내역이 없어요</div></div>
 </div>
 
-<div class="page" id="page-saving">
-  <div class="card"><div class="ct">🎯 이달 저축 목표</div><div id="saving-list"></div>
-    <div class="div"></div>
-    <div class="trow"><span class="tlbl">목표 합계</span><span class="tval" style="color:var(--blue)">₩2,750,000</span></div>
-    <div class="trow"><span class="tlbl">실제 저축</span><span class="tval" id="act-sav" style="color:var(--green)">₩0</span></div>
+<div class="page" id="page-balance">
+  <!-- 순자산 요약 -->
+  <div class="sgrid" style="margin-bottom:12px">
+    <div class="sc"><div class="sl">총 자산</div><div class="sv" style="color:var(--blue)" id="bal-total-asset">₩0</div></div>
+    <div class="sc"><div class="sl">총 부채</div><div class="sv" style="color:var(--red)" id="bal-total-debt">₩0</div></div>
+    <div class="sc"><div class="sl">순자산</div><div class="sv" id="bal-net">₩0</div></div>
   </div>
-  <div class="card"><div class="ct">💡 수입 대비 현황</div><div id="inc-summary"></div></div>
+
+  <!-- 초기잔고 설정 -->
+  <div class="card" id="init-bal-card">
+    <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
+      💰 초기 잔고 설정
+      <button onclick="toggleInitBal()" style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer" id="init-bal-tog">설정 ▾</button>
+    </div>
+    <div id="init-bal-body" style="display:none">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.7">25년 말 기준 잔고를 한 번만 입력하세요. 이후 입력한 내역으로 자동 계산돼요.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px" id="init-bal-inputs"></div>
+      <button onclick="saveInitBal()" style="margin-top:10px;width:100%;padding:10px;border:.5px solid var(--blue);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">저장</button>
+    </div>
+  </div>
+
+  <!-- 현금·예금 -->
+  <div class="card">
+    <div class="ct">💰 현금·예금</div>
+    <div id="bal-cash"></div>
+  </div>
+
+  <!-- 저축·투자 -->
+  <div class="card">
+    <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
+      📈 저축·투자
+      <span style="font-size:11px;color:var(--sub)">이달 저축 <span id="bal-sav-month" style="font-weight:700;color:var(--blue)">₩0</span></span>
+    </div>
+    <div id="bal-invest"></div>
+    <div class="div"></div>
+    <div id="bal-sav-goals"></div>
+  </div>
+
+  <!-- 부동산 -->
+  <div class="card">
+    <div class="ct">🏡 부동산</div>
+    <div id="bal-estate"></div>
+  </div>
+
+  <!-- 카드 미결제 -->
+  <div class="card">
+    <div class="ct" style="color:var(--red)">💳 카드 미결제 (부채)</div>
+    <div id="bal-card-debt"></div>
+  </div>
 </div>
 
 <nav class="nav">
   <button class="nb active" onclick="goPage('home',this)"><span class="ni">🏠</span>홈</button>
   <button class="nb" onclick="goPage('input',this)"><span class="ni">✏️</span>입력</button>
   <button class="nb" onclick="goPage('history',this)"><span class="ni">📋</span>내역</button>
-  <button class="nb" onclick="goPage('saving',this)"><span class="ni">💰</span>저축</button>
+  <button class="nb" onclick="goPage('balance',this)"><span class="ni">💵</span>잔고</button>
 </nav>
 <div class="toast" id="toast"></div>
 
@@ -205,12 +292,20 @@ const CAT={
     '✔️ 기타':['회비','기타2','집 관련 지출']
   },
   '수입':{'👷 근로소득':['월급','보너스'],'💵 금융소득':['이자소득'],'💰 기타소득':['1/n, 카드환불','기타1','부수입']},
-  '이동':{'예적금':['주택청약저축','자유적금','전세대출원금'],'연금':['개인연금'],'주식':['ISA'],'목적':['집계약용'],'목적2':['비상금','덕질']}
+  '이동':{
+    '💳 카드납부':['롯카납부','롯카-납부','삼카납부','신카납부','신카!납부','국카1납부','국카k납부','국카k!납부','국카k!실미납부','농카납부'],
+    '🔄 계좌이체':['급여이체','생활비이체','대출이자이체','카드비이체','기타이체'],
+    '예적금':['주택청약저축','자유적금','전세대출원금'],
+    '연금':['개인연금'],
+    '주식':['ISA'],
+    '목적':['집계약용'],
+    '목적2':['비상금','덕질']
+  }
 };
 const BUDGET={'🏠 주거비':904890,'🗃️ 보험':393130,'📞 통신비':48300,'🍀 곗돈':100000,'☀️ 엄마':772187,'🍽️ 식비':300000,'🛒 생활용품':30000,'👗 꾸밈비':30000,'👩‍🎓 자기계발':50000,'😷 건강':50000,'🚌 교통비':60000,'🎁 경조사':0,'📺 문화생활':0,'✔️ 기타':50000};
 const SUB_BUDGET={"🏠 주거비": {"전세대출이자": 640000, "관리비": 120000, "전기세": 60000, "도시가스": 50000, "상수도비": 15000, "기타세금": 12000, "구독비": 7890, "TV수신료": 0}, "🗃️ 보험": {"우체국보험": 74220, "메리츠화재": 87160, "메리츠화재2": 102940, "삼성화재": 128810}, "📞 통신비": {"LGU+": 40800, "삼케": 7500, "LG알뜰(우릉교)": 0}, "🍀 곗돈": {"가족곗돈": 50000, "대딩곗돈": 50000, "친척곗돈": 20000}, "☀️ 엄마": {"엄마대출원금": 0, "엄마대출이자": 0, "엄마생활비": 350000, "엄마보험(삼성생명)": 201157, "엄마보험(DB 손해)": 30250, "엄마보험(보람상조)": 8000, "엄마보험(라이나)": 42280, "엄마핸드폰(LGU+)": 13000, "엄마핸드폰(삼케)": 7500, "엄마건강": 120000}, "🍽️ 식비": {"식자재": 50000, "배달식비": 0, "외식": 100000, "카페류": 50000, "가족식비": 100000}, "🛒 생활용품": {"생활소모품": 30000, "가전/가구": 0, "침구/인테리어": 0}, "👗 꾸밈비": {"의류/잡화": 30000, "미용/헤어": 0, "세탁/수선": 0}, "👩\u200d🎓 자기계발": {"스터디/수강": 50000, "운동": 0, "도서": 0}, "😷 건강": {"병원/약국": 50000, "건강보조": 0, "예방/검진": 0, "목욕": 0}, "🚌 교통비": {"대중교통": 60000, "택시비": 0, "기차": 0}, "🎁 경조사": {"가족/친척": 0, "지인/동료": 0}, "📺 문화생활": {"공연/전시": 0, "OTT": 0, "기타 입장료": 0, "덕질": 0}, "✔️ 기타": {"회비": 0, "기타2": 50000, "집 관련 지출": 0}};
 const CARD_BUDGET={'롯카':318910,'롯카!':0,'롯카-':13000,'삼카':284237,'삼카!':0,'신카':60000,'신카!':240000,'국카1':161140,'국카k':111140,'국카k!':188860,'국카k!실미':60000,'국카k-':15000};
-const SAVE_GOALS=[{name:'주택청약저축',goal:0},{name:'자유적금',goal:0},{name:'전세대출원금',goal:600000},{name:'개인연금',goal:400000},{name:'ISA',goal:500000},{name:'집계약용',goal:1000000},{name:'비상금',goal:200000},{name:'덕질',goal:50000}];
+const SAVE_GOALS=[{n:'전세대출원금',g:600000,mk:'전세대출원금'},{n:'집계약용',g:1000000,mk:'집계약용통장'},{n:'개인연금',g:400000,mk:'개인연금입금'},{n:'ISA',g:500000,mk:'ISA입금'},{n:'비상금',g:200000,mk:'비상금통장'},{n:'덕질통장',g:50000,mk:'덕질통장'}];
 const ACCOUNTS=['KB뱅크','NH뱅크','케이-덕질','케이-비상금','케이-임시','케이뱅크','하나은행','KB 펀드','케이-집계약용','신한은행','전세 보증금','토스증권','미래에셋','삼성증권','우리IRP','농카','농카!','농카!실미','농카-','롯카','롯카!','롯카!실미','롯카-','신카','신카!','신카!실미','삼카','삼카!','국카1','국카k','국카k!','국카k!실미','국카k-','전세자금대출 원금(국민)','전세자금대출 원금(농협)','엄마신용대출 원금'];
 const CMAP=[{k:['롯카!실미'],v:'롯카!실미'},{k:['롯카!'],v:'롯카!'},{k:['롯카-'],v:'롯카-'},{k:['롯데카드','로카','롯카'],v:'롯카'},{k:['신카!실미'],v:'신카!실미'},{k:['신카!'],v:'신카!'},{k:['신한카드','신카','FBS'],v:'신카'},{k:['삼카!'],v:'삼카!'},{k:['삼성카드','삼카'],v:'삼카'},{k:['국카k!실미'],v:'국카k!실미'},{k:['국카k!'],v:'국카k!'},{k:['국카k-'],v:'국카k-'},{k:['국카k'],v:'국카k'},{k:['국카1'],v:'국카1'},{k:['국민카드','KB카드','KB Pay','KB국민'],v:'국카k'},{k:['농카!실미'],v:'농카!실미'},{k:['농카!'],v:'농카!'},{k:['농카-'],v:'농카-'},{k:['농협카드','NH카드','농카'],v:'농카'},{k:['케이뱅크'],v:'케이뱅크'},{k:['KB뱅크','KB은행'],v:'KB뱅크'},{k:['NH뱅크','농협은행'],v:'NH뱅크'},{k:['하나은행','하나카드'],v:'하나은행'},{k:['신한은행'],v:'신한은행'}];
 
@@ -236,7 +331,7 @@ function goPage(n,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+n).classList.add('active');btn.classList.add('active');
-  if(n==='home')renderHome();if(n==='history')renderHist();if(n==='saving')renderSav();
+  if(n==='home')renderHome();if(n==='history')renderHist();if(n==='balance')renderBalance();
 }
 function changeMonth(d){
   const[y,m]=curMon.split('-').map(Number);
@@ -418,10 +513,21 @@ function addEntry(){
   if(!amt||amt<=0){showToast('금액을 입력해주세요');return;}
   if(!selMaj){showToast('대분류를 선택해주세요');return;}
   if(!selSub){showToast('소분류를 선택해주세요');return;}
-  entries.unshift({id:Date.now(),date:document.getElementById('f-date').value,type:cType,major:selMaj,sub:selSub,memo:document.getElementById('f-memo').value,amount:amt,inAcct:document.getElementById('f-in-acct').value,outAcct:document.getElementById('f-out-acct').value});
+  const entry={id:Date.now(),date:document.getElementById('f-date').value,type:cType,major:selMaj,sub:selSub,memo:document.getElementById('f-memo').value,amount:amt,inAcct:document.getElementById('f-in-acct').value,outAcct:document.getElementById('f-out-acct').value};
+  entries.unshift(entry);
   try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,500)));}catch(e){}
   document.getElementById('f-amount').value='';document.getElementById('f-memo').value='';
   showToast('✅ 추가됐어요!');renderHome();
+  // 구글 시트 전송
+  const sUrl=localStorage.getItem('scriptUrl')||'';
+  const sId=localStorage.getItem('sheetId')||'';
+  if(sUrl&&sId){
+    fetch(sUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({sheetId:sId,date:entry.date,type:entry.type,major:entry.major,
+        sub:entry.sub,memo:entry.memo,amount:entry.type==='지출'?-entry.amount:entry.amount,
+        inAcct:entry.inAcct,outAcct:entry.outAcct})
+    }).then(()=>showToast('📊 시트에도 저장됐어요!')).catch(()=>showToast('⚠️ 시트 전송 실패'));
+  }
 }
 function delEntry(id){entries=entries.filter(e=>e.id!==id);try{localStorage.setItem('gb_v3',JSON.stringify(entries));}catch(e){}renderHist();renderHome();}
 
@@ -436,25 +542,176 @@ function renderHist(){
   }).join('');
 }
 
-function renderSav(){
+// ── 초기 잔고 데이터 ──
+const ACCOUNTS_DEF = [
+  // 현금·예금
+  {key:'KB뱅크',       label:'KB뱅크',       group:'cash',   init:16770},
+  {key:'NH뱅크',       label:'NH뱅크',       group:'cash',   init:0},
+  {key:'케이-임시',    label:'케이-임시',    group:'cash',   init:3143618},
+  {key:'케이뱅크',     label:'케이뱅크',     group:'cash',   init:280262},
+  {key:'케이-비상금',  label:'케이-비상금',  group:'cash',   init:217595},
+  {key:'케이-덕질',    label:'케이-덕질',    group:'cash',   init:2492267},
+  {key:'하나은행',     label:'하나은행',     group:'cash',   init:0},
+  // 저축·투자
+  {key:'케이-집계약용',label:'집계약용',     group:'invest', init:6133692, goal:1000000},
+  {key:'신한은행',     label:'주택청약(신한)',group:'invest', init:8950000, goal:0},
+  {key:'미래에셋',     label:'개인연금(미래에셋)',group:'invest',init:4300000,goal:400000},
+  {key:'우리IRP',      label:'우리IRP',      group:'invest', init:3795540, goal:0},
+  {key:'토스증권',     label:'ISA(토스)',     group:'invest', init:0,       goal:500000},
+  {key:'삼성증권',     label:'삼성증권',     group:'invest', init:0,       goal:0},
+  // 부동산
+  {key:'전세 보증금',  label:'전세 보증금',  group:'estate', init:330500000},
+  // 카드 부채 (음수)
+  {key:'롯카',         label:'롯카',         group:'debt',   init:-318910},
+  {key:'롯카-',        label:'롯카-',        group:'debt',   init:-12810},
+  {key:'삼카',         label:'삼카',         group:'debt',   init:-284237},
+  {key:'신카!',        label:'신카!',        group:'debt',   init:0},
+  {key:'국카1',        label:'국카1',        group:'debt',   init:-2170797},
+  {key:'국카k',        label:'국카k',        group:'debt',   init:-76420},
+  {key:'국카k!',       label:'국카k!',       group:'debt',   init:-309450},
+  {key:'국카k!실미',   label:'국카k!실미',   group:'debt',   init:-67400},
+  {key:'국카k-',       label:'국카k-',       group:'debt',   init:-145510},
+  // 장기부채
+  {key:'전세자금대출 원금(국민)', label:'전세대출(국민)', group:'longdebt', init:-184837860},
+];
+
+function getInitBal(){
+  try{const s=localStorage.getItem('initBal');if(s)return JSON.parse(s);}catch(e){}
+  const d={};ACCOUNTS_DEF.forEach(a=>d[a.key]=a.init);return d;
+}
+function saveInitBal(){
+  const d={};
+  ACCOUNTS_DEF.forEach(a=>{
+    const el=document.getElementById('ibal-'+a.key.replace(/[^a-zA-Z가-힣0-9]/g,'_'));
+    if(el)d[a.key]=parseInt(el.value.replace(/,/g,''))||0;
+  });
+  try{localStorage.setItem('initBal',JSON.stringify(d));}catch(e){}
+  showToast('✅ 초기잔고 저장됐어요!');
+  document.getElementById('init-bal-body').style.display='none';
+  renderBalance();
+}
+function toggleInitBal(){
+  const b=document.getElementById('init-bal-body');
+  const tog=document.getElementById('init-bal-tog');
+  const isOpen=b.style.display!=='none';
+  b.style.display=isOpen?'none':'block';
+  tog.textContent=isOpen?'설정 ▾':'설정 ▴';
+  if(!isOpen){
+    const init=getInitBal();
+    const container=document.getElementById('init-bal-inputs');
+    container.innerHTML=ACCOUNTS_DEF.filter(a=>a.group!=='longdebt').map(a=>`
+      <div class="field" style="margin-bottom:6px">
+        <label style="font-size:11px">${a.label}</label>
+        <input type="number" id="ibal-${a.key.replace(/[^a-zA-Z가-힣0-9]/g,'_')}"
+          value="${init[a.key]||0}" inputmode="numeric"
+          style="padding:7px 9px;font-size:13px;width:100%;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text)"/>
+      </div>`).join('');
+  }
+}
+
+function renderBalance(){
+  const init=getInitBal();
+  // 전체 내역으로 누적 계산 (월 무관)
+  const allIn={},allOut={};
+  entries.forEach(e=>{
+    if(e.type==='이동'){
+      if(e.inAcct)allIn[e.inAcct]=(allIn[e.inAcct]||0)+e.amount;
+      if(e.outAcct)allOut[e.outAcct]=(allOut[e.outAcct]||0)+e.amount;
+    }
+    if(e.type==='지출'&&e.outAcct)allOut[e.outAcct]=(allOut[e.outAcct]||0)+e.amount;
+    if(e.type==='수입'&&e.inAcct)allIn[e.inAcct]=(allIn[e.inAcct]||0)+e.amount;
+  });
+
+  function curBal(key){return(init[key]||0)+(allIn[key]||0)-(allOut[key]||0);}
+
+  const cashAccs=ACCOUNTS_DEF.filter(a=>a.group==='cash');
+  const investAccs=ACCOUNTS_DEF.filter(a=>a.group==='invest');
+  const estateAccs=ACCOUNTS_DEF.filter(a=>a.group==='estate');
+  const debtAccs=ACCOUNTS_DEF.filter(a=>a.group==='debt');
+  const longDebtAccs=ACCOUNTS_DEF.filter(a=>a.group==='longdebt');
+
+  function balRow(a){
+    const v=curBal(a.key);
+    const color=v>=0?'var(--text)':'var(--red)';
+    return`<div class="srow"><span class="sname">${a.label}</span>
+      <span class="samt" style="color:${color}">${v>=0?'':'-'}${fmt(Math.abs(v))}</span></div>`;
+  }
+  function balRowGoal(a){
+    const v=curBal(a.key);
+    const es=me();
+    const monthSav=es.filter(e=>e.type==='이동'&&(e.inAcct===a.key)).reduce((s,e)=>s+e.amount,0);
+    const ok=a.goal===0||monthSav>=a.goal;
+    return`<div class="srow">
+      <div><div class="sname">${a.label}</div>
+        ${a.goal>0?`<div style="font-size:10px;color:var(--sub)">이달 ${fmt(monthSav)} / 목표 ${fmt(a.goal)}</div>`:''}
+      </div>
+      <span class="samt" style="color:var(--blue)">${fmt(v)}</span>
+    </div>`;
+  }
+
+  const cashTotal=cashAccs.reduce((s,a)=>s+curBal(a.key),0);
+  const investTotal=investAccs.reduce((s,a)=>s+curBal(a.key),0);
+  const estateTotal=estateAccs.reduce((s,a)=>s+curBal(a.key),0);
+  const debtTotal=debtAccs.reduce((s,a)=>s+curBal(a.key),0);
+  const longDebtTotal=longDebtAccs.reduce((s,a)=>s+curBal(a.key),0);
+  const totalAsset=cashTotal+investTotal+estateTotal;
+  const totalDebt=Math.abs(debtTotal)+Math.abs(longDebtTotal);
+  const netAsset=totalAsset-totalDebt;
+
+  document.getElementById('bal-total-asset').textContent=fmt(totalAsset);
+  document.getElementById('bal-total-debt').textContent=fmt(totalDebt);
+  const netEl=document.getElementById('bal-net');
+  netEl.textContent=(netAsset<0?'-':'')+fmt(Math.abs(netAsset));
+  netEl.style.color=netAsset>=0?'var(--blue)':'var(--red)';
+
+  // 현금
+  document.getElementById('bal-cash').innerHTML=
+    cashAccs.map(balRow).join('')+
+    `<div class="div"></div><div class="trow"><span class="tlbl">소계</span><span class="tval" style="color:var(--blue)">${fmt(cashTotal)}</span></div>`;
+
+  // 저축·투자
   const es=me();
-  const mvT={};es.filter(e=>e.type==='이동').forEach(e=>{mvT[e.sub]=(mvT[e.sub]||0)+e.amount;});
-  document.getElementById('saving-list').innerHTML=SAVE_GOALS.map(s=>{
-    const a=mvT[s.name]||0,ok=s.goal===0||a>=s.goal;
-    return`<div class="srow"><span class="sname">${s.name}</span><div class="sright"><div class="samt" style="color:${ok?'var(--green)':'var(--red)'}">${fmt(a)}</div>${s.goal>0?`<div class="sgoal">목표 ${fmt(s.goal)}</div>`:''}</div></div>`;
+  const monthSavTotal=investAccs.reduce((s,a)=>{
+    return s+es.filter(e=>e.type==='이동'&&e.inAcct===a.key).reduce((ss,e)=>ss+e.amount,0);
+  },0);
+  document.getElementById('bal-sav-month').textContent=fmt(monthSavTotal);
+  document.getElementById('bal-invest').innerHTML=
+    investAccs.map(balRowGoal).join('')+
+    `<div class="div"></div><div class="trow"><span class="tlbl">소계</span><span class="tval" style="color:var(--blue)">${fmt(investTotal)}</span></div>`;
+
+  // 저축 목표 진행
+  const savGoals=SAVE_GOALS.map(g=>{
+    const monthAmt=es.filter(e=>e.type==='이동'&&e.memo&&e.memo.includes(g.mk)).reduce((s,e)=>s+e.amount,0);
+    const ok=g.g===0||monthAmt>=g.g;
+    return`<div class="srow">
+      <div><div class="sname" style="font-size:12px">${g.n}</div></div>
+      <div class="sright">
+        <div class="samt" style="font-size:13px;color:${ok?'var(--green)':'var(--amber)'}">
+          ${fmt(monthAmt)}${g.g>0?` / ${fmt(g.g)}`:''}
+        </div>
+        ${g.g>0?`<div class="sgoal">${ok?'✅ 달성':'📌 미달성'}</div>`:''}
+      </div>
+    </div>`;
   }).join('');
-  const totSav=es.filter(e=>e.type==='이동').reduce((s,e)=>s+e.amount,0);
-  document.getElementById('act-sav').textContent=fmt(totSav);
-  const inc=es.filter(e=>e.type==='수입').reduce((s,e)=>s+e.amount,0);
-  const exp=es.filter(e=>e.type==='지출').reduce((s,e)=>s+e.amount,0);
-  const sr=inc>0?Math.round((totSav/inc)*100):0;
-  document.getElementById('inc-summary').innerHTML=`
-    <div class="trow"><span class="tlbl">월 수입 목표</span><span class="tval" style="color:var(--blue)">₩5,600,000</span></div>
-    <div class="trow"><span class="tlbl">이달 실제 수입</span><span class="tval" style="color:var(--green)">${fmt(inc)}</span></div>
-    <div class="div"></div>
-    <div class="trow"><span class="tlbl">이달 지출</span><span class="tval" style="color:var(--red)">${fmt(exp)}</span></div>
-    <div class="trow"><span class="tlbl">이달 저축</span><span class="tval" style="color:var(--blue)">${fmt(totSav)}</span></div>
-    <div class="trow"><span class="tlbl">저축률</span><span class="tval" style="color:${sr>=30?'var(--green)':'var(--amber)'}">${sr}%</span></div>`;
+  document.getElementById('bal-sav-goals').innerHTML=
+    `<div style="font-size:11px;font-weight:700;color:var(--sub);margin-bottom:6px">이달 저축 목표</div>`+savGoals;
+
+  // 부동산
+  document.getElementById('bal-estate').innerHTML=
+    estateAccs.map(balRow).join('');
+
+  // 카드 미결제
+  document.getElementById('bal-card-debt').innerHTML=
+    debtAccs.map(a=>{
+      const v=curBal(a.key);
+      return`<div class="srow"><span class="sname">${a.label}</span>
+        <span class="samt" style="color:${v<0?'var(--red)':'var(--sub)'}">
+          ${v<0?fmt(Math.abs(v)):'-'}
+        </span></div>`;
+    }).join('')+
+    `<div class="div"></div>
+    <div class="trow"><span class="tlbl">전세대출 (장기부채)</span><span class="tval" style="color:var(--red)">${fmt(Math.abs(longDebtTotal))}</span></div>
+    <div class="trow"><span class="tlbl">부채 합계</span><span class="tval" style="color:var(--red)">${fmt(totalDebt)}</span></div>`;
 }
 
 function parseNotif(v){
@@ -495,6 +752,49 @@ function exportXLSX(){
   XLSX.writeFile(wb,`가계부_${curMon}.xlsx`);
 }
 
+// 구글 시트 설정
+function toggleSheets(){
+  const b=document.getElementById('sheets-body');
+  const btn=document.querySelector('.sheets-tog');
+  b.classList.toggle('open');
+  btn.textContent=b.classList.contains('open')?'설정 ▴':'설정 ▾';
+}
+function saveSheetConfig(){
+  const sid=document.getElementById('sheet-id').value.trim();
+  const surl=document.getElementById('script-url').value.trim();
+  if(!sid||!surl){showToast('ID와 URL을 입력해주세요');return;}
+  try{localStorage.setItem('sheetId',sid);localStorage.setItem('scriptUrl',surl);}catch(e){}
+  updateSheetStatus();
+  showToast('✅ 연동 설정 저장됐어요!');
+  toggleSheets();
+}
+function updateSheetStatus(){
+  const sid=localStorage.getItem('sheetId')||'';
+  const surl=localStorage.getItem('scriptUrl')||'';
+  const dot=document.getElementById('sheets-dot');
+  if(!dot)return;
+  if(sid&&surl){dot.classList.add('on');}else{dot.classList.remove('on');}
+  if(sid)document.getElementById('sheet-id').value=sid;
+  if(surl)document.getElementById('script-url').value=surl;
+}
+
+// 메모 자동저장
+let memoTimer;
+function initMemo(){
+  const ta=document.getElementById('quick-memo');
+  if(!ta)return;
+  try{const saved=localStorage.getItem('quickMemo');if(saved)ta.value=saved;}catch(e){}
+  ta.addEventListener('input',()=>{
+    clearTimeout(memoTimer);
+    document.getElementById('memo-saved').textContent='저장 중...';
+    memoTimer=setTimeout(()=>{
+      try{localStorage.setItem('quickMemo',ta.value);}catch(e){}
+      document.getElementById('memo-saved').textContent='저장됨 ✓';
+      setTimeout(()=>{const s=document.getElementById('memo-saved');if(s)s.textContent='';},2000);
+    },800);
+  });
+}
+
 function toggleBrow(id){
   const det=document.getElementById('det-'+id);
   const arr=document.getElementById('arr-'+id);
@@ -523,7 +823,7 @@ function fmtK(n){return n>=10000?(n/10000).toFixed(n%10000===0?0:1)+'만':n.toLo
 let tt;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2000);}
 
-setType('지출');renderHome();
+setType('지출');renderHome();updateSheetStatus();initMemo();
 </script>
 </body>
 </html>
