@@ -1603,6 +1603,41 @@ _allNbs.forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').incl
 if(_lastBtn){goPage(_lastTab,_lastBtn);}else{renderHome();}
 updateSheetStatus();initMemo();
 
+// 앱 시작 시 + 5분마다 시트 자동 동기화
+function autoSync(){
+  const url=localStorage.getItem('scriptUrl')||'';
+  if(!url)return;
+  fetch(url+'?action=all')
+    .then(r=>r.json())
+    .then(data=>{
+      if(!data.ok)return;
+      let changed=false;
+      if(data.config){
+        const c=data.config;
+        if(c.budget&&Object.keys(c.budget).length>0){Object.assign(BUDGET,c.budget);try{localStorage.setItem('gb_budget',JSON.stringify(BUDGET));}catch(e){}changed=true;}
+        if(c.cardBudget&&Object.keys(c.cardBudget).length>0){Object.assign(CARD_BUDGET,c.cardBudget);try{localStorage.setItem('gb_card_budget',JSON.stringify(CARD_BUDGET));}catch(e){}changed=true;}
+        if(c.saveGoals&&c.saveGoals.length>0){SAVE_GOALS.length=0;c.saveGoals.forEach(g=>SAVE_GOALS.push(g));try{localStorage.setItem('gb_save_goals',JSON.stringify(SAVE_GOALS));}catch(e){}changed=true;}
+        if(c.initBal&&Object.keys(c.initBal).length>0){try{localStorage.setItem('initBal',JSON.stringify(c.initBal));}catch(e){}changed=true;}
+      }
+      if(data.entries&&data.entries.length>0){
+        const keys=new Set(entries.map(x=>x.date+'|'+x.type+'|'+x.amount+'|'+x.memo));
+        const newOnes=data.entries.filter(x=>!keys.has(x.date+'|'+x.type+'|'+x.amount+'|'+x.memo));
+        if(newOnes.length>0){
+          entries=[...entries,...newOnes];
+          entries.sort((a,b)=>b.date.localeCompare(a.date));
+          try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,2000)));}catch(e){}
+          changed=true;
+        }
+      }
+      if(changed){renderHome();const t=localStorage.getItem('lastTab')||'home';if(t==='history')renderHist();else if(t==='balance')renderBalance();else if(t==='asset')renderAsset();}
+    }).catch(()=>{});
+}
+
+// 앱 시작 시 동기화
+autoSync();
+// 5분마다 자동 동기화
+setInterval(autoSync, 5*60*1000);
+
 </script>
 </body>
 </html>
