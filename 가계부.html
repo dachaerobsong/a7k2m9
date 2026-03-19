@@ -805,8 +805,34 @@ function saveSheetConfig(){
 function loadFromSheet(overwrite){
   var url=getScriptUrl();if(!url){showToast('Script URL\uC744 \uBA3C\uC800 \uC124\uC815\uD574\uC8FC\uC138\uC694');return;}
   var st=document.getElementById('sheet-load-status');st.textContent='\uBD88\uB7EC\uC624\uB294 \uC911...';
-  fetch(url+'?action=entries').then(function(r){return r.json();}).then(function(data){
+  fetch(url+'?action=all').then(function(r){return r.json();}).then(function(data){
     if(!data.ok)throw new Error(data.error||'\uC624\uB958');
+    // config 적용 (예산/카드예산/저축목표/초기잔고)
+    var cfg=data.config||{};
+    // 레이블->키 변환 (시트에 이모지 레이블로 저장된 경우)
+    var L2K={};
+    Object.keys(CAT_OUT_LABELS).forEach(function(k){L2K[CAT_OUT_LABELS[k]]=k;L2K[k]=k;});
+    L2K['☀️ 엄마(고정)']='엄마고정';
+    L2K['☀️ 엄마(건강)']='엄마건강';
+    function cfgKey(s){return L2K[s]||s;}
+    if(cfg.budget&&Object.keys(cfg.budget).length>0){
+      Object.keys(cfg.budget).forEach(function(k){BUDGET[cfgKey(k)]=cfg.budget[k];});
+      try{localStorage.setItem('gb_budget',JSON.stringify(BUDGET));}catch(e){}
+    }
+    if(cfg.cardBudget&&Object.keys(cfg.cardBudget).length>0){
+      Object.assign(CARD_BUDGET,cfg.cardBudget);
+      try{localStorage.setItem('gb_card_budget',JSON.stringify(CARD_BUDGET));}catch(e){}
+    }
+    if(cfg.saveGoals&&cfg.saveGoals.length>0){
+      SAVE_GOALS.length=0;
+      cfg.saveGoals.forEach(function(g){SAVE_GOALS.push(g);});
+      try{localStorage.setItem('gb_save_goals',JSON.stringify(SAVE_GOALS));}catch(e){}
+    }
+    if(cfg.initBal&&Object.keys(cfg.initBal).length>0){
+      var curInit=getInitBal();
+      Object.assign(curInit,cfg.initBal);
+      try{localStorage.setItem('initBal',JSON.stringify(curInit));}catch(e){}
+    }
     var raw=data.entries||[];
     var imported=raw.map(function(e){
       return {id:String(e.id||''),date:String(e.date||'').slice(0,10),type:String(e.type||''),
@@ -828,7 +854,7 @@ function loadFromSheet(overwrite){
       st.textContent='\uC2DC\uD2B8 '+raw.length+'\uAC74 \u2192 \uC720\uD6A8 '+imported.length+'\uAC74 \u2192 \uC2E0\uADDC '+newOnes.length+'\uAC74 / \uCD1D '+entries.length+'\uAC74';
     }
     entries.sort(function(a,b){return b.date.localeCompare(a.date);});saveEntries();
-    showToast('\uBD88\uB7EC\uC624\uAE30 \uC644\uB8CC!');renderHome();renderHist();
+    showToast('\uBD88\uB7EC\uC624\uAE30 \uC644\uB8CC!');renderHome();renderHist();renderSetup();
   }).catch(function(err){st.textContent='\uC2E4\uD328: '+err.message;});
 }
 function renderCurrentConfig(){
