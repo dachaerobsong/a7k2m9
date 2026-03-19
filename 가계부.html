@@ -774,7 +774,7 @@ function addEntry(){
   }
 }
 function delEntry(id){
-  entries=entries.filter(e=>e.id!==id);
+  entries=entries.filter(e=>String(e.id)!==String(id));
   try{localStorage.setItem('gb_v3',JSON.stringify(entries));}catch(e){}
   renderHist();renderHome();
   try{
@@ -840,7 +840,7 @@ function renderHist(){
       const cl=ii?'ap':im?'av':'am2';const sg=ii?'+':im?'↔':'-';
       const icon=e.major?e.major.split(' ')[0]:'📌';
       const desc=e.major?e.major.split(' ').slice(1).join(' '):e.memo||'이동';
-      return`<div class="entry"><div class="ei" style="background:${bg}">${icon}</div><div class="einfo"><div class="edesc">${desc}${e.sub?' · '+e.sub:''}${e.memo?' · '+e.memo:''}</div><div class="emeta">${e.outAcct?' · '+e.outAcct:''}${e.inAcct?' · '+e.inAcct:''}</div></div><div class="eamt ${cl}">${sg}${fmt(e.amount)}</div><button class="del" style="color:var(--sub)" onclick="openEditModal(${e.id})">✏️</button><button class="del" onclick="delEntry(${e.id})">✕</button></div>`;
+      return`<div class="entry"><div class="ei" style="background:${bg}">${icon}</div><div class="einfo"><div class="edesc">${desc}${e.sub?' · '+e.sub:''}${e.memo?' · '+e.memo:''}</div><div class="emeta">${e.outAcct?' · '+e.outAcct:''}${e.inAcct?' · '+e.inAcct:''}</div></div><div class="eamt ${cl}">${sg}${fmt(e.amount)}</div><button class="del" style="color:var(--sub)" onclick="openEditModal('${e.id}')">✏️</button><button class="del" onclick="delEntry('${e.id}')">✕</button></div>`;
     }).join('');
     const [,dm]=date.split('-'); const dd=date.split('-')[2];
     return`<div style="margin-bottom:4px">
@@ -1300,7 +1300,7 @@ function initMemo(){
 let editingId = null;
 
 function openEditModal(id) {
-  const e = entries.find(x => x.id === id);
+  const e = entries.find(x => String(x.id) === String(id));
   if (!e) return;
   editingId = id;
   document.getElementById('edit-date').value = e.date;
@@ -1320,7 +1320,7 @@ function closeEditModal(ev) {
 
 function saveEdit() {
   if (!editingId) return;
-  const idx = entries.findIndex(x => x.id === editingId);
+  const idx = entries.findIndex(x => String(x.id) === String(editingId));
   if (idx === -1) return;
   const amt = parseInt(document.getElementById('edit-amount').value);
   if (!amt || amt <= 0) { showToast('금액을 확인해주세요'); return; }
