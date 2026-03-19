@@ -777,11 +777,12 @@ function delEntry(id){
   entries=entries.filter(e=>e.id!==id);
   try{localStorage.setItem('gb_v3',JSON.stringify(entries));}catch(e){}
   renderHist();renderHome();
-  // 시트에서도 삭제
-  const url=localStorage.getItem('scriptUrl')||'';
-  if(url){fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'deleteEntry',id:id})
-  }).catch(()=>{});}
+  try{
+    const url=localStorage.getItem('scriptUrl')||'';
+    if(url)fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'deleteEntry',id:String(id)})
+    }).catch(()=>{});
+  }catch(e){}
 }
 
 // 카드 그룹 키 매핑
@@ -1343,18 +1344,19 @@ function saveEdit() {
 function deleteAndClose() {
   if (!editingId) return;
   const _delId = editingId;
-  entries = entries.filter(e => e.id !== editingId);
+  entries = entries.filter(e => e.id !== _delId);
   try { localStorage.setItem('gb_v3', JSON.stringify(entries)); } catch(e) {}
   document.getElementById('edit-modal').classList.add('hidden');
   editingId = null;
   showToast('삭제됐어요');
   renderHist();
   renderHome();
-  // 시트에서도 삭제
-  const url=localStorage.getItem('scriptUrl')||'';
-  if(url){fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
-    body:JSON.stringify({action:'deleteEntry',id:_delId})
-  }).catch(()=>{});}
+  try{
+    const url=localStorage.getItem('scriptUrl')||'';
+    if(url)fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'deleteEntry',id:String(_delId)})
+    }).catch(()=>{});
+  }catch(e){}
 }
 
 // ── 설정 페이지 ──
