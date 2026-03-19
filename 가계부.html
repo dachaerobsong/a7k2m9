@@ -336,67 +336,26 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 
 <!-- 설정 페이지 -->
 <div class="page" id="page-setup">
-  <!-- 데이터 가져오기 -->
+
+  <!-- 파일 가져오기 -->
   <div class="card">
-    <div class="ct">📂 내역 가져오기</div>
-    <div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">
-      구글 시트에서 <b>CSV</b> 또는 앱에서 저장한 <b>엑셀</b> 파일을 올려주세요.
+    <div class="ct">📂 파일 가져오기</div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:12px;line-height:1.8">
+      <b>① 설정 파일</b> → 예산/카드/잔고/저축목표 한번에 적용<br>
+      <b>② 내역 파일</b> → 구글 시트에서 CSV로 다운받아 올리기
     </div>
     <input type="file" id="setup-import-file" accept=".xlsx,.csv" style="display:none" onchange="importXLSX(this)"/>
     <button onclick="document.getElementById('setup-import-file').click()"
-      style="width:100%;padding:11px;background:var(--blue-bg);color:var(--blue);border:.5px solid var(--blue-lt);border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">
-      📂 파일 가져오기
+      style="width:100%;padding:12px;background:var(--blue-bg);color:var(--blue);border:.5px solid var(--blue-lt);border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:6px">
+      📂 파일 선택해서 올리기
     </button>
     <div style="font-size:11px;color:var(--sub);text-align:center" id="setup-import-status"></div>
   </div>
 
-  <!-- 예산 설정 -->
-  <div class="card">
-    <div class="ct">📊 카테고리 예산 설정</div>
-    <div style="font-size:11px;color:var(--sub);margin-bottom:10px">월 예산을 입력하세요 (0이면 미설정)</div>
-    <div id="budget-setup-inputs"></div>
-    <button onclick="saveBudgetSetup()"
-      style="width:100%;margin-top:10px;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
-      저장
-    </button>
-  </div>
-
-  <!-- 카드 예산 설정 -->
-  <div class="card">
-    <div class="ct">💳 카드 예산 설정</div>
-    <div style="font-size:11px;color:var(--sub);margin-bottom:10px">카드별 월 한도를 입력하세요</div>
-    <div id="card-setup-inputs"></div>
-    <button onclick="saveCardSetup()"
-      style="width:100%;margin-top:10px;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
-      저장
-    </button>
-  </div>
-
-  <!-- 저축 목표 설정 -->
-  <div class="card">
-    <div class="ct">🎯 저축 목표 설정</div>
-    <div style="font-size:11px;color:var(--sub);margin-bottom:10px">항목명과 월 목표금액을 입력하세요</div>
-    <div id="save-goal-inputs"></div>
-    <button onclick="addSaveGoalRow()" style="width:100%;padding:8px;margin-bottom:8px;border:.5px solid var(--border-md);border-radius:var(--rs);background:transparent;color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">
-      + 항목 추가
-    </button>
-    <button onclick="saveSaveGoals()"
-      style="width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
-      저장
-    </button>
-  </div>
-
-  <!-- 초기 잔고 설정 -->
-  <div class="card">
-    <div class="ct">💰 초기 잔고 설정</div>
-    <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.7">
-      기준일 잔고를 입력하면 이후 입력한 내역으로 자동 계산돼요
-    </div>
-    <div id="init-bal-inputs2"></div>
-    <button onclick="saveInitBal2()"
-      style="width:100%;margin-top:10px;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
-      저장
-    </button>
+  <!-- 현재 설정 확인 -->
+  <div class="card" id="setup-current" style="display:none">
+    <div class="ct">✅ 현재 설정 확인</div>
+    <div id="setup-current-content"></div>
   </div>
 
   <!-- 구글 시트 연동 -->
@@ -1172,32 +1131,26 @@ function importXLSX(input){
           text=new TextDecoder('euc-kr').decode(new Uint8Array(e.target.result));
         }
         const lines=text.split('\n').map(l=>l.replace(/\r/g,'')).filter(l=>l.trim());
-        const rows=lines.map(l=>parseCSVLine(l)).filter(r=>{
-          const c0=String(r[0]||''), c1=String(r[1]||'');
-          return c0.match(/^20[0-9][0-9][\/\-]/)||c1.match(/^20[0-9][0-9][\/\-]/);
-        });
-        if(rows.length===0){
-          const sample=lines.slice(0,12).map(l=>parseCSVLine(l)).map(r=>r[0]+'|'+r[1]).join(' / ');
-          showToast('날짜 못찾음: '+sample.slice(0,60));
-          return;
-        }
-        // 설정 CSV인지 확인 (첫 셀이 [예산] 등)
-        const firstCell=String(rows[0][0]||'').trim();
-        if(firstCell==='[예산]'||firstCell==='예산'||firstCell==='초기잔고'||firstCell==='카드예산'){
-          const cnt=applyConfigCSV(rows);
-          showToast('✅ 설정 '+cnt+'개 적용됐어요!');
-          renderHome();
-          return;
-        }
-        // 첫 줄이 헤더([예산])인 경우
+        // 모든 행 파싱
         const allRows=lines.map(l=>parseCSVLine(l)).filter(r=>r.length>1);
-        const isConfig=allRows.some(r=>['예산','카드예산','저축목표','초기잔고'].includes(String(r[0]||'').trim()));
+        // 설정 CSV인지 먼저 확인
+        const isConfig=allRows.some(r=>{
+          const c=String(r[0]||'').trim();
+          return c==='예산'||c==='카드예산'||c==='저축목표'||c==='초기잔고'||c==='[예산]';
+        });
         if(isConfig){
           const cnt=applyConfigCSV(allRows);
           showToast('✅ 설정 '+cnt+'개 적용됐어요!');
           renderHome();
+          if(document.getElementById('page-setup').classList.contains('active'))renderSetup();
           return;
         }
+        // 내역 CSV: 날짜 있는 행만
+        const rows=allRows.filter(r=>{
+          const c0=String(r[0]||''), c1=String(r[1]||'');
+          return c0.match(/^20[0-9][0-9][\/\-]/)||c1.match(/^20[0-9][0-9][\/\-]/);
+        });
+        if(rows.length===0){showToast('날짜 형식을 찾을 수 없어요');return;}
         mergeImport(parseRows(rows));
       }catch(err){showToast('CSV 오류: '+err.message);}
     };
@@ -1330,46 +1283,46 @@ const BUDGET_CATS=['🏠 주거비','🗃️ 보험','📞 통신비','🍀 곗�
 const CARD_KEYS=['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-'];
 
 function renderSetup(){
-  // 예산 입력 폼
-  document.getElementById('budget-setup-inputs').innerHTML=
-    BUDGET_CATS.map(c=>`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
-        <span style="font-size:12px;flex:1">${c}</span>
-        <input type="number" id="bs-${c.replace(/[^가-힣a-zA-Z0-9]/g,'_')}"
-          value="${BUDGET[c]||0}" inputmode="numeric"
-          style="width:110px;padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);text-align:right"/>
-      </div>`).join('');
-
-  // 카드 예산 입력 폼
-  document.getElementById('card-setup-inputs').innerHTML=
-    CARD_KEYS.map(c=>`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
-        <span style="font-size:12px;flex:1">${c}</span>
-        <input type="number" id="cs-${c.replace(/[^가-힣a-zA-Z0-9]/g,'_')}"
-          value="${CARD_BUDGET[c]||0}" inputmode="numeric"
-          style="width:110px;padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);text-align:right"/>
-      </div>`).join('');
-
-  // 저축 목표
-  renderSaveGoalInputs();
-
-  // 초기 잔고
-  const init=getInitBal();
-  document.getElementById('init-bal-inputs2').innerHTML=
-    ACCOUNTS_DEF.filter(a=>a.group!=='longdebt').map(a=>`
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
-        <span style="font-size:12px;flex:1">${a.label}</span>
-        <input type="number" id="ib2-${a.key.replace(/[^가-힣a-zA-Z0-9]/g,'_')}"
-          value="${init[a.key]||0}" inputmode="numeric"
-          style="width:130px;padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);text-align:right"/>
-      </div>`).join('');
-
-  // 구글 시트
+  // 구글 시트 설정
   const sid=localStorage.getItem('sheetId')||'';
   const surl=localStorage.getItem('scriptUrl')||'';
   if(sid)document.getElementById('sheet-id2').value=sid;
   if(surl)document.getElementById('script-url2').value=surl;
   updateSheetStatus();
+
+  // 현재 설정 표시
+  const hasBudget=Object.keys(BUDGET).length>0;
+  const hasCard=Object.keys(CARD_BUDGET).length>0;
+  const hasGoals=SAVE_GOALS.length>0;
+  const initBal=getInitBal();
+  const hasInit=Object.values(initBal).some(v=>v!==0);
+  const hasEntries=entries.length>0;
+
+  const card=document.getElementById('setup-current');
+  const content=document.getElementById('setup-current-content');
+
+  if(hasBudget||hasCard||hasGoals||hasInit||hasEntries){
+    card.style.display='block';
+    let html2='';
+    if(hasEntries) html2+=`<div class="srow"><span class="sname">📋 내역</span><span class="samt" style="color:var(--green)">${entries.length}건</span></div>`;
+    if(hasBudget){
+      const cnt=Object.keys(BUDGET).length;
+      const total=Object.values(BUDGET).reduce((s,v)=>s+v,0);
+      html2+=`<div class="srow"><span class="sname">📊 예산</span><span class="samt" style="color:var(--blue)">${cnt}개 항목 / 월 ${fmtK(total)}</span></div>`;
+    }
+    if(hasCard){
+      const cnt=Object.values(CARD_BUDGET).filter(v=>v>0).length;
+      html2+=`<div class="srow"><span class="sname">💳 카드예산</span><span class="samt" style="color:var(--blue)">${cnt}개 설정</span></div>`;
+    }
+    if(hasGoals) html2+=`<div class="srow"><span class="sname">🎯 저축목표</span><span class="samt" style="color:var(--blue)">${SAVE_GOALS.length}개</span></div>`;
+    if(hasInit){
+      const nonZero=Object.entries(initBal).filter(([,v])=>v!==0).length;
+      html2+=`<div class="srow"><span class="sname">💰 초기잔고</span><span class="samt" style="color:var(--blue)">${nonZero}개 계좌 설정</span></div>`;
+    }
+    content.innerHTML=html2;
+  } else {
+    card.style.display='none';
+  }
 }
 
 function renderSaveGoalInputs(){
@@ -1440,9 +1393,14 @@ function saveSheetConfig2(){
   showToast('✅ 구글 시트 연동 저장됐어요!');
 }
 function resetAll(){
-  if(!confirm('모든 데이터와 설정이 삭제됩니다. 계속할까요?'))return;
   localStorage.clear();
-  location.reload();
+  // 메모리 변수도 초기화
+  entries=[];
+  Object.keys(BUDGET).forEach(k=>delete BUDGET[k]);
+  Object.keys(CARD_BUDGET).forEach(k=>delete CARD_BUDGET[k]);
+  SAVE_GOALS.length=0;
+  showToast('✅ 초기화 완료! 새로고침 합니다...');
+  setTimeout(()=>location.reload(), 1000);
 }
 
 function toggleBrow(id){
