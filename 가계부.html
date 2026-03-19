@@ -424,7 +424,16 @@ var editingId=null,memoTimer;
 var now=new Date();
 var curMon=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
 
-try{var _s=localStorage.getItem('gb_v3');if(_s){entries=JSON.parse(_s);entries.forEach(function(e){if(e.outAcct==='케이-덭질')e.outAcct='케이-덕질';if(e.inAcct==='케이-덭질')e.inAcct='케이-덕질';if(e.outAcct==='케이-덜질')e.outAcct='케이-덕질';if(e.inAcct==='케이-덜질')e.inAcct='케이-덕질';});}}catch(e){}
+// URL 파라미터로 Script URL 자동 세팅
+try{
+  var _urlp=new URLSearchParams(location.search);
+  var _pscript=_urlp.get('script');
+  var _psheet=_urlp.get('sheet');
+  if(_pscript){localStorage.setItem('scriptUrl',_pscript);}
+  if(_psheet){localStorage.setItem('sheetId',_psheet);}
+}catch(e){}
+
+try{var _s=localStorage.getItem('gb_v3');if(_s){entries=JSON.parse(_s);entries.forEach(function(e){if(e.outAcct==='케이-덜질')e.outAcct='케이-덕질';if(e.inAcct==='케이-덜질')e.inAcct='케이-덕질';if(e.major&&e.major.indexOf('꿿밀비')>=0)e.major=e.major.replace('꿿밀비','꿼밀비');if(e.major&&e.major.indexOf('꿿')>=0)e.major=e.major.replace(/꿿/g,'꿼');});}}catch(e){}
 try{var _s=localStorage.getItem('gb_budget');if(_s)BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_card_budget');if(_s)CARD_BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_save_goals');if(_s)SAVE_GOALS=JSON.parse(_s);}catch(e){}
@@ -438,7 +447,8 @@ function showToast(msg){var t=document.getElementById('toast');t.textContent=msg
 function saveEntries(){try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,1000)));}catch(e){}}
 function isConfigured(){return Object.keys(BUDGET).length>0||entries.length>0;}
 function me(){return entries.filter(function(e){return e.date&&e.date.indexOf(curMon)===0;});}
-function getScriptUrl(){return localStorage.getItem('scriptUrl')||'';}
+var DEFAULT_SCRIPT_URL='https://script.google.com/macros/s/AKfycbxIXpy06VyJZ7YAVZYpaGSOVLr1768Su5QRGFqoKdJQ2jr6CIBkjRrpBU5DLkVbkRpcJQ/exec';
+function getScriptUrl(){return localStorage.getItem('scriptUrl')||DEFAULT_SCRIPT_URL;}
 
 function goPage(n,btn){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
@@ -730,7 +740,7 @@ function getInitBal(){
     if(s){
       var d=JSON.parse(s);
       // 구 키 마이그레이션
-      if(d['케이-덭질']!==undefined&&d['케이-덕질']===undefined){d['케이-덕질']=d['케이-덭질'];delete d['케이-덭질'];localStorage.setItem('initBal',JSON.stringify(d));}
+      if(d['케이-덕질']!==undefined&&d['케이-덕질']===undefined){d['케이-덕질']=d['케이-덕질'];delete d['케이-덕질'];localStorage.setItem('initBal',JSON.stringify(d));}
       return d;
     }
   }catch(e){}
