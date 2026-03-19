@@ -1033,9 +1033,7 @@ function importXLSX(input){
     reader.onload=function(e){
       try{
         const text=e.target.result;
-        const lines=text.split(/
-?
-/).filter(l=>l.trim());
+        const lines=text.split('\n').map(l=>l.replace(/\r/g,'')).filter(l=>l.trim());
         // 헤더 행 스킵 (날짜로 시작 안하면)
         const rows=lines.map(l=>{
           // CSV 파싱 (따옴표 처리)
