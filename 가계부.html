@@ -356,6 +356,100 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 
+<!-- 설정 페이지 -->
+<div class="page" id="page-setup">
+  <!-- 데이터 가져오기 -->
+  <div class="card">
+    <div class="ct">📂 내역 가져오기</div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">
+      구글 시트에서 <b>CSV</b> 또는 앱에서 저장한 <b>엑셀</b> 파일을 올려주세요.
+    </div>
+    <input type="file" id="setup-import-file" accept=".xlsx,.csv" style="display:none" onchange="importXLSX(this)"/>
+    <button onclick="document.getElementById('setup-import-file').click()"
+      style="width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">
+      📂 파일 가져오기
+    </button>
+    <div style="font-size:11px;color:var(--sub);text-align:center" id="setup-import-status"></div>
+  </div>
+
+  <!-- 예산 설정 -->
+  <div class="card">
+    <div class="ct">📊 카테고리 예산 설정</div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:10px">월 예산을 입력하세요 (0이면 미설정)</div>
+    <div id="budget-setup-inputs"></div>
+    <button onclick="saveBudgetSetup()"
+      style="width:100%;margin-top:10px;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
+      저장
+    </button>
+  </div>
+
+  <!-- 카드 예산 설정 -->
+  <div class="card">
+    <div class="ct">💳 카드 예산 설정</div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:10px">카드별 월 한도를 입력하세요</div>
+    <div id="card-setup-inputs"></div>
+    <button onclick="saveCardSetup()"
+      style="width:100%;margin-top:10px;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
+      저장
+    </button>
+  </div>
+
+  <!-- 저축 목표 설정 -->
+  <div class="card">
+    <div class="ct">🎯 저축 목표 설정</div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:10px">항목명과 월 목표금액을 입력하세요</div>
+    <div id="save-goal-inputs"></div>
+    <button onclick="addSaveGoalRow()" style="width:100%;padding:8px;margin-bottom:8px;border:.5px solid var(--border-md);border-radius:var(--rs);background:transparent;color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">
+      + 항목 추가
+    </button>
+    <button onclick="saveSaveGoals()"
+      style="width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
+      저장
+    </button>
+  </div>
+
+  <!-- 초기 잔고 설정 -->
+  <div class="card">
+    <div class="ct">💰 초기 잔고 설정</div>
+    <div style="font-size:11px;color:var(--sub);margin-bottom:10px;line-height:1.7">
+      기준일 잔고를 입력하면 이후 입력한 내역으로 자동 계산돼요
+    </div>
+    <div id="init-bal-inputs2"></div>
+    <button onclick="saveInitBal2()"
+      style="width:100%;margin-top:10px;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
+      저장
+    </button>
+  </div>
+
+  <!-- 구글 시트 연동 -->
+  <div class="card">
+    <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
+      📊 구글 시트 연동
+      <div class="sheets-dot" id="sheets-dot"></div>
+    </div>
+    <div class="field"><label>시트 ID</label>
+      <input type="text" id="sheet-id2" placeholder="스프레드시트 URL의 /d/ 뒤 ID"/>
+    </div>
+    <div class="field"><label>Apps Script URL</label>
+      <input type="text" id="script-url2" placeholder="https://script.google.com/macros/s/.../exec"/>
+    </div>
+    <button onclick="saveSheetConfig2()"
+      style="width:100%;padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
+      저장 & 연결
+    </button>
+  </div>
+
+  <!-- 초기화 -->
+  <div class="card" style="border-color:var(--red-lt)">
+    <div class="ct" style="color:var(--red)">⚠️ 전체 초기화</div>
+    <div style="font-size:12px;color:var(--sub);margin-bottom:10px">모든 데이터와 설정이 삭제돼요</div>
+    <button onclick="resetAll()"
+      style="width:100%;padding:11px;background:var(--red-bg);color:var(--red);border:.5px solid var(--red-lt);border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
+      전체 초기화
+    </button>
+  </div>
+</div>
+
 <!-- 수정 모달 -->
 <div class="modal-bg hidden" id="edit-modal" onclick="closeEditModal(event)">
   <div class="modal">
@@ -382,12 +476,13 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 
-<nav class="nav" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
+<nav class="nav" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr 1fr">
   <button class="nb active" onclick="goPage('home',this)"><span class="ni">🏠</span>홈</button>
   <button class="nb" onclick="goPage('input',this)"><span class="ni">✏️</span>입력</button>
   <button class="nb" onclick="goPage('history',this)"><span class="ni">📋</span>내역</button>
   <button class="nb" onclick="goPage('balance',this)"><span class="ni">💵</span>잔고</button>
   <button class="nb" onclick="goPage('asset',this)"><span class="ni">📈</span>자산</button>
+  <button class="nb" onclick="goPage('setup',this)"><span class="ni">⚙️</span>설정</button>
 </nav>
 <div class="toast" id="toast"></div>
 
@@ -421,15 +516,15 @@ const CAT={
     '목적2':['비상금','덕질']
   }
 };
-const BUDGET_DEFAULT={'🏠 주거비':904890,'🗃️ 보험':393130,'📞 통신비':48300,'🍀 곗돈':100000,'☀️ 엄마':772187,'🍽️ 식비':300000,'🛒 생활용품':30000,'👗 꾸밈비':30000,'👩‍🎓 자기계발':50000,'😷 건강':50000,'🚌 교통비':60000,'🎁 경조사':0,'📺 문화생활':0,'✔️ 기타':50000};
+const BUDGET_DEFAULT={};
 let BUDGET=Object.assign({},BUDGET_DEFAULT);
 try{const _b=localStorage.getItem('gb_budget');if(_b)BUDGET=JSON.parse(_b);}catch(e){}
 const SUB_BUDGET={};
 
-const CARD_BUDGET_DEFAULT={'롯카':318910,'롯카!':0,'롯카-':13000,'삼카':284237,'삼카!':0,'신카':60000,'신카!':240000,'국카1':161140,'국카k':111140,'국카k!':188860,'국카k!실미':60000,'국카k-':15000};
+const CARD_BUDGET_DEFAULT={};
 let CARD_BUDGET=Object.assign({},CARD_BUDGET_DEFAULT);
 try{const _cb=localStorage.getItem('gb_card_budget');if(_cb)CARD_BUDGET=JSON.parse(_cb);}catch(e){}
-const SAVE_GOALS_DEFAULT=[{n:'전세대출원금',g:600000,mk:'전세대출원금'},{n:'집계약용',g:1000000,mk:'집계약용통장'},{n:'개인연금',g:400000,mk:'개인연금입금'},{n:'ISA',g:500000,mk:'ISA입금'},{n:'비상금',g:200000,mk:'비상금통장'},{n:'덕질통장',g:50000,mk:'덕질통장'}];
+const SAVE_GOALS_DEFAULT=[];
 let SAVE_GOALS=SAVE_GOALS_DEFAULT.slice();
 try{const _sg=localStorage.getItem('gb_save_goals');if(_sg)SAVE_GOALS=JSON.parse(_sg);}catch(e){}
 const ACCOUNTS=['KB뱅크','NH뱅크','케이-덕질','케이-비상금','케이-임시','케이뱅크','하나은행','KB 펀드','케이-집계약용','신한은행','전세 보증금','토스증권','미래에셋','삼성증권','우리IRP','농카','농카!','농카!실미','농카-','롯카','롯카!','롯카!실미','롯카-','신카','신카!','신카!실미','삼카','삼카!','국카1','국카k','국카k!','국카k!실미','국카k-','전세자금대출 원금(국민)','전세자금대출 원금(농협)','엄마신용대출 원금'];
@@ -481,7 +576,7 @@ function goPage(n,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+n).classList.add('active');btn.classList.add('active');
-  if(n==='home')renderHome();if(n==='history')renderHist();if(n==='balance')renderBalance();if(n==='asset')renderAsset();
+  if(n==='home')renderHome();if(n==='history')renderHist();if(n==='balance')renderBalance();if(n==='asset')renderAsset();if(n==='setup')renderSetup();
 }
 function changeMonth(d){
   const[y,m]=curMon.split('-').map(Number);
@@ -1023,6 +1118,8 @@ function mergeImport(imported){
   const banner=document.getElementById('import-banner');
   if(banner)banner.style.display='none';
   showToast('✅ '+newOnes.length+'건 가져왔어요!');
+  const st=document.getElementById('setup-import-status');
+  if(st)st.textContent='총 '+entries.length+'건 로드됨';
   renderHome();renderHist();
 }
 function importXLSX(input){
@@ -1164,6 +1261,126 @@ function deleteAndClose() {
   showToast('삭제됐어요');
   renderHist();
   renderHome();
+}
+
+// ── 설정 페이지 ──
+const BUDGET_CATS=['🏠 주거비','🗃️ 보험','📞 통신비','🍀 곗돈','☀️ 엄마','🍽️ 식비','🛒 생활용품','👗 꾸밈비','👩‍🎓 자기계발','😷 건강','🚌 교통비','🎁 경조사','📺 문화생활','✔️ 기타'];
+const CARD_KEYS=['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-'];
+
+function renderSetup(){
+  // 예산 입력 폼
+  document.getElementById('budget-setup-inputs').innerHTML=
+    BUDGET_CATS.map(c=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+        <span style="font-size:12px;flex:1">${c}</span>
+        <input type="number" id="bs-${c.replace(/[^가-힣a-zA-Z0-9]/g,'_')}"
+          value="${BUDGET[c]||0}" inputmode="numeric"
+          style="width:110px;padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);text-align:right"/>
+      </div>`).join('');
+
+  // 카드 예산 입력 폼
+  document.getElementById('card-setup-inputs').innerHTML=
+    CARD_KEYS.map(c=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+        <span style="font-size:12px;flex:1">${c}</span>
+        <input type="number" id="cs-${c.replace(/[^가-힣a-zA-Z0-9]/g,'_')}"
+          value="${CARD_BUDGET[c]||0}" inputmode="numeric"
+          style="width:110px;padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);text-align:right"/>
+      </div>`).join('');
+
+  // 저축 목표
+  renderSaveGoalInputs();
+
+  // 초기 잔고
+  const init=getInitBal();
+  document.getElementById('init-bal-inputs2').innerHTML=
+    ACCOUNTS_DEF.filter(a=>a.group!=='longdebt').map(a=>`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">
+        <span style="font-size:12px;flex:1">${a.label}</span>
+        <input type="number" id="ib2-${a.key.replace(/[^가-힣a-zA-Z0-9]/g,'_')}"
+          value="${init[a.key]||0}" inputmode="numeric"
+          style="width:130px;padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);text-align:right"/>
+      </div>`).join('');
+
+  // 구글 시트
+  const sid=localStorage.getItem('sheetId')||'';
+  const surl=localStorage.getItem('scriptUrl')||'';
+  if(sid)document.getElementById('sheet-id2').value=sid;
+  if(surl)document.getElementById('script-url2').value=surl;
+  updateSheetStatus();
+}
+
+function renderSaveGoalInputs(){
+  document.getElementById('save-goal-inputs').innerHTML=
+    SAVE_GOALS.map((g,i)=>`
+      <div style="display:grid;grid-template-columns:1fr 100px 30px;gap:6px;margin-bottom:7px">
+        <input type="text" value="${g.n}" id="sg-n-${i}" placeholder="항목명"
+          style="padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text)"/>
+        <input type="number" value="${g.g}" id="sg-g-${i}" placeholder="목표금액" inputmode="numeric"
+          style="padding:7px 9px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);text-align:right"/>
+        <button onclick="removeSaveGoal(${i})" style="background:none;border:none;color:var(--hint);font-size:16px;cursor:pointer">✕</button>
+      </div>`).join('');
+}
+function addSaveGoalRow(){
+  SAVE_GOALS.push({n:'',g:0,mk:''});
+  renderSaveGoalInputs();
+}
+function removeSaveGoal(i){
+  SAVE_GOALS.splice(i,1);
+  renderSaveGoalInputs();
+}
+function saveSaveGoals(){
+  const newGoals=[];
+  SAVE_GOALS.forEach((_,i)=>{
+    const n=document.getElementById('sg-n-'+i)?.value.trim()||'';
+    const g=parseInt(document.getElementById('sg-g-'+i)?.value)||0;
+    if(n)newGoals.push({n,g,mk:n});
+  });
+  SAVE_GOALS.length=0;
+  newGoals.forEach(g=>SAVE_GOALS.push(g));
+  try{localStorage.setItem('gb_save_goals',JSON.stringify(SAVE_GOALS));}catch(e){}
+  showToast('✅ 저축 목표 저장됐어요!');
+}
+
+function saveBudgetSetup(){
+  BUDGET_CATS.forEach(c=>{
+    const el=document.getElementById('bs-'+c.replace(/[^가-힣a-zA-Z0-9]/g,'_'));
+    if(el)BUDGET[c]=parseInt(el.value)||0;
+  });
+  try{localStorage.setItem('gb_budget',JSON.stringify(BUDGET));}catch(e){}
+  showToast('✅ 예산 저장됐어요!');
+  renderHome();
+}
+function saveCardSetup(){
+  CARD_KEYS.forEach(c=>{
+    const el=document.getElementById('cs-'+c.replace(/[^가-힣a-zA-Z0-9]/g,'_'));
+    if(el)CARD_BUDGET[c]=parseInt(el.value)||0;
+  });
+  try{localStorage.setItem('gb_card_budget',JSON.stringify(CARD_BUDGET));}catch(e){}
+  showToast('✅ 카드 예산 저장됐어요!');
+  renderHome();
+}
+function saveInitBal2(){
+  const d={};
+  ACCOUNTS_DEF.filter(a=>a.group!=='longdebt').forEach(a=>{
+    const el=document.getElementById('ib2-'+a.key.replace(/[^가-힣a-zA-Z0-9]/g,'_'));
+    if(el)d[a.key]=parseInt(el.value)||0;
+  });
+  try{localStorage.setItem('initBal',JSON.stringify(d));}catch(e){}
+  showToast('✅ 초기 잔고 저장됐어요!');
+}
+function saveSheetConfig2(){
+  const sid=document.getElementById('sheet-id2').value.trim();
+  const surl=document.getElementById('script-url2').value.trim();
+  if(!sid||!surl){showToast('ID와 URL을 입력해주세요');return;}
+  try{localStorage.setItem('sheetId',sid);localStorage.setItem('scriptUrl',surl);}catch(e){}
+  updateSheetStatus();
+  showToast('✅ 구글 시트 연동 저장됐어요!');
+}
+function resetAll(){
+  if(!confirm('모든 데이터와 설정이 삭제됩니다. 계속할까요?'))return;
+  localStorage.clear();
+  location.reload();
 }
 
 function toggleBrow(id){
