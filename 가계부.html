@@ -745,10 +745,8 @@ function selSubF(s,e){
   e.target.classList.add('sel');
   // 카드납부: 소분류(카드명)를 입금계좌로 자동 세팅
   if(selMaj==='💳 카드납부'){
-    const inSel=document.getElementById('f-in-acct');
-    for(let i=0;i<inSel.options.length;i++){
-      if(inSel.options[i].value===s){inSel.value=s;break;}
-    }
+    const inEl=document.getElementById('f-in-acct');
+    if(inEl){inEl.value=s;}
   }
 }
 
@@ -1330,15 +1328,19 @@ function saveEdit() {
   entries[idx].outAcct = document.getElementById('edit-out-acct').value;
   entries[idx].inAcct = document.getElementById('edit-in-acct').value;
   try { localStorage.setItem('gb_v3', JSON.stringify(entries)); } catch(e) {}
+  // 시트 업데이트 (editingId 초기화 전에!)
+  const _sUrl=localStorage.getItem('scriptUrl')||'';
+  if(_sUrl){
+    const _e=entries[idx];
+    fetch(_sUrl,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'updateEntry',id:String(_e.id),date:_e.date,type:_e.type,
+        major:_e.major,sub:_e.sub,memo:_e.memo,amount:_e.amount,inAcct:_e.inAcct,outAcct:_e.outAcct})
+    }).catch(()=>{});
+  }
   document.getElementById('edit-modal').classList.add('hidden');
   editingId = null;
   showToast('✅ 수정됐어요!');
   renderHist();renderHome();
-  // 시트 업데이트
-  const _sUrl=localStorage.getItem('scriptUrl')||'';
-  if(_sUrl){const _e=entries.find(x=>x.id===editingId)||{};
-    fetch(_sUrl,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'updateEntry',..._e})}).catch(()=>{});
-  }
 }
 
 function deleteAndClose() {
