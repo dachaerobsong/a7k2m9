@@ -1117,23 +1117,23 @@ function importXLSX(input){
   const isCSV=file.name.toLowerCase().endsWith('.csv');
   const reader=new FileReader();
   if(isCSV){
-    reader.onload=function(e){
+    const csvReader2=new FileReader();
+    csvReader2.onload=function(e){
       try{
-        const text=e.target.result;
+        let text=new TextDecoder('utf-8').decode(new Uint8Array(e.target.result));
+        if(text.includes('\uFFFD')){
+          text=new TextDecoder('euc-kr').decode(new Uint8Array(e.target.result));
+        }
         const lines=text.split('\n').map(l=>l.replace(/\r/g,'')).filter(l=>l.trim());
-        // 2026 포함된 줄만 파싱 (헤더/빈줄 자동 스킵)
-        const rows=lines
-          .map(l=>parseCSVLine(l))
-          .filter(r=>{
-            // r[0] 또는 r[1]에 날짜가 있는 줄만
-            return String(r[0]||'').match(/^20\d\d[\/\-]/)||
-                   String(r[1]||'').match(/^20\d\d[\/\-]/);
-          });
-        if(rows.length===0){showToast('날짜 형식을 찾을 수 없어요');return;}
+        const rows=lines.map(l=>parseCSVLine(l)).filter(r=>{
+          const c0=String(r[0]||''), c1=String(r[1]||'');
+          return c0.match(/^20[0-9][0-9][\/\-]/)||c1.match(/^20[0-9][0-9][\/\-]/);
+        });
+        if(rows.length===0){showToast('날짜 행을 찾을 수 없어요 ('+lines.length+'줄 확인)');return;}
         mergeImport(parseRows(rows));
       }catch(err){showToast('CSV 오류: '+err.message);}
     };
-    reader.readAsText(file,'UTF-8');
+    csvReader2.readAsArrayBuffer(file);
   } else {
     reader.onload=function(e){
       try{
