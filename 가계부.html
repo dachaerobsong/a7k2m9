@@ -306,11 +306,6 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <div class="ct">현재 설정</div>
     <div id="setup-current-content"></div>
   </div>
-  <div class="card">
-    <div class="ct">초기 잔고 리셋</div>
-    <div style="font-size:12px;color:var(--sub);margin-bottom:10px;line-height:1.7">시트에 25년말 잔고가 이미 반영되어 있으면 앱 초기 잔고를 0으로 리셋해주세요</div>
-    <button onclick="resetInitBal()" style="width:100%;padding:11px;background:var(--amber-bg);color:var(--amber);border:.5px solid var(--amber-lt);border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">초기 잔고 0으로 리셋</button>
-  </div>
   <div class="card" style="border-color:var(--red-lt)">
     <div class="ct" style="color:var(--red)">전체 초기화</div>
     <div style="font-size:12px;color:var(--sub);margin-bottom:10px">모든 데이터와 설정이 삭제됩니다</div>
@@ -429,7 +424,7 @@ var editingId=null,memoTimer;
 var now=new Date();
 var curMon=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
 
-try{var _s=localStorage.getItem('gb_v3');if(_s)entries=JSON.parse(_s);}catch(e){}
+try{var _s=localStorage.getItem('gb_v3');if(_s){entries=JSON.parse(_s);entries.forEach(function(e){if(e.outAcct==='케이-덭질')e.outAcct='케이-덕질';if(e.inAcct==='케이-덭질')e.inAcct='케이-덕질';if(e.outAcct==='케이-덜질')e.outAcct='케이-덕질';if(e.inAcct==='케이-덜질')e.inAcct='케이-덕질';});}}catch(e){}
 try{var _s=localStorage.getItem('gb_budget');if(_s)BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_card_budget');if(_s)CARD_BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_save_goals');if(_s)SAVE_GOALS=JSON.parse(_s);}catch(e){}
