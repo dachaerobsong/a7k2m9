@@ -1637,14 +1637,11 @@ function autoSync(){
         if(c.initBal&&Object.keys(c.initBal).length>0){try{localStorage.setItem('initBal',JSON.stringify(c.initBal));}catch(e){}changed=true;}
       }
       if(data.entries&&data.entries.length>0){
-        const keys=new Set(entries.map(x=>x.date+'|'+x.type+'|'+x.amount+'|'+x.memo));
-        const newOnes=data.entries.filter(x=>!keys.has(x.date+'|'+x.type+'|'+x.amount+'|'+x.memo));
-        if(newOnes.length>0){
-          entries=[...entries,...newOnes];
-          entries.sort((a,b)=>b.date.localeCompare(a.date));
-          try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,2000)));}catch(e){}
-          changed=true;
-        }
+        // 시트가 원본 → 시트 데이터로 완전 교체
+        entries=data.entries;
+        entries.sort((a,b)=>b.date.localeCompare(a.date));
+        try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,2000)));}catch(e){}
+        changed=true;
       }
       if(changed){renderHome();const t=localStorage.getItem('lastTab')||'home';if(t==='history')renderHist();else if(t==='balance')renderBalance();else if(t==='asset')renderAsset();}
     }).catch(()=>{});
