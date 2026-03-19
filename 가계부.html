@@ -773,7 +773,16 @@ function addEntry(){
     }).then(()=>showToast('📊 시트에도 저장됐어요!')).catch(()=>showToast('⚠️ 시트 전송 실패'));
   }
 }
-function delEntry(id){entries=entries.filter(e=>e.id!==id);try{localStorage.setItem('gb_v3',JSON.stringify(entries));}catch(e){}renderHist();renderHome();}
+function delEntry(id){
+  entries=entries.filter(e=>e.id!==id);
+  try{localStorage.setItem('gb_v3',JSON.stringify(entries));}catch(e){}
+  renderHist();renderHome();
+  // 시트에서도 삭제
+  const url=localStorage.getItem('scriptUrl')||'';
+  if(url){fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'deleteEntry',id:id})
+  }).catch(()=>{});}
+}
 
 // 카드 그룹 키 매핑
 const CARD_GROUP_KEYS={
@@ -1333,6 +1342,7 @@ function saveEdit() {
 
 function deleteAndClose() {
   if (!editingId) return;
+  const _delId = editingId;
   entries = entries.filter(e => e.id !== editingId);
   try { localStorage.setItem('gb_v3', JSON.stringify(entries)); } catch(e) {}
   document.getElementById('edit-modal').classList.add('hidden');
@@ -1340,6 +1350,11 @@ function deleteAndClose() {
   showToast('삭제됐어요');
   renderHist();
   renderHome();
+  // 시트에서도 삭제
+  const url=localStorage.getItem('scriptUrl')||'';
+  if(url){fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'deleteEntry',id:_delId})
+  }).catch(()=>{});}
 }
 
 // ── 설정 페이지 ──
