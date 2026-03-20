@@ -436,6 +436,7 @@ var CMAP = [
 
 // ── 상태 ──
 var entries=[],BUDGET={},CARD_BUDGET={},SAVE_GOALS=[];
+var sheetAssetData={}; // 시트에서 가져온 투자계좌 실잔액
 var cType='지출',selMaj='',selSub='';
 var histFilter='전체',histCardFilter='';
 var budgetExpanded=false,cardExpanded=false;
@@ -447,6 +448,7 @@ try{var _s=localStorage.getItem('gb_v3');if(_s)entries=JSON.parse(_s);}catch(e){
 try{var _s=localStorage.getItem('gb_budget');if(_s)BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_card_budget');if(_s)CARD_BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_save_goals');if(_s)SAVE_GOALS=JSON.parse(_s);}catch(e){}
+try{var _sa=localStorage.getItem('sheetAssetData');if(_sa)sheetAssetData=JSON.parse(_sa);}catch(e){}
 
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 
@@ -470,7 +472,7 @@ function goPage(n,btn){
   if(n==='home'){renderHome();autoSyncFromSheet();}
   else if(n==='history'){if(isConfigured())renderHist();else document.getElementById('entry-list').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='balance'){if(isConfigured())renderBalance();else document.getElementById('page-balance').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
-  else if(n==='asset'){if(isConfigured())renderAsset();else document.getElementById('page-asset').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
+  else if(n==='asset'){if(isConfigured()){loadAssetFromSheet();renderAsset();}else document.getElementById('page-asset').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='input'){if(!isConfigured())document.getElementById('page-input').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='setup')renderSetup();
 }
@@ -808,7 +810,12 @@ function renderBalance(){
 
 // ── 자산 ──
 function renderAsset(){
-  var cb=calcBalances().curBal;
+  var _cb=calcBalances().curBal;
+  // 시트에서 받은 실잔액이 있으면 해당 계좌는 시트값 우선 사용
+  var cb=function(k){
+    if(sheetAssetData&&sheetAssetData[k]!==undefined)return sheetAssetData[k];
+    return _cb(k);
+  };
   var invA=ACCTS_DEF.filter(function(a){return a.group==='invest';}),estA=ACCTS_DEF.filter(function(a){return a.group==='estate';});
   var cA=ACCTS_DEF.filter(function(a){return a.group==='cash';});
   var invT=invA.reduce(function(s,a){return s+cb(a.key);},0),estT=estA.reduce(function(s,a){return s+cb(a.key);},0);
@@ -893,6 +900,17 @@ function renderAsset(){
       +'<span style="font-size:10px;color:var(--sub);min-width:36px;text-align:right">저축 '+mR2+'%</span>'
       +'</div>';
   }).join('')||'<div class="empty">데이터 없음</div>';
+}
+
+// ── 자산 시트 데이터 로드 ──
+function loadAssetFromSheet(){
+  var url=getScriptUrl();if(!url)return;
+  fetch(url+'?action=asset').then(function(r){return r.json();}).then(function(data){
+    if(!data.ok||!data.asset)return;
+    sheetAssetData=data.asset;
+    try{localStorage.setItem('sheetAssetData',JSON.stringify(sheetAssetData));}catch(e){}
+    if(document.getElementById('page-asset').classList.contains('active'))renderAsset();
+  }).catch(function(){});
 }
 
 // ── 설정 ──
@@ -1102,7 +1120,7 @@ _nbs.forEach(function(b){if(b.getAttribute('onclick')&&b.getAttribute('onclick')
 if(_lb)goPage(_lt,_lb);else renderHome();
 setTimeout(function(){autoSyncFromSheet();},1500);
 // 앱 시작 시 시트에서 자동 동기화 (scriptUrl 설정된 경우)
-if(getScriptUrl()){setTimeout(function(){loadFromSheet(true);},800);}
+if(getScriptUrl()){setTimeout(function(){loadFromSheet(true);},800);setTimeout(function(){loadAssetFromSheet();},2000);}
 
 </script>
 </body>
