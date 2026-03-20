@@ -1135,7 +1135,8 @@ function loadFromSheet(silent,overwrite){
       }
       if(cfg.initBalRaw){
         try{localStorage.setItem('initBalRaw',JSON.stringify(cfg.initBalRaw));}catch(e){}
-              }
+        buildAcctsDef();
+      }
     }
     var allCardKeys=ACCTS.filter(function(a){return ACCTS_DEF.some(function(d){return d.key===a&&d.group==='debt';});});
     var imported=(data.entries||[]).map(function(e){
@@ -1154,7 +1155,14 @@ function loadFromSheet(silent,overwrite){
     entries=entries.concat(newOnes);entries.sort(function(a,b){return b.date.localeCompare(a.date);});saveEntries();
     if(st)st.textContent=newOnes.length+'\uAC74 \uC0C8\uB85C \uAC00\uC838\uC654\uC5B4\uC694 (\uCD1D '+entries.length+'\uAC74)';
     if(newOnes.length>0||!silent)showToast(newOnes.length+'\uAC74 \uBD88\uB7EC\uC654\uC5B4\uC694!');
+    // asset 데이터도 같이 처리
+    if(data.asset){
+      sheetAssetData=data.asset;
+      try{localStorage.setItem('sheetAssetData',JSON.stringify(sheetAssetData));}catch(e){}
+    }
     renderHome();renderHist();
+    // asset 데이터 있으면 자산탭 진입 시 혹은 즉시 렌더링
+    if(sheetAssetData&&Object.keys(sheetAssetData).length>0){setTimeout(function(){if(document.getElementById('page-asset').classList.contains('active'))renderAsset();},100);}
   }).catch(function(err){if(st)st.textContent='\uC2E4\uD328: '+err.message;if(!silent)showToast('\uBD88\uB7EC\uC624\uAE30 \uC2E4\uD328');});
 }
 function toggleCfgSec(id){
