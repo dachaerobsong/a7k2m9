@@ -414,15 +414,44 @@ var CARD_GROUPS = [
   {label:'국카1',keys:['국카1']}
 ];
 
-// ACCTS, ACCTS_DEF는 시트 초기잔고에서 동적으로 생성 (소스코드에 계좌명 미포함)
-var ACCTS = [];
+var ACCTS = ['KB뱅크','NH뱅크','케이-덕질','케이-비상금','케이-임시','케이뱅크','하나은행','케이-집계약용','신한은행','전세 보증금','토스증권','미래에셋','삼성증권','우리IRP','농카','농카!','농카!실미','농카-','롯카','롯카!','롯카!실미','롯카-','신카','신카!','신카!실미','삼카','삼카!','국카1','국카k','국카k!','국카k!실미','국카k-','전세자금대출 원금(국민)','전세자금대출 원금(농협)','엄마신용대출 원금'];
 var ACCTS_DEF_EXTRA = [
-  // 시트에 없지만 앱에서 필요한 시트연동 투자계좌
   {key:'미래주식',label:'미래(주식)',group:'invest'},
   {key:'금',label:'금',group:'invest'}
 ];
 
-var ACCTS_DEF = []; // 시트에서 동적 로드 (buildAcctsDef 참고)
+var ACCTS_DEF = [
+  // ── 현금/예금 계좌 ──
+  {key:'케이뱅크',label:'케이뱅크',group:'cash'},
+  {key:'케이-비상금',label:'케이-비상금',group:'cash'},
+  {key:'케이-덕질',label:'케이-덕질',group:'cash'},
+  {key:'케이-임시',label:'케이-임시',group:'cash'},
+  {key:'KB뱅크',label:'KB뱅크',group:'cash'},
+  {key:'NH뱅크',label:'NH뱅크',group:'cash'},
+  {key:'하나은행',label:'하나은행',group:'cash'},
+  // ── 계약금 ──
+  {key:'케이-집계약용',label:'집계약용',group:'contract',goal:1000000},
+  {key:'신한은행',label:'주택청약(신한)',group:'contract'},
+  // ── 투자/저축 계좌 ──
+  {key:'미래에셋',label:'개인연금(미래에셋)',group:'invest',goal:400000},
+  {key:'우리IRP',label:'우리IRP',group:'invest'},
+  {key:'토스증권',label:'ISA(토스)',group:'invest',goal:500000},
+  {key:'삼성증권',label:'삼성증권',group:'invest'},
+  {key:'미래주식',label:'미래(주식)',group:'invest'},
+  {key:'금',label:'금',group:'invest'},
+  // ── 부동산 ──
+  {key:'전세 보증금',label:'전세 보증금',group:'estate'},
+  // ── 카드 미결제 ──
+  {key:'롯카',label:'롯카',group:'debt'},{key:'롯카-',label:'롯카-',group:'debt'},
+  {key:'롯카!',label:'롯카!',group:'debt'},
+  {key:'삼카',label:'삼카',group:'debt'},{key:'삼카!',label:'삼카!',group:'debt'},
+  {key:'신카',label:'신카',group:'debt'},{key:'신카!',label:'신카!',group:'debt'},
+  {key:'국카1',label:'국카1',group:'debt'},
+  {key:'국카k',label:'국카k',group:'debt'},{key:'국카k!',label:'국카k!',group:'debt'},
+  {key:'국카k!실미',label:'국카k!실미',group:'debt'},{key:'국카k-',label:'국카k-',group:'debt'},
+  // ── 장기부채 ──
+  {key:'전세자금대출 원금(국민)',label:'전세대출(국민)',group:'longdebt'}
+];
 
 var CMAP = [
   {k:['롯카!실미'],v:'롯카!실미'},{k:['롯카!'],v:'롯카!'},{k:['롯카-'],v:'롯카-'},{k:['롯데카드','로카','롯카'],v:'롯카'},
@@ -450,7 +479,6 @@ try{var _s=localStorage.getItem('gb_budget');if(_s)BUDGET=JSON.parse(_s);}catch(
 try{var _s=localStorage.getItem('gb_card_budget');if(_s)CARD_BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_save_goals');if(_s)SAVE_GOALS=JSON.parse(_s);}catch(e){}
 try{var _sa=localStorage.getItem('sheetAssetData');if(_sa)sheetAssetData=JSON.parse(_sa);}catch(e){}
-buildAcctsDef(); // initBalRaw에서 ACCTS_DEF 동적 생성
 
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 
@@ -1051,8 +1079,7 @@ function loadFromSheet(silent,overwrite){
       }
       if(cfg.initBalRaw){
         try{localStorage.setItem('initBalRaw',JSON.stringify(cfg.initBalRaw));}catch(e){}
-        buildAcctsDef();
-      }
+              }
     }
     var allCardKeys=ACCTS.filter(function(a){return ACCTS_DEF.some(function(d){return d.key===a&&d.group==='debt';});});
     var imported=(data.entries||[]).map(function(e){
@@ -1164,7 +1191,7 @@ function importFile(input){
         var lines=text.split('\n').map(function(l){return l.replace(/\r/g,'');}).filter(function(l){return l.trim();});
         var allRows=lines.map(function(l){return parseCSVLine(l);}).filter(function(r){return r.length>1;});
         var isConfig=allRows.some(function(r){return ['\uC608\uC0B0','\uCE74\uB4DC\uC608\uC0B0','\uC800\uCD95\uBAA9\uD45C','\uCD08\uAE30\uC7D8\uACE0'].indexOf(String(r[0]||'').trim())>=0;});
-        if(isConfig){var cnt=applyConfigCSV(allRows);buildAcctsDef();showToast('\uC124\uC815 '+cnt+'\uAC1C \uC801\uC6A9\uB410\uC5B4\uC694!');renderSetup();location.reload();return;}
+        if(isConfig){var cnt=applyConfigCSV(allRows);showToast('\uC124\uC815 '+cnt+'\uAC1C \uC801\uC6A9\uB410\uC5B4\uC694!');renderSetup();location.reload();return;}
         var rows=allRows.filter(function(r){var c0=String(r[0]||''),c1=String(r[1]||'');return c0.match(/^20[0-9][0-9][\/\-]/)||c1.match(/^20[0-9][0-9][\/\-]/);});
         if(!rows.length){showToast('\uB0A0\uC9DC \uD615\uC2DD\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC5B4\uC694');return;}
         mergeImport(parseEntryRows(rows));
