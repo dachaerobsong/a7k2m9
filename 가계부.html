@@ -899,10 +899,16 @@ function buildAcctsDef(rawData){
     if(r.goal)def.goal=r.goal;
     return def;
   });
-  // debt/longdebt는 하드코딩 유지 (시트에 없을 수 있음)
+  // debt/longdebt는 하드코딩 순서 유지 (시트에 없을 수 있음)
   var hardDebt=__HARD_ACCTS_DEF.filter(function(a){return a.group==='debt'||a.group==='longdebt';});
   var existDebtKeys=ACCTS_DEF.filter(function(a){return a.group==='debt'||a.group==='longdebt';}).map(function(a){return a.key;});
-  hardDebt.forEach(function(a){if(existDebtKeys.indexOf(a.key)<0)ACCTS_DEF.push(a);});
+  // debt/longdebt를 하드코딩 순서대로 재정렬
+  var nonDebt=ACCTS_DEF.filter(function(a){return a.group!=='debt'&&a.group!=='longdebt';});
+  var mergedDebt=hardDebt.map(function(a){
+    var found=ACCTS_DEF.find(function(x){return x.key===a.key;});
+    return found||a;
+  });
+  ACCTS_DEF=nonDebt.concat(mergedDebt);
   // ACCTS 재구성 (입력폼 드롭다운용)
   ACCTS=ACCTS_DEF.map(function(a){return a.key;});
   // CARD_GROUPS 재구성 (debt 그룹 키들로)
@@ -1210,6 +1216,8 @@ function cfgSec(id,title,innerH){
     +'<div class="brow-detail open" id="cfg-body-'+safeId+'" style="margin-top:4px">'+innerH+'</div>'
     +'</div>';
 }
+function renderCurrentConfig(){
+  var init=getInitBal(),card=document.getElementById('setup-current'),content=document.getElementById('setup-current-content');
   var hB=Object.keys(BUDGET).length>0,hC=Object.values(CARD_BUDGET).some(function(v){return v>0;}),hG=SAVE_GOALS.length>0,hI=Object.values(init).some(function(v){return v!==0;});
   if(!hB&&!hC&&!hG&&!hI){card.style.display='none';return;}
   card.style.display='block';var h='';
