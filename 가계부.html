@@ -404,7 +404,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   <div class="modal">
     <div class="modal-title">내역 수정 <button class="modal-close" onclick="closeEditModal()">&#10005;</button></div>
     <div class="field"><label>날짜</label><input type="date" id="edit-date"/></div>
-    <div class="field"><label>금액</label><input type="number" id="edit-amount" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"  /></div>
+    <div class="field"><label>금액</label><input type="number" id="edit-amount" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.-]/g,'')"  /></div>
     <div class="field"><label>내용</label><input type="text" id="edit-memo"/></div>
     <div class="field"><label>출금계좌</label>
       <div class="acct-wrap">
@@ -840,8 +840,8 @@ function pickAcct(key,val){
 }
 
 function addEntry(){
-  var amt=parseFloat(document.getElementById('f-amount').value)||0;
-  if(!amt){showToast('\uAE08\uC561\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694');return;}
+  var amt=parseFloat(document.getElementById('f-amount').value);
+  if(!amt||isNaN(amt)){showToast('\uAE08\uC561\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694');return;}
   var label=selMaj?getCatLabel(cType,selMaj):'';
   var entry={id:Date.now(),date:document.getElementById('f-date').value,type:cType,major:label,sub:selSub,
     memo:document.getElementById('f-memo').value,amount:amt,
