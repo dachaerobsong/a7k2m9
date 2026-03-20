@@ -1032,7 +1032,7 @@ function openEditModal(id){
   var e=entries.find(function(x){return String(x.id)===String(id);});if(!e)return;
   editingId=id;
   document.getElementById('edit-date').value=e.date;
-  document.getElementById('edit-amount').value=e.amount;
+  document.getElementById('edit-amount').value=Math.abs(e.amount);
   document.getElementById('edit-memo').value=e.memo||'';
   document.getElementById('edit-out-acct').value=e.outAcct||'';
   document.getElementById('edit-in-acct').value=e.inAcct||'';
@@ -1045,7 +1045,7 @@ function closeEditModal(ev){
 function saveEdit(){
   if(!editingId)return;
   var idx=entries.findIndex(function(x){return String(x.id)===String(editingId);});if(idx===-1)return;
-  var amt=parseFloat(document.getElementById('edit-amount').value)||0;
+  var amt=Math.abs(parseFloat(document.getElementById('edit-amount').value)||0);
   entries[idx].date=document.getElementById('edit-date').value;
   entries[idx].amount=amt;
   if(amt!==0&&entries[idx].isTpl)delete entries[idx].isTpl; // 금액 입력시 미입력 상태 해제
