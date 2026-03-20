@@ -216,7 +216,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <button class="ftab" id="cf-g1" onclick="setCardFilter('국카1',this)">국카1</button>
   </div>
   <div style="margin-bottom:10px">
-    <input id="hist-search" type="text" placeholder="검색 (내용/카테고리)" oninput="renderHist()"
+    <input id="hist-search" type="text" placeholder="검색 (내용/카테고리/계좌)" oninput="renderHist()"
       style="width:100%;padding:9px 12px;font-size:13px;border:.5px solid var(--border-md);border-radius:var(--rs);background:var(--surface);color:var(--text);font-family:inherit"/>
   </div>
   <div id="entry-list"><div class="empty">아직 내역이 없어요</div></div>
@@ -250,7 +250,8 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--blue-bg),var(--surface));border-color:var(--blue-lt)">
     <div class="ct" style="margin-bottom:4px">💎 순자산</div>
     <div style="font-size:28px;font-weight:700;color:var(--blue);text-align:center;padding:4px 0" id="ast-net-worth">&#8361;0</div>
-    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px" id="ast-net-breakdown"></div>
+    <div style="font-size:10px;color:var(--hint);text-align:center;margin-top:4px;margin-bottom:6px" id="ast-net-sub"></div>
+    <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:4px" id="ast-net-breakdown"></div>
   </div>
   <!-- 계약금 가용 현황 -->
   <div class="card" style="margin-bottom:12px">
@@ -748,9 +749,16 @@ function addEntry(){
 
 // ── 내역 ──
 function setFilter(f,btn){
-  histFilter=f;
-  document.querySelectorAll('.ftab:not([id^="cf-"])').forEach(function(b){b.classList.remove('on');});
-  btn.classList.add('on');renderHist();
+  if(histFilter===f&&f!=='전체'){
+    histFilter='전체';
+    document.querySelectorAll('.ftab:not([id^="cf-"])').forEach(function(b){b.classList.remove('on');});
+    document.querySelector('.ftab[onclick*="전체"]').classList.add('on');
+  } else {
+    histFilter=f;
+    document.querySelectorAll('.ftab:not([id^="cf-"])').forEach(function(b){b.classList.remove('on');});
+    btn.classList.add('on');
+  }
+  renderHist();
 }
 function setCardFilter(f,btn){
   if(histCardFilter===f){histCardFilter='';btn.classList.remove('on');}
@@ -965,20 +973,21 @@ function renderAsset(){
   var nwEl=document.getElementById('ast-net-worth');
   nwEl.textContent=(netWorth<0?'-':'')+fmt(netWorth);
   nwEl.style.color=netWorth>=0?'var(--blue)':'var(--red)';
+  var nwSub=document.getElementById('ast-net-sub');
+  if(nwSub)nwSub.textContent='현금 '+fmtK(cashT)+' + 투자 '+fmtK(invT+conT)+' + 부동산 '+fmtK(netEstate)+' - 카드부채 '+fmtK(Math.abs(debtT));
   var bdItems=[
     {l:'현금',v:cashT,c:'var(--text)',note:''},
     {l:'투자',v:invT+conT,c:'var(--blue)',note:''},
     {l:'부동산',v:netEstate,c:'var(--blue)',note:'보증금-대출'},
     {l:'카드부채',v:Math.abs(debtT),c:'var(--red)',neg:true,note:''}
   ];
-  var nwNote='<div style="font-size:10px;color:var(--hint);text-align:center;margin-top:6px">현금+투자+부동산(순보증금)-카드부채</div>';
   document.getElementById('ast-net-breakdown').innerHTML=bdItems.map(function(x){
     return '<div style="text-align:center;padding:4px 8px;background:rgba(0,0,0,.04);border-radius:8px">'
       +'<div style="font-size:9px;color:var(--sub);margin-bottom:1px">'+x.l+'</div>'
       +'<div style="font-size:12px;font-weight:700;color:'+x.c+'">'+(x.neg?'-':'')+fmt(x.v)+'</div>'
       +(x.note?'<div style="font-size:9px;color:var(--hint);margin-top:1px">'+x.note+'</div>':'')
       +'</div>';
-  }).join('')+nwNote;
+  }).join('');
 
   // ── 계약금 가용 ──
   var contractRows=conA.map(function(a){
