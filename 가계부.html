@@ -432,7 +432,7 @@ function goPage(n,btn){
   document.getElementById('page-'+n).classList.add('active');
   btn.classList.add('active');
   try{localStorage.setItem('lastTab',n);}catch(e){}
-  if(n==='home')renderHome();
+  if(n==='home'){renderHome();autoSyncFromSheet();}
   else if(n==='history'){if(isConfigured())renderHist();else document.getElementById('entry-list').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='balance'){if(isConfigured())renderBalance();else document.getElementById('page-balance').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='asset'){if(isConfigured())renderAsset();else document.getElementById('page-asset').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
@@ -816,6 +816,45 @@ function saveSheetConfig(){
   renderSetup();showToast('\uC5F0\uB3D9 \uC124\uC815 \uC800\uC7A5\uB410\uC5B4\uC694!');
 }
 // ── 자동 동기화 (백그라운드, 조용히) ──
+// ── 자동 동기화 (읽기 전용 - 새 항목만 추가, 기존 데이터 절대 안건드림) ──
+var _lastSync=0;
+function autoSyncFromSheet(){
+  var url=getScriptUrl();if(!url)return;
+  var now=Date.now();
+  if(now-_lastSync<180000)return;// 3분 쿨다운
+  _lastSync=now;
+  fetch(url+'?action=entries').then(function(r){return r.json();}).then(function(data){
+    if(!data.ok)return;
+    var imported=(data.entries||[]).map(function(e){
+      return {
+        id:String(e.id||''),
+        date:String(e.date||'').slice(0,10),
+        type:String(e.type||''),
+        major:String(e.major||''),
+        sub:String(e.sub||''),
+        memo:String(e.memo||''),
+        amount:parseFloat(e.amount)||0,
+        inAcct:String(e.inAcct||''),
+        outAcct:String(e.outAcct||'')
+      };
+    }).filter(function(e){
+      return e.date.match(/^20[0-9][0-9]-[0-9][0-9]-[0-9][0-9]/)
+        &&['지출','수입','이동'].indexOf(e.type)>=0
+        &&e.amount!==0
+        &&e.id!==''; // ID 없는 것은 제외 (원본 시트 데이터)
+    });
+    // ID 기준으로만 중복 체크 (amount 비교 없음)
+    var idSet=new Set(entries.map(function(x){return String(x.id);}));
+    var newOnes=imported.filter(function(x){return !idSet.has(x.id);});
+    if(!newOnes.length)return;
+    entries=entries.concat(newOnes);
+    entries.sort(function(a,b){return b.date.localeCompare(a.date);});
+    saveEntries();
+    renderHome();
+    if(document.getElementById('hist-month'))renderHist();
+    showToast('시트에서 '+newOnes.length+'건 업데이트');
+  }).catch(function(){});
+}
 function loadFromSheet(silent){
   var url=getScriptUrl();if(!url){if(!silent)showToast('Script URL\uC744 \uBA3C\uC800 \uC124\uC815\uD574\uC8FC\uC138\uC694');return;}
   var st=document.getElementById('sheet-load-status');if(st&&!silent)st.textContent='\uBD88\uB7EC\uC624\uB294 \uC911...';
@@ -973,6 +1012,7 @@ var _lt=localStorage.getItem('lastTab')||'home';
 var _nbs=document.querySelectorAll('.nb'),_lb=null;
 _nbs.forEach(function(b){if(b.getAttribute('onclick')&&b.getAttribute('onclick').indexOf("'"+_lt+"'")>=0)_lb=b;});
 if(_lb)goPage(_lt,_lb);else renderHome();
+autoSyncFromSheet();
 // 앱 시작 시 시트에서 자동 동기화 (scriptUrl 설정된 경우)
 if(getScriptUrl()){setTimeout(function(){loadFromSheet(true);},800);}
 
