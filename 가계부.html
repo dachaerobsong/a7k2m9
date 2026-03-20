@@ -878,48 +878,6 @@ function setCardFilter(f,btn){
 // 일괄 선택/삭제
 var bulkMode=false,bulkSelected=new Set();
 function toggleBulkMode(){
-  bulkMode=!bulkMode;
-  bulkSelected.clear();
-  var btn=document.getElementById('bulk-btn');
-  var bar=document.getElementById('bulk-bar');
-  if(btn){btn.textContent=bulkMode?'완료':'선택';
-    btn.style.background=bulkMode?'var(--blue)':'' ;
-    btn.style.color=bulkMode?'#fff':'var(--sub)';}
-  if(bar)bar.style.display=bulkMode?'flex':'none';
-  renderHist();
-}
-function toggleBulkSelect(id){
-  if(bulkSelected.has(id))bulkSelected.delete(id);else bulkSelected.add(id);
-  var cnt=document.getElementById('bulk-count');
-  if(cnt)cnt.textContent=bulkSelected.size+'개 선택됨';
-  // 체크박스 시각 업데이트
-  var el=document.getElementById('chk-'+id);
-  if(el)el.style.background=bulkSelected.has(id)?'var(--blue)':'' ;
-}
-function selectAllBulk(){
-  var es=me();
-  if(histFilter!=='전체')es=es.filter(function(e){return e.type===histFilter;});
-  if(bulkSelected.size===es.length){bulkSelected.clear();}else{es.forEach(function(e){bulkSelected.add(String(e.id));});}
-  var cnt=document.getElementById('bulk-count');
-  if(cnt)cnt.textContent=bulkSelected.size+'개 선택됨';
-  renderHist();
-}
-function deleteBulk(){
-  if(!bulkSelected.size){showToast('선택된 항목이 없어요');return;}
-  if(!confirm(bulkSelected.size+'개를 삭제할까요?'))return;
-  var url=getScriptUrl();
-  bulkSelected.forEach(function(id){
-    entries=entries.filter(function(e){return String(e.id)!==id;});
-    if(url)fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'deleteEntry',id:id})}).catch(function(){});
-  });
-  saveEntries();
-  bulkSelected.clear();
-  showToast('삭제되었어요');
-  renderHist();renderHome();
-}
-// 일괄 선택/삭제
-var bulkMode=false,bulkSelected=new Set();
-function toggleBulkMode(){
   bulkMode=!bulkMode;bulkSelected.clear();
   var btn=document.getElementById('bulk-btn'),bar=document.getElementById('bulk-bar');
   if(btn){btn.textContent=bulkMode?'완료':'선택';btn.style.background=bulkMode?'var(--blue)':'transparent';btn.style.color=bulkMode?'#fff':'var(--sub)';}
