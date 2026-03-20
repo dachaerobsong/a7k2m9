@@ -570,18 +570,22 @@ function renderHome(){
     var gc=ov?'gr':wn?'gw':'go';
     var id='cg'+gi;
     var det=g.keys.map(function(k){var spent=cdT[k]||0;var bud=CARD_BUDGET[k]||0;var rem=bud>0?bud-spent:null;var remStr=rem!==null?'<span style="font-size:10px;color:var(--hint);margin-left:3px">('+( rem>=0?'잔 '+fmt(rem):'초과 '+fmt(-rem))+')</span>':'';return '<div class="srow2"><span style="flex:1;color:var(--sub)">'+k+'</span><span style="font-size:11px;font-weight:600;color:'+(spent>0?'var(--text)':'var(--hint)')+'">'+( spent>0?fmt(spent):'0')+remStr+'</span></div>';}).join('');
-    var remG=l>0?l-s:null;
-    var remGStr=remG!==null?'<span style="font-size:10px;font-weight:700;color:'+(remG>=0?'var(--green)':'var(--red)')+';margin-left:3px">'+(remG>=0?'잔 ':'초과 ')+fmt(Math.abs(remG))+'</span>':'';
-    return '<div class="brow-wrap" data-group="card">'
-      +'<div class="brow-hd" onclick="toggleBrow(\''+id+'\')">'
-      +'<span class="bn" style="flex:1">'+g.label+'</span>'
-      +'<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
-      +'<span style="font-size:10px;color:'+(ov?'var(--red)':'var(--text)')+';white-space:nowrap;font-weight:600">'+fmtK(s)+(l?'/'+fmtK(l):'')+'</span>'
-      +remGStr
-      +(l?'<div class="gb" style="width:32px;flex-shrink:0"><div class="gf '+gc+'" style="width:'+p3+'%"></div></div>':'')
-      +'</div><span class="barr" id="arr-'+id+'">v</span></div>'
-      +'<div class="brow-detail" id="det-'+id+'">'+det+'</div></div>';
-  }).join('');
+     var det=g.keys.map(function(k){var spent=cdT[k]||0;var bud=CARD_BUDGET[k]||0;var rem=bud>0?bud-spent:null;var remStr=rem!==null?'<span style="font-size:10px;color:var(--hint);margin-left:3px">('+( rem>=0?'잔 '+fmt(rem):'초과 '+fmt(-rem))+')</span>':'';return '<div class="srow2"><span style="flex:1;color:var(--sub)">'+k+'</span><span style="font-size:11px;font-weight:600;color:'+(spent>0?'var(--text)':'var(--hint)')+'">'+( spent>0?fmt(spent):'0')+remStr+'</span></div>';}).join('');
+     var remG=l>0?l-s:null;
+     var remC=remG===null?'var(--sub)':remG>=0?'var(--green)':'var(--red)';
+     var remTxt=remG===null?'':remG>=0?'잔액 '+fmt(remG):'초과 '+fmt(-remG);
+     var tag=ov?'<span class="tag to">초과</span>':wn?'<span class="tag tw">주의</span>':'';
+     var ac=ov?'var(--red)':wn?'var(--amber)':'var(--text)';
+     return '<div class="brow-wrap" data-group="card">'
+       +'<div class="brow-hd" onclick="toggleBrow(\''+id+'\')">  '
+       +'<span class="bn" style="flex:1">'+g.label+tag+'</span>'
+       +'<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">'
+       +'<span style="font-size:10px;color:'+ac+';white-space:nowrap;font-weight:600">'+fmtK(s)+(l?'/'+fmtK(l):'')+'</span>'
+       +(l?'<span style="font-size:10px;font-weight:700;min-width:24px;text-align:right;color:'+ac+'">'+Math.round(p3)+'%</span>':'')
+       +(l?'<div class="gb" style="width:32px;flex-shrink:0"><div class="gf '+gc+'" style="width:'+p3+'%"></div></div>':'')
+       +(remTxt?'<span style="font-size:10px;font-weight:600;color:'+remC+';white-space:nowrap;min-width:60px;text-align:right">'+remTxt+'</span>':'')
+       +'</div><span class="barr" id="arr-'+id+'">v</span></div>'
+       +'<div class="brow-detail" id="det-'+id+'">'+det+'</div></div>';
   setTimeout(applyExpanded,0);
 }
 
@@ -808,6 +812,28 @@ function buildAcctsDef(){
   ACCTS_DEF_EXTRA.forEach(function(x){if(existKeys.indexOf(x.key)<0)ACCTS_DEF.push(x);});
   // ACCTS 재구성 (입력폼 드롭다운용)
   ACCTS=ACCTS_DEF.map(function(a){return a.key;});
+  // CARD_GROUPS 재구성 (debt 그룹 키들로)
+  var debtKeys=ACCTS_DEF.filter(function(a){return a.group==='debt';}).map(function(a){return a.key;});
+  if(debtKeys.length){
+    // 카드명 기본명 추출 (특수문자 제거) → 그룹핑
+    var groups={};
+    debtKeys.forEach(function(k){
+      // 기본명: 특수문자(!,-) 제거한 앞부분
+      var base=k.replace(/[!\-]/g,'').replace(/실미$/,'');
+      if(!groups[base])groups[base]=[];
+      groups[base].push(k);
+    });
+    CARD_GROUPS=Object.keys(groups).map(function(base){
+      return {label:base+' 합산',keys:groups[base]};
+    });
+    // CARD_GROUP_KEYS 재구성
+    CARD_GROUP_KEYS={};
+    CARD_GROUPS.forEach(function(g){
+      // 대표키 = 특수문자 없는 순수 카드명
+      var rep=g.keys.find(function(k){return k===k.replace(/[!\-]/g,'').replace(/실미$/,'');});
+      if(rep)CARD_GROUP_KEYS[rep]=g.keys;
+    });
+  }
 }
 
 function getInitBalRaw(){
@@ -1135,7 +1161,7 @@ function importFile(input){
         var lines=text.split('\n').map(function(l){return l.replace(/\r/g,'');}).filter(function(l){return l.trim();});
         var allRows=lines.map(function(l){return parseCSVLine(l);}).filter(function(r){return r.length>1;});
         var isConfig=allRows.some(function(r){return ['\uC608\uC0B0','\uCE74\uB4DC\uC608\uC0B0','\uC800\uCD95\uBAA9\uD45C','\uCD08\uAE30\uC7D8\uACE0'].indexOf(String(r[0]||'').trim())>=0;});
-        if(isConfig){var cnt=applyConfigCSV(allRows);showToast('\uC124\uC815 '+cnt+'\uAC1C \uC801\uC6A9\uB410\uC5B4\uC694!');renderSetup();location.reload();return;}
+        if(isConfig){var cnt=applyConfigCSV(allRows);buildAcctsDef();showToast('\uC124\uC815 '+cnt+'\uAC1C \uC801\uC6A9\uB410\uC5B4\uC694!');renderSetup();location.reload();return;}
         var rows=allRows.filter(function(r){var c0=String(r[0]||''),c1=String(r[1]||'');return c0.match(/^20[0-9][0-9][\/\-]/)||c1.match(/^20[0-9][0-9][\/\-]/);});
         if(!rows.length){showToast('\uB0A0\uC9DC \uD615\uC2DD\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC5B4\uC694');return;}
         mergeImport(parseEntryRows(rows));
