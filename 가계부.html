@@ -182,7 +182,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
       <div id="sub-sec" style="display:none"><div class="sl2">소분류</div><div class="sgrid2" id="sub-grid"></div></div>
     </div>
     <div class="field"><label>내용</label><input type="text" id="f-memo" placeholder="메모 (선택)"/></div>
-    <div class="field"><label>금액</label><input type="number" id="f-amount" placeholder="0" inputmode="numeric"/></div>
+    <div class="field"><label>금액</label><input type="number" id="f-amount" placeholder="0" inputmode="decimal" oninput="this.value=this.value.replace(/[^0-9.]/g,'')"/></div>
     <div class="field" id="f-in-wrap"><label>입금계좌</label>
       <div class="acct-wrap">
         <input class="acct-input" id="f-in-acct" type="text" placeholder="계좌 검색 또는 입력" autocomplete="off"
@@ -546,7 +546,7 @@ var editingId=null,memoTimer;
 var now=new Date();
 var curMon=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
 
-try{var _s=localStorage.getItem('gb_v3');if(_s)entries=JSON.parse(_s);}catch(e){}
+try{var _s=localStorage.getItem('gb_v3');if(_s){entries=JSON.parse(_s);entries.forEach(function(e){if(e.amount<0)e.amount=Math.abs(e.amount);});}}catch(e){}
 try{var _s=localStorage.getItem('gb_budget');if(_s)BUDGET=JSON.parse(_s);}catch(e){}
 try{var _he=localStorage.getItem('homeExpanded');if(_he){var _hep=JSON.parse(_he);budgetExpanded=!!_hep.budget;cardExpanded=!!_hep.card;}}catch(e){}
 try{var _ae=localStorage.getItem('astExpanded');if(_ae)astExpanded=JSON.parse(_ae);}catch(e){}
@@ -840,7 +840,7 @@ function pickAcct(key,val){
 }
 
 function addEntry(){
-  var amt=parseFloat(document.getElementById('f-amount').value);
+  var amt=Math.abs(parseFloat(document.getElementById('f-amount').value)||0);
   if(!amt){showToast('\uAE08\uC561\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694');return;}
   var label=selMaj?getCatLabel(cType,selMaj):'';
   var entry={id:Date.now(),date:document.getElementById('f-date').value,type:cType,major:label,sub:selSub,
@@ -1501,7 +1501,7 @@ function loadFromSheet(silent,overwrite){
       if(e.type==='\uC774\uB3D9'&&!inAcct&&String(e.major||'').indexOf('\uCE74\uB4DC\uB099\uBD80')>=0){
         var s=String(e.sub||'').trim();if(allCardKeys.indexOf(s)>=0)inAcct=s;
       }
-      return {id:e.id||Date.now()+Math.random(),date:e.date,type:e.type,major:e.major||'',sub:e.sub||'',memo:e.memo||'',amount:parseFloat(e.amount)||0,inAcct:inAcct,outAcct:outAcct};
+      return {id:e.id||Date.now()+Math.random(),date:e.date,type:e.type,major:e.major||'',sub:e.sub||'',memo:e.memo||'',amount:Math.abs(parseFloat(e.amount)||0),inAcct:inAcct,outAcct:outAcct};
     }).filter(function(e){return e.date&&['\uC9C0\uCD9C','\uC218\uC785','\uC774\uB3D9'].indexOf(e.type)>=0;});
     if(overwrite){
       entries=imported;
