@@ -156,6 +156,14 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 <div class="page" id="page-input">
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button onclick="openTplModal()" style="flex:1;padding:10px;border:.5px solid var(--blue-lt);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">📋 템플릿 불러오기</button>
+    <button onclick="openSaveTplModal()" style="padding:10px 14px;border:.5px solid var(--border-md);border-radius:var(--rs);background:transparent;color:var(--sub);font-size:12px;cursor:pointer">저장</button>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button onclick="openTplModal()" style="flex:1;padding:10px;border:.5px solid var(--blue-lt);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">&#128203; 템플릿 불러오기</button>
+    <button onclick="openSaveTplModal()" style="padding:10px 14px;border:.5px solid var(--border-md);border-radius:var(--rs);background:transparent;color:var(--sub);font-size:12px;cursor:pointer">저장</button>
+  </div>
   <div class="nbox">
     <div class="nhd"><span class="nlbl">알림 붙여넣기</span><button class="nclr" onclick="clearNotif()">지우기</button></div>
     <textarea id="notif-input" placeholder="카드 알림 붙여넣으면 금액/날짜/카드 자동인식" oninput="onNotif(this.value)"
@@ -246,6 +254,10 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 <div class="page" id="page-asset">
+  <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:8px">
+    <button onclick="expandAllAst()" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 펴기</button>
+    <button onclick="collapseAllAst()" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 접기</button>
+  </div>
   <!-- 순자산 -->
   <div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--blue-bg),var(--surface));border-color:var(--blue-lt)">
     <div class="ct" style="margin-bottom:4px">💎 순자산</div>
@@ -343,7 +355,13 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <div id="setup-import-status" style="margin-top:8px;font-size:12px;color:var(--sub)"></div>
   </div>
   <div class="card" id="setup-current" style="display:none">
-    <div class="ct">현재 설정</div>
+    <div class="ct" style="display:flex;justify-content:space-between;align-items:center">
+      현재 설정
+      <div style="display:flex;gap:6px">
+        <button onclick="expandAllCfg()" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 펴기</button>
+        <button onclick="collapseAllCfg()" style="font-size:10px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 접기</button>
+      </div>
+    </div>
     <div id="setup-current-content"></div>
   </div>
   <div class="card" style="border-color:var(--red-lt)">
@@ -353,6 +371,21 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
       style="width:100%;padding:11px;background:var(--red-bg);color:var(--red);border:.5px solid var(--red-lt);border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">
       전체 초기화
     </button>
+  </div>
+</div>
+<!-- 템플릿 불러오기 모달 -->
+<div class="modal-bg hidden" id="tpl-modal" onclick="closeTplModal(event)">
+  <div class="modal">
+    <div class="modal-title">템플릿 불러오기 <button class="modal-close" onclick="closeTplModal()">&#10005;</button></div>
+    <div id="tpl-list" style="max-height:60vh;overflow-y:auto"></div>
+  </div>
+</div>
+<!-- 템플릿 저장 모달 -->
+<div class="modal-bg hidden" id="save-tpl-modal" onclick="closeSaveTplModal(event)">
+  <div class="modal">
+    <div class="modal-title">템플릿으로 저장 <button class="modal-close" onclick="closeSaveTplModal()">&#10005;</button></div>
+    <div class="field"><label>템플릿 이름</label><input type="text" id="tpl-name-input" placeholder="예: 엄마생활비"/></div>
+    <button onclick="saveCurAsTpl()" style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:14px;font-weight:700;cursor:pointer">저장</button>
   </div>
 </div>
 <div class="modal-bg hidden" id="edit-modal" onclick="closeEditModal(event)">
@@ -490,6 +523,7 @@ var CMAP = [
 
 // ── 상태 ──
 var entries=[],BUDGET={},CARD_BUDGET={},SAVE_GOALS=[];
+var templates=[]; // 고정지출 템플릿
 var sheetAssetData={}; // 시트에서 가져온 투자계좌 실잔액
 var cType='지출',selMaj='',selSub='';
 var histFilter='전체',histCardFilter='',histViewAll=false,histMon='';
@@ -503,6 +537,7 @@ try{var _s=localStorage.getItem('gb_budget');if(_s)BUDGET=JSON.parse(_s);}catch(
 try{var _s=localStorage.getItem('gb_card_budget');if(_s)CARD_BUDGET=JSON.parse(_s);}catch(e){}
 try{var _s=localStorage.getItem('gb_save_goals');if(_s)SAVE_GOALS=JSON.parse(_s);}catch(e){}
 try{var _sa=localStorage.getItem('sheetAssetData');if(_sa)sheetAssetData=JSON.parse(_sa);}catch(e){}
+try{var _st=localStorage.getItem('gb_templates');if(_st)templates=JSON.parse(_st);}catch(e){}
 
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 
@@ -685,6 +720,32 @@ function toggleAstSec(id){
   if(!body)return;
   body.classList.toggle('open');
   if(arr)arr.classList.toggle('open');
+}
+function expandAllAst(){
+  ['contract','invest','estate','monthly','trend'].forEach(function(id){
+    var b=document.getElementById('ast-'+id+'-body'),a=document.getElementById('arr-'+id);
+    if(b){b.classList.add('open');if(a)a.classList.add('open');}
+  });
+}
+function collapseAllAst(){
+  ['contract','invest','estate','monthly','trend'].forEach(function(id){
+    var b=document.getElementById('ast-'+id+'-body'),a=document.getElementById('arr-'+id);
+    if(b){b.classList.remove('open');if(a)a.classList.remove('open');}
+  });
+}
+function expandAllCfg(){
+  document.querySelectorAll('.cfg-toggle').forEach(function(el){
+    var id=el.getAttribute('data-id');
+    var b=document.getElementById('cfg-body-'+id),a=document.getElementById('cfg-arr-'+id);
+    if(b){b.classList.add('open');if(a)a.classList.add('open');}
+  });
+}
+function collapseAllCfg(){
+  document.querySelectorAll('.cfg-toggle').forEach(function(el){
+    var id=el.getAttribute('data-id');
+    var b=document.getElementById('cfg-body-'+id),a=document.getElementById('cfg-arr-'+id);
+    if(b){b.classList.remove('open');if(a)a.classList.remove('open');}
+  });
 }
 function expandAll(g){
   if(g==='budget')budgetExpanded=true;if(g==='card')cardExpanded=true;
@@ -1093,6 +1154,93 @@ function saveMemoToSheet(memoText){
   fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
     body:JSON.stringify({action:'saveMemo',yearMonth:ym,memo:memoText})
   }).catch(function(){});
+}
+
+// ── 템플릿 ────────────────────────────────────────────────────────
+function loadTemplatesFromSheet(){
+  var url=getScriptUrl();if(!url)return;
+  fetch(url+'?action=templates').then(function(r){return r.json();}).then(function(data){
+    if(!data.ok||!data.templates)return;
+    templates=data.templates;
+    try{localStorage.setItem('gb_templates',JSON.stringify(templates));}catch(e){}
+  }).catch(function(){});
+}
+function openTplModal(){
+  loadTemplatesFromSheet();
+  renderTplList();
+  document.getElementById('tpl-modal').classList.remove('hidden');
+}
+function renderTplList(){
+  var list=document.getElementById('tpl-list');
+  if(!templates.length){
+    list.innerHTML='<div class="empty">저장된 템플릿이 없어요<br><span style="font-size:11px;color:var(--hint)">입력 후 "저장" 버튼으로 추가하세요</span></div>';
+    return;
+  }
+  list.innerHTML=templates.map(function(t,i){
+    var acct='';
+    if(t.outAcct)acct+='출: '+t.outAcct;
+    if(t.outAcct&&t.inAcct)acct+=' / ';
+    if(t.inAcct)acct+='입: '+t.inAcct;
+    return '<div style="display:flex;align-items:center;padding:10px 0;border-bottom:.5px solid var(--border)">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:13px;font-weight:600">'+t.name+'</div>'
+      +'<div style="font-size:11px;color:var(--sub);margin-top:2px">'+t.type+' · '+(t.major||'')+(t.sub?' · '+t.sub:'')+(t.memo?' · '+t.memo:'')+'</div>'
+      +(acct?'<div style="font-size:10px;color:var(--hint)">'+acct+'</div>':'')
+      +'</div>'
+      +'<button data-tpl="'+i+'" onclick="applyTplByIdx(Number(this.getAttribute(\'data-tpl\')))" style="padding:6px 12px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:12px;cursor:pointer;margin-left:8px">사용</button>'
+      +'<button data-tpl="'+i+'" onclick="deleteTplByIdx(Number(this.getAttribute(\'data-tpl\')))" style="padding:6px 10px;background:var(--red-bg);color:var(--red);border:.5px solid var(--red-lt);border-radius:var(--rs);font-size:12px;cursor:pointer;margin-left:4px">삭제</button>'
+      +'</div>';
+  }).join('');
+}
+function closeTplModal(ev){
+  if(ev&&ev.target!==document.getElementById('tpl-modal'))return;
+  document.getElementById('tpl-modal').classList.add('hidden');
+}
+function applyTplByIdx(i){
+  var t=templates[i];if(!t)return;
+  setType(t.type||'지출');
+  var keys=getCatKeys(t.type||'지출');
+  var majKey=keys.find(function(k){return getCatLabel(t.type||'지출',k)===t.major||k===t.major;});
+  if(majKey){selMaj=majKey;renderMajor();}
+  if(t.sub){selSub=t.sub;document.querySelectorAll('.sbtn').forEach(function(b){b.classList.toggle('sel',b.textContent===t.sub);});}
+  if(t.memo)document.getElementById('f-memo').value=t.memo;
+  if(t.outAcct)document.getElementById('f-out-acct').value=t.outAcct;
+  if(t.inAcct)document.getElementById('f-in-acct').value=t.inAcct;
+  document.getElementById('tpl-modal').classList.add('hidden');
+  showToast(t.name+' 템플릿 적용됐어요!');
+}
+function deleteTplByIdx(i){
+  var t=templates[i];if(!t)return;
+  if(!confirm(t.name+' 템플릿을 삭제할까요?'))return;
+  templates.splice(i,1);
+  try{localStorage.setItem('gb_templates',JSON.stringify(templates));}catch(e){}
+  var url=getScriptUrl();
+  if(url)fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'deleteTemplate',name:t.name})}).catch(function(){});
+  renderTplList();
+}
+function openSaveTplModal(){
+  document.getElementById('tpl-name-input').value='';
+  document.getElementById('save-tpl-modal').classList.remove('hidden');
+}
+function closeSaveTplModal(ev){
+  if(ev&&ev.target!==document.getElementById('save-tpl-modal'))return;
+  document.getElementById('save-tpl-modal').classList.add('hidden');
+}
+function saveCurAsTpl(){
+  var name=document.getElementById('tpl-name-input').value.trim();
+  if(!name){showToast('이름을 입력해주세요');return;}
+  var majLabel=selMaj?getCatLabel(cType,selMaj):'';
+  var t={name:name,type:cType,major:majLabel,sub:selSub,
+    memo:document.getElementById('f-memo').value,
+    outAcct:document.getElementById('f-out-acct').value,
+    inAcct:document.getElementById('f-in-acct').value};
+  var idx=templates.findIndex(function(x){return x.name===name;});
+  if(idx>=0)templates[idx]=t;else templates.push(t);
+  try{localStorage.setItem('gb_templates',JSON.stringify(templates));}catch(e){}
+  var url=getScriptUrl();
+  if(url)fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({action:'saveTemplate',template:t})}).catch(function(){});
+  document.getElementById('save-tpl-modal').classList.add('hidden');
+  showToast(name+' 저장됐어요!');
 }
 
 // ── 자산 시트 데이터 로드 ──
