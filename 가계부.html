@@ -504,7 +504,7 @@ function goPage(n,btn){
   if(n==='home'){renderHome();autoSyncFromSheet();}
   else if(n==='history'){if(isConfigured()){if(!histMon)histMon=curMon;renderHist();}else document.getElementById('entry-list').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='balance'){if(isConfigured())renderBalance();else document.getElementById('page-balance').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
-  else if(n==='asset'){if(isConfigured()){loadAssetFromSheet();renderAsset();}else document.getElementById('page-asset').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
+  else if(n==='asset'){if(isConfigured()){renderAsset();loadAssetFromSheet();}else document.getElementById('page-asset').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='input'){if(!isConfigured())document.getElementById('page-input').innerHTML='<div class="empty">\uC124\uC815\uD0ED\uC5D0\uC11C \uD30C\uC77C\uC744 \uC62C\uB824\uC8FC\uC138\uC694</div>';}
   else if(n==='setup')renderSetup();
 }
@@ -1067,7 +1067,7 @@ function loadAssetFromSheet(){
     if(!data.ok||!data.asset)return;
     sheetAssetData=data.asset;
     try{localStorage.setItem('sheetAssetData',JSON.stringify(sheetAssetData));}catch(e){}
-    if(document.getElementById('page-asset').classList.contains('active'))renderAsset();
+    renderAsset();
   }).catch(function(){});
 }
 
