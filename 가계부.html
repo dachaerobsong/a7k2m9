@@ -561,26 +561,25 @@ try{
   var _ir=localStorage.getItem('initBalRaw');
   if(_ir){
     var _irp=JSON.parse(_ir);
-    // group이 전부 cash면 (구버전 시트) 알려진 키로 강제 복원
     var _INVEST=['미래에셋_연금','미래에셋_종합','미래에셋_ISA','미래에셋_금','우리_IRP','삼성증권_연금'];
     var _CONTRACT=['케이-집계약용','신한은행'];
     var _ESTATE=['전세 보증금'];
     var _LONGDEBT=['전세자금대출 원금(국민)'];
     var _DEBT=['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'];
-    var _allCash=_irp.every(function(r){return !r.group||r.group==='cash';});
-    if(_allCash){
-      _irp=_irp.map(function(r){
-        var g='cash';
-        if(_LONGDEBT.indexOf(r.key)>=0) g='longdebt';
-        else if(_DEBT.indexOf(r.key)>=0) g='debt';
-        else if(_ESTATE.indexOf(r.key)>=0) g='estate';
-        else if(_CONTRACT.indexOf(r.key)>=0) g='contract';
-        else if(_INVEST.indexOf(r.key)>=0) g='invest';
-        return {key:r.key,label:r.label||r.key,group:g,goal:r.goal||0};
-      });
-      localStorage.setItem('initBalRaw',JSON.stringify(_irp));
-    }
+    // 무조건 그룹 재계산 (캐시된 group 값 무시)
+    _irp=_irp.map(function(r){
+      var g='cash';
+      if(_LONGDEBT.indexOf(r.key)>=0) g='longdebt';
+      else if(_DEBT.indexOf(r.key)>=0) g='debt';
+      else if(_ESTATE.indexOf(r.key)>=0) g='estate';
+      else if(_CONTRACT.indexOf(r.key)>=0) g='contract';
+      else if(_INVEST.indexOf(r.key)>=0) g='invest';
+      return {key:r.key,label:r.label||r.key,group:g,goal:r.goal||0};
+    });
+    localStorage.setItem('initBalRaw',JSON.stringify(_irp));
     buildAcctsDef(_irp);
+    // 디버그용 — 나중에 제거
+    try{var _dbgInv=_irp.filter(function(r){return r.group==='invest';});console.log('invest복원:',_dbgInv.map(function(r){return r.key;}));}catch(e){}
   }
 }catch(e){}
 
@@ -602,8 +601,11 @@ function dbgShow(){
   var lines=[];
   lines.push('<b>ACCTS_DEF 개수:</b> '+(ACCTS_DEF?ACCTS_DEF.length:'없음'));
   lines.push('<b>invest 계좌:</b> '+(ACCTS_DEF?ACCTS_DEF.filter(function(a){return a.group==='invest';}).map(function(a){return a.key;}).join(', ')||'없음':'없음'));
+  // initBalRaw 직접 재파싱해서 invest 있는지 확인
+  var _irChk=localStorage.getItem('initBalRaw');
+  if(_irChk){var _irChkP=JSON.parse(_irChk);lines.push('<b>initBalRaw invest 키:</b> '+_irChkP.filter(function(r){return r.group==='invest';}).map(function(r){return r.key;}).join(', ')||'없음');}
   lines.push('<b>localStorage.initBalRaw:</b> '+(ir?'있음 ('+JSON.parse(ir).length+'개)':'❌ 없음'));
-  if(ir){var irp=JSON.parse(ir);lines.push('<b>initBalRaw 그룹 샘플:</b> '+irp.slice(0,5).map(function(x){return x.key+'='+x.group;}).join(', '));}
+  if(ir){var irp=JSON.parse(ir);lines.push('<b>initBalRaw 전체 그룹:</b><br>'+irp.map(function(x){return x.key+'=<b>'+x.group+'</b>';}).join('<br>'));}
   lines.push('<b>localStorage.sheetAssetData:</b> '+(sa?'있음 → '+Object.keys(JSON.parse(sa)).join(', '):'❌ 없음'));
   lines.push('<b>localStorage.initBal:</b> '+(ib?'있음':'❌ 없음'));
   lines.push('<b>현재 sheetAssetData 키:</b> '+Object.keys(sheetAssetData||{}).join(', ')||'비어있음');
