@@ -659,7 +659,7 @@ function renderHome(){
   // 월별 메모 불러오기
   try{
     var ta=document.getElementById('quick-memo');
-    if(ta){var mv=localStorage.getItem('quickMemo_'+curMon)||'';if(ta.value!==mv)ta.value=mv;}
+    if(ta){var mv=localStorage.getItem('quickMemo_'+curMon);ta.value=mv||'';}
   }catch(e){}
   var p=curMon.split('-'),y=p[0],m=p[1];
   document.getElementById('month-label').textContent=y+'\uB144 '+parseInt(m)+'\uC6D4';
@@ -1753,15 +1753,19 @@ function exportXLSX(){
 
 // ── 메모 ──
 var _mt;
+var _memoInited=false;
 function initMemo(){
   var ta=document.getElementById('quick-memo');if(!ta)return;
   var memoKey='quickMemo_'+curMon;
-  try{var sv=localStorage.getItem(memoKey);if(sv)ta.value=sv;}catch(e){}
+  try{var sv=localStorage.getItem(memoKey);if(sv!==null)ta.value=sv;else ta.value='';}catch(e){}
+  if(_memoInited)return; // 이벤트 중복 방지
+  _memoInited=true;
   ta.addEventListener('input',function(){
     clearTimeout(_mt);
     document.getElementById('memo-saved').textContent='저장 중...';
     _mt=setTimeout(function(){
-      try{localStorage.setItem(memoKey,ta.value);}catch(e){}
+      var key='quickMemo_'+curMon;
+      try{localStorage.setItem(key,ta.value);}catch(e){}
       document.getElementById('memo-saved').textContent='저장됨';
       setTimeout(function(){var s=document.getElementById('memo-saved');if(s)s.textContent='';},2000);
       saveMemoToSheet(ta.value);
