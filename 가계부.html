@@ -601,6 +601,8 @@ function dbgShow(){
   var lines=[];
   lines.push('<b>ACCTS_DEF 개수:</b> '+(ACCTS_DEF?ACCTS_DEF.length:'없음'));
   lines.push('<b>invest 계좌:</b> '+(ACCTS_DEF?ACCTS_DEF.filter(function(a){return a.group==='invest';}).map(function(a){return a.key;}).join(', ')||'없음':'없음'));
+  lines.push('<b>initBalRaw invest 키:</b> '+(_INVEST_DBG||[]).join(', '));
+  lines.push('<b>ACCTS_DEF 전체:</b><br>'+ACCTS_DEF.map(function(a){return a.key+'='+a.group;}).join('<br>'));
   // initBalRaw 직접 재파싱해서 invest 있는지 확인
   var _irChk=localStorage.getItem('initBalRaw');
   if(_irChk){var _irChkP=JSON.parse(_irChk);lines.push('<b>initBalRaw invest 키:</b> '+_irChkP.filter(function(r){return r.group==='invest';}).map(function(r){return r.key;}).join(', ')||'없음');}
@@ -1128,7 +1130,7 @@ var SHEET_INVEST_KEYS = ['우리IRP','미래에셋','삼성증권','토스증권
 var CONTRACT_KEYS = ['케이-집계약용','신한은행'];
 
 function buildAcctsDef(rawData){
-  var init=rawData||getInitBalRaw(); // 파라미터로 받거나 localStorage에서
+  var init=rawData||getInitBalRaw();
   if(!init||!init.length){
     ACCTS_DEF=[];ACCTS=[];return;
   }
@@ -1139,6 +1141,7 @@ function buildAcctsDef(rawData){
     if(r.goal)def.goal=r.goal;
     return def;
   });
+  console.log('buildAcctsDef 직후 invest:',ACCTS_DEF.filter(function(a){return a.group==='invest';}).map(function(a){return a.key;}));
   // debt/longdebt는 하드코딩 순서 유지 (시트에 없을 수 있음)
   var hardDebt=__HARD_ACCTS_DEF.filter(function(a){return a.group==='debt'||a.group==='longdebt';});
   var existDebtKeys=ACCTS_DEF.filter(function(a){return a.group==='debt'||a.group==='longdebt';}).map(function(a){return a.key;});
