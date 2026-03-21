@@ -156,14 +156,11 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 <div class="page" id="page-input">
-  <div style="display:flex;gap:8px;margin-bottom:10px">
+  <div style="display:flex;gap:8px;margin-bottom:6px">
     <button onclick="openTplModal()" style="flex:1;padding:10px;border:.5px solid var(--blue-lt);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">📋 템플릿 불러오기</button>
     <button onclick="openSaveTplModal()" style="padding:10px 14px;border:.5px solid var(--border-md);border-radius:var(--rs);background:transparent;color:var(--sub);font-size:12px;cursor:pointer">저장</button>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:10px">
-    <button onclick="openTplModal()" style="flex:1;padding:10px;border:.5px solid var(--blue-lt);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">&#128203; 템플릿 불러오기</button>
-    <button onclick="openSaveTplModal()" style="padding:10px 14px;border:.5px solid var(--border-md);border-radius:var(--rs);background:transparent;color:var(--sub);font-size:12px;cursor:pointer">저장</button>
-  </div>
+  <div style="margin-bottom:10px;font-size:11px;color:var(--red);font-weight:600;text-align:center">⚠️ 앱/웹에서 입력 → 시트에서 확인되기 전까진 새로고침 금지!!!</div>
   <div class="nbox">
     <div class="nhd"><span class="nlbl">알림 붙여넣기</span><button class="nclr" onclick="clearNotif()">지우기</button></div>
     <textarea id="notif-input" placeholder="카드 알림 붙여넣으면 금액/날짜/카드 자동인식" oninput="onNotif(this.value)"
@@ -541,7 +538,7 @@ var cType='지출',selMaj='',selSub='';
 var histFilter='전체',histCardFilter='',histViewAll=false,histMon='',histSort='date';
 var budgetExpanded=false,cardExpanded=false;
 var astExpanded={contract:true,invest:true,estate:true,monthly:true,trend:true};
-var cfgExpanded={budget:true,card:true,goals:true,initbal:true};
+var cfgExpanded={budget:false,card:false,goals:false,initbal:false};
 var editingId=null,memoTimer;
 var now=new Date();
 var curMon=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
@@ -687,8 +684,9 @@ function renderHome(){
     majT[e.major]=(majT[e.major]||0)+e.amount;
     var k=e.major+'__'+e.sub;subT[k]=(subT[k]||0)+e.amount;
   });
-  var mamaF=es.filter(function(e){return e.type==='지출'&&e.major==='엄마'&&MAMA_FIXED.indexOf(e.sub)>=0;}).reduce(function(s,e){return s+e.amount;},0);
-  var mamaV=es.filter(function(e){return e.type==='지출'&&e.major==='엄마'&&e.sub==='엄마건강';}).reduce(function(s,e){return s+e.amount;},0);
+  var mamaLabel=getCatLabel('지출','엄마'); // '☀️ 엄마'
+  var mamaF=es.filter(function(e){return e.type==='지출'&&(e.major===mamaLabel||e.major==='엄마')&&MAMA_FIXED.indexOf(e.sub)>=0;}).reduce(function(s,e){return s+e.amount;},0);
+  var mamaV=es.filter(function(e){return e.type==='지출'&&(e.major===mamaLabel||e.major==='엄마')&&e.sub==='엄마건강';}).reduce(function(s,e){return s+e.amount;},0);
 
   function bRow(id,label,budget,spent,subKeys,group){
     var p2=budget>0?Math.min((spent/budget)*100,100):0;
@@ -717,15 +715,24 @@ function renderHome(){
   }
 
   var h='<div class="sec-div"><span>\uACE0\uC815\uBE44</span></div>';
-  h+=bRow('주거비',getCatLabel('지출','주거비'),BUDGET['주거비']||0,majT[getCatLabel('지출','주거비')]||0,CAT_OUT_SUBS['주거비'],'budget');
-  h+=bRow('보험',getCatLabel('지출','보험'),BUDGET['보험']||0,majT[getCatLabel('지출','보험')]||0,CAT_OUT_SUBS['보험'],'budget');
-  h+=bRow('통신비',getCatLabel('지출','통신비'),BUDGET['통신비']||0,majT[getCatLabel('지출','통신비')]||0,CAT_OUT_SUBS['통신비'],'budget');
-  h+=bRow('곗돈',getCatLabel('지출','곗돈'),BUDGET['곗돈']||0,majT[getCatLabel('지출','곗돈')]||0,CAT_OUT_SUBS['곗돈'],'budget');
-  h+=bRow('엄마고정',getCatLabel('지출','엄마')+' (고정)',BUDGET['엄마고정']||652187,mamaF,MAMA_FIXED,'budget');
+  // BUDGET 키가 이모지 포함('🏠 주거비')이거나 없는('주거비') 경우 모두 처리
+  function getBudget(k){
+    var lbl=getCatLabel('지출',k);
+    return BUDGET[k]||BUDGET[lbl]||0;
+  }
+  function getSpent(k){
+    var lbl=getCatLabel('지출',k);
+    return majT[k]||majT[lbl]||0;
+  }
+  h+=bRow('주거비',getCatLabel('지출','주거비'),getBudget('주거비'),getSpent('주거비'),CAT_OUT_SUBS['주거비'],'budget');
+  h+=bRow('보험',getCatLabel('지출','보험'),getBudget('보험'),getSpent('보험'),CAT_OUT_SUBS['보험'],'budget');
+  h+=bRow('통신비',getCatLabel('지출','통신비'),getBudget('통신비'),getSpent('통신비'),CAT_OUT_SUBS['통신비'],'budget');
+  h+=bRow('곗돈',getCatLabel('지출','곗돈'),getBudget('곗돈'),getSpent('곗돈'),CAT_OUT_SUBS['곗돈'],'budget');
+  h+=bRow('엄마고정',getCatLabel('지출','엄마')+' (고정)',BUDGET['엄마고정']||BUDGET['☀️ 엄마(고정)']||652187,mamaF,MAMA_FIXED,'budget');
   h+='<div class="sec-div"><span>\uBE44\uACE0\uC815\uBE44</span></div>';
-  h+=bRow('엄마건강',getCatLabel('지출','엄마')+'\uAC74\uAC15',BUDGET['엄마건강']||120000,mamaV,['엄마건강'],'budget');
+  h+=bRow('엄마건강',getCatLabel('지출','엄마')+'\uAC74\uAC15',BUDGET['엄마건강']||BUDGET['☀️ 엄마(건강)']||120000,mamaV,['엄마건강'],'budget');
   ['식비','생활용품','꾸밈비','자기계발','건강','교통비','경조사','문화생활','기타'].forEach(function(k){
-    h+=bRow(k,getCatLabel('지출',k),BUDGET[k]||0,majT[getCatLabel('지출',k)]||0,CAT_OUT_SUBS[k],'budget');
+    h+=bRow(k,getCatLabel('지출',k),getBudget(k),getSpent(k),CAT_OUT_SUBS[k],'budget');
   });
   document.getElementById('budget-list').innerHTML=h;
   setTimeout(applyExpanded,0);
