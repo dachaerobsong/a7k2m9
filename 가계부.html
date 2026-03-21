@@ -555,6 +555,7 @@ try{var _s=localStorage.getItem('gb_card_budget');if(_s)CARD_BUDGET=JSON.parse(_
 try{var _s=localStorage.getItem('gb_save_goals');if(_s)SAVE_GOALS=JSON.parse(_s);}catch(e){}
 try{var _sa=localStorage.getItem('sheetAssetData');if(_sa)sheetAssetData=JSON.parse(_sa);}catch(e){}
 try{var _st=localStorage.getItem('gb_templates');if(_st)templates=JSON.parse(_st);}catch(e){}
+try{var _ir=localStorage.getItem('initBalRaw');if(_ir)buildAcctsDef(JSON.parse(_ir));}catch(e){}
 
 document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
 
