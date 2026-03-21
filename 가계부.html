@@ -354,8 +354,6 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
       <button onclick="saveSheetConfig()" style="padding:11px;background:var(--blue);color:#fff;border:none;border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer">저장 &amp; 연결</button>
       <button onclick="loadFromSheet()" style="padding:11px;background:var(--blue-bg);color:var(--blue);border:.5px solid var(--blue-lt);border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer">&#128202; 시트에서 불러오기</button>
       <button onclick="if(confirm('시트 데이터로 완전 덮어쓰기할까요? 현재 앱 데이터가 모두 삭제됩니다.'))loadFromSheet(false,true)" style="padding:11px;background:var(--red-bg);color:var(--red);border:.5px solid var(--red-lt);border-radius:var(--rs);font-size:13px;font-weight:700;cursor:pointer">시트로 덮어쓰기</button>
-      <button onclick="dbgShow()" style="padding:11px;background:#f5f5f5;color:#888;border:.5px solid #ddd;border-radius:var(--rs);font-size:12px;cursor:pointer">🔍 디버그</button>
-      <div id="dbg-out" style="margin-top:8px;font-size:11px;color:#555;background:#f9f9f9;border-radius:6px;padding:8px;display:none;word-break:break-all;line-height:1.6;"></div>
     </div>
     <div id="sheet-load-status" style="margin-top:8px;font-size:12px;color:var(--sub)"></div>
   </div>
@@ -561,25 +559,22 @@ try{
   var _ir=localStorage.getItem('initBalRaw');
   if(_ir){
     var _irp=JSON.parse(_ir);
-    var _INVEST=['미래에셋_연금','미래에셋_종합','미래에셋_ISA','미래에셋_금','우리_IRP','삼성증권_연금'];
-    var _CONTRACT=['케이-집계약용','신한은행'];
-    var _ESTATE=['전세 보증금'];
-    var _LONGDEBT=['전세자금대출 원금(국민)'];
-    var _DEBT=['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'];
-    // 무조건 그룹 재계산 (캐시된 group 값 무시)
+    var _GRP_INVEST  =['미래에셋_연금','미래에셋_종합','미래에셋_ISA','미래에셋_금','우리_IRP','삼성증권_연금'];
+    var _GRP_CONTRACT=['케이-집계약용','신한은행'];
+    var _GRP_ESTATE  =['전세 보증금'];
+    var _GRP_LONGDEBT=['전세자금대출 원금(국민)'];
+    var _GRP_DEBT    =['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'];
     _irp=_irp.map(function(r){
       var g='cash';
-      if(_LONGDEBT.indexOf(r.key)>=0) g='longdebt';
-      else if(_DEBT.indexOf(r.key)>=0) g='debt';
-      else if(_ESTATE.indexOf(r.key)>=0) g='estate';
-      else if(_CONTRACT.indexOf(r.key)>=0) g='contract';
-      else if(_INVEST.indexOf(r.key)>=0) g='invest';
+      if(_GRP_LONGDEBT.indexOf(r.key)>=0)     g='longdebt';
+      else if(_GRP_DEBT.indexOf(r.key)>=0)    g='debt';
+      else if(_GRP_ESTATE.indexOf(r.key)>=0)  g='estate';
+      else if(_GRP_CONTRACT.indexOf(r.key)>=0)g='contract';
+      else if(_GRP_INVEST.indexOf(r.key)>=0)  g='invest';
       return {key:r.key,label:r.label||r.key,group:g,goal:r.goal||0};
     });
     localStorage.setItem('initBalRaw',JSON.stringify(_irp));
     buildAcctsDef(_irp);
-    // 디버그용 — 나중에 제거
-    try{var _dbgInv=_irp.filter(function(r){return r.group==='invest';});console.log('invest복원:',_dbgInv.map(function(r){return r.key;}));}catch(e){}
   }
 }catch(e){}
 
@@ -591,28 +586,6 @@ function fmtK(n){var a=Math.abs(n),sg=n<0?'-':'';return sg+(a>=10000?(a/10000).t
 var _tt;
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(function(){t.classList.remove('show');},2000);}
 function saveEntries(){try{localStorage.setItem('gb_v3',JSON.stringify(entries.slice(0,1000)));}catch(e){}}
-function dbgShow(){
-  var d=document.getElementById('dbg-out');
-  d.style.display=d.style.display==='none'?'block':'none';
-  if(d.style.display==='none')return;
-  var ir=localStorage.getItem('initBalRaw');
-  var sa=localStorage.getItem('sheetAssetData');
-  var ib=localStorage.getItem('initBal');
-  var lines=[];
-  lines.push('<b>ACCTS_DEF 개수:</b> '+(ACCTS_DEF?ACCTS_DEF.length:'없음'));
-  lines.push('<b>invest 계좌:</b> '+(ACCTS_DEF?ACCTS_DEF.filter(function(a){return a.group==='invest';}).map(function(a){return a.key;}).join(', ')||'없음':'없음'));
-  lines.push('<b>initBalRaw invest 키:</b> '+(_INVEST_DBG||[]).join(', '));
-  lines.push('<b>ACCTS_DEF 전체:</b><br>'+ACCTS_DEF.map(function(a){return a.key+'='+a.group;}).join('<br>'));
-  // initBalRaw 직접 재파싱해서 invest 있는지 확인
-  var _irChk=localStorage.getItem('initBalRaw');
-  if(_irChk){var _irChkP=JSON.parse(_irChk);lines.push('<b>initBalRaw invest 키:</b> '+_irChkP.filter(function(r){return r.group==='invest';}).map(function(r){return r.key;}).join(', ')||'없음');}
-  lines.push('<b>localStorage.initBalRaw:</b> '+(ir?'있음 ('+JSON.parse(ir).length+'개)':'❌ 없음'));
-  if(ir){var irp=JSON.parse(ir);lines.push('<b>initBalRaw 전체 그룹:</b><br>'+irp.map(function(x){return x.key+'=<b>'+x.group+'</b>';}).join('<br>'));}
-  lines.push('<b>localStorage.sheetAssetData:</b> '+(sa?'있음 → '+Object.keys(JSON.parse(sa)).join(', '):'❌ 없음'));
-  lines.push('<b>localStorage.initBal:</b> '+(ib?'있음':'❌ 없음'));
-  lines.push('<b>현재 sheetAssetData 키:</b> '+Object.keys(sheetAssetData||{}).join(', ')||'비어있음');
-  d.innerHTML=lines.join('<br>');
-}
 function isConfigured(){return Object.keys(BUDGET).length>0||entries.length>0;}
 function me(){
   if(histViewAll)return entries;
@@ -1131,17 +1104,13 @@ var CONTRACT_KEYS = ['케이-집계약용','신한은행'];
 
 function buildAcctsDef(rawData){
   var init=rawData||getInitBalRaw();
-  if(!init||!init.length){
-    ACCTS_DEF=[];ACCTS=[];return;
-  }
+  if(!init||!init.length){ACCTS_DEF=[];ACCTS=[];return;}
   ACCTS_DEF=init.map(function(r){
     var grp=r.group||'cash';
-    if(CONTRACT_KEYS.indexOf(r.key)>=0)grp='contract';
     var def={key:r.key,label:r.label||r.key,group:grp};
     if(r.goal)def.goal=r.goal;
     return def;
   });
-  console.log('buildAcctsDef 직후 invest:',ACCTS_DEF.filter(function(a){return a.group==='invest';}).map(function(a){return a.key;}));
   // debt/longdebt는 하드코딩 순서 유지 (시트에 없을 수 있음)
   var hardDebt=__HARD_ACCTS_DEF.filter(function(a){return a.group==='debt'||a.group==='longdebt';});
   var existDebtKeys=ACCTS_DEF.filter(function(a){return a.group==='debt'||a.group==='longdebt';}).map(function(a){return a.key;});
@@ -1537,24 +1506,17 @@ function loadFromSheet(silent,overwrite){
         try{localStorage.setItem('initBal',JSON.stringify(cfg.initBal));}catch(e){}
       }
       if(cfg.initBalRaw){
-        // group이 전부 cash인 경우 (saveConfig 구버전 시트) → 알려진 키로 그룹 복원
-        var KNOWN_INVEST=['케이-집계약용','신한은행','미래에셋_연금','미래에셋_종합','미래에셋_ISA','미래에셋_금','우리_IRP','삼성증권_연금'];
-        var KNOWN_CONTRACT=['케이-집계약용','신한은행'];
-        var KNOWN_ESTATE=['전세 보증금'];
-        var KNOWN_LONGDEBT=['전세자금대출 원금(국민)'];
-        var KNOWN_DEBT=['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'];
-        cfg.initBalRaw=cfg.initBalRaw.map(function(r){
-          if(r.group&&r.group!=='cash') return r; // 이미 올바른 그룹이면 유지
+        var _raw=cfg.initBalRaw.map(function(r){
           var g='cash';
-          if(KNOWN_LONGDEBT.indexOf(r.key)>=0) g='longdebt';
-          else if(KNOWN_DEBT.indexOf(r.key)>=0) g='debt';
-          else if(KNOWN_ESTATE.indexOf(r.key)>=0) g='estate';
-          else if(KNOWN_CONTRACT.indexOf(r.key)>=0) g='contract';
-          else if(KNOWN_INVEST.indexOf(r.key)>=0) g='invest';
+          if(['전세자금대출 원금(국민)'].indexOf(r.key)>=0) g='longdebt';
+          else if(['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'].indexOf(r.key)>=0) g='debt';
+          else if(['전세 보증금'].indexOf(r.key)>=0) g='estate';
+          else if(['케이-집계약용','신한은행'].indexOf(r.key)>=0) g='contract';
+          else if(['미래에셋_연금','미래에셋_종합','미래에셋_ISA','미래에셋_금','우리_IRP','삼성증권_연금'].indexOf(r.key)>=0) g='invest';
           return {key:r.key,label:r.label||r.key,group:g,goal:r.goal||0};
         });
-        try{localStorage.setItem('initBalRaw',JSON.stringify(cfg.initBalRaw));}catch(e){}
-        buildAcctsDef(cfg.initBalRaw);
+        try{localStorage.setItem('initBalRaw',JSON.stringify(_raw));}catch(e){}
+        buildAcctsDef(_raw);
       }
     }
     var allCardKeys=ACCTS.filter(function(a){return ACCTS_DEF.some(function(d){return d.key===a&&d.group==='debt';});});
