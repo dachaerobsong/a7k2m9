@@ -980,6 +980,58 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 </div>
 
 
+<!-- ════════════════════════════════════════════
+  탭 11 : 주식·투자 설정 (URL 미설정 시 리다이렉트)
+═════════════════════════════════════════════ -->
+<div id="p11" class="panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
+  <div class="card">
+    <div class="ct" style="display:flex;align-items:center;gap:7px">
+      📊 주식·투자 시트 연동
+      <div id="pf-dot" style="width:7px;height:7px;border-radius:50%;background:var(--hint)"></div>
+    </div>
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:14px;line-height:1.7">
+      가계부와 동일한 Apps Script URL을 사용합니다.<br>
+      아래에 입력하면 모든 탭에 자동으로 적용됩니다.
+    </div>
+    <div class="field" style="margin-bottom:12px">
+      <label style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">Apps Script URL</label>
+      <input id="cfg-pf-url" type="url" placeholder="https://script.google.com/macros/s/.../exec"
+        style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;color:var(--txt);font-size:13px;outline:none;box-sizing:border-box"
+        oninput="try{localStorage.setItem('scriptUrl',this.value.trim());if(typeof syncUrlInputs==='function')syncUrlInputs();}catch(e){}"/>
+    </div>
+    <div class="field" style="margin-bottom:14px">
+      <label style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">비밀번호 변경 (선택)</label>
+      <input id="cfg-pw" type="password" placeholder="새 비밀번호 입력"
+        style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;color:var(--txt);font-size:13px;outline:none;box-sizing:border-box"/>
+    </div>
+    <button onclick="savePfConfig()"
+      style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">
+      저장 &amp; 연결
+    </button>
+    <div id="cfg-msg" style="font-size:12px;color:var(--green);text-align:center;min-height:18px"></div>
+  </div>
+  <div class="card" style="margin-top:0">
+    <div class="ct">데이터 불러오기</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button onclick="loadPfData()"
+        style="padding:11px;background:var(--bg3);color:var(--blue);border:1px solid var(--bd);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+        📊 주식 불러오기
+      </button>
+      <button onclick="loadFromSheet()"
+        style="padding:11px;background:var(--bg3);color:var(--blue);border:1px solid var(--bd);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+        💰 가계부 불러오기
+      </button>
+    </div>
+    <div id="p11-load-status" style="margin-top:8px;font-size:12px;color:var(--txt3);text-align:center"></div>
+  </div>
+  <div class="card" style="border-color:var(--bd);background:var(--bg3)">
+    <div style="font-size:11px;color:var(--txt3);line-height:1.8">
+      💡 <b>시트 ID</b>와 <b>Script URL</b>은 가계부 설정 탭(⚙️ 설정)에서도 함께 관리됩니다.<br>
+      어느 탭에서 저장해도 양쪽에 적용됩니다.
+    </div>
+  </div>
+</div>
+
 
 <div id="p12" class="panel on" style="max-width:900px;margin:0 auto">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -1134,7 +1186,11 @@ function showTab(i) {
   if(i===8) { setTimeout(function(){ if(typeof renderBalance==='function') renderBalance(); }, 50); }
   if(i===9) { setTimeout(function(){ if(typeof renderAsset==='function') renderAsset(); }, 50); }
   if(i===10) { setTimeout(function(){ if(typeof renderSetup==="function") renderSetup(); }, 50); }
-  if(i===11) { var _pfu=document.getElementById("cfg-pf-url"); if(_pfu){ var _sv=getPfUrl(); if(_sv) _pfu.value=_sv; } }
+  if(i===11) {
+    var _pfu=document.getElementById("cfg-pf-url"); if(_pfu){ _pfu.value=getPfUrl()||''; }
+    var _dot=document.getElementById("pf-dot"); if(_dot) _dot.style.background=getPfUrl()?'var(--green)':'var(--hint)';
+    var _st11=document.getElementById("p11-load-status"); if(_st11) _st11.textContent=getPfUrl()?'URL 연결됨 ✓':'URL을 입력하고 저장해주세요';
+  }
   if(i===12) { setTimeout(function(){ renderTotalAsset(); }, 50); }
 }
 
@@ -3905,16 +3961,24 @@ function renderTodayTx() {
 
 // ── 설정 저장 ──
 function savePfConfig() {
-  const url = document.getElementById('cfg-pf-url').value.trim();
-  const pw  = document.getElementById('cfg-pw').value;
-  if (url) {
-    try {
-      localStorage.setItem(PF_URL_KEY, url);
-    } catch(e) {}
+  const url = (document.getElementById('cfg-pf-url')||{}).value||'';
+  const pw  = (document.getElementById('cfg-pw')||{}).value||'';
+  const trimUrl = url.trim();
+  if (trimUrl) {
+    try { localStorage.setItem(PF_URL_KEY, trimUrl); } catch(e) {}
     syncUrlInputs();
+    if(typeof renderSetup==='function') renderSetup();
   }
   if (pw) { try{ localStorage.setItem(PF_PW_KEY, btoa(encodeURIComponent(pw))); }catch(e){} }
-  (document.getElementById('cfg-msg')||{}).textContent = '저장됐어요! 새로고침하면 적용돼요.';
+  const msg = document.getElementById('cfg-msg'); if(msg) msg.textContent = '저장됐어요! 데이터를 불러오는 중...';
+  const dot = document.getElementById('pf-dot'); if(dot) dot.style.background = trimUrl ? 'var(--green)' : 'var(--hint)';
+  const st = document.getElementById('p11-load-status'); if(st) st.textContent = trimUrl ? 'URL 연결됨 ✓' : '';
+  if(trimUrl) {
+    setTimeout(function(){
+      if(typeof loadPfData==='function') loadPfData();
+      if(typeof loadFromSheet==='function') loadFromSheet();
+    }, 300);
+  }
 }
 
 // ── 투자 플랜 렌더링 ──
@@ -4144,7 +4208,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
 // ── URL 입력 동기화 & 로드 ──
 function syncUrlInputs() {
   const url = getPfUrl(); // 통합키 'scriptUrl' 사용
-  ['pf-url-input','pf-url-input2'].forEach(id => {
+  ['pf-url-input','pf-url-input2','cfg-pf-url','script-url2'].forEach(id => {
     const el = document.getElementById(id);
     if (el && el.value !== url) el.value = url;
   });
@@ -4271,218 +4335,302 @@ function pfRenderDash() {
 
 // ── 주식·연금 대시보드 렌더 ──
 function pfRenderAcctBalance() {
-  const wrap  = document.getElementById('acct-balance-wrap');
-  const cards = document.getElementById('acct-balance-cards');
-  const wrap2  = document.getElementById('acct-balance-wrap2');
-  const cards2 = document.getElementById('acct-balance-cards2');
+  const targets = [
+    {wrap:'acct-balance-wrap', cards:'acct-balance-cards'},
+    {wrap:'acct-balance-wrap2', cards:'acct-balance-cards2'},
+    {wrap:'acct-balance-wrap15', cards:'acct-balance-cards15'},
+  ];
   if (!pfTx.length) {
-    if(wrap) wrap.style.display='none';
-    if(wrap2) wrap2.style.display='none';
+    targets.forEach(t=>{ const el=document.getElementById(t.wrap); if(el) el.style.display='none'; });
+    const e15=document.getElementById('p15-empty'); if(e15) e15.style.display='block';
     return;
   }
 
-  const accts = ['미래ISA','미래연금저축','삼성연금저축','우리IRP','미래종합','미래금현물'];
+  const STOCK_ACCS   = ['미래ISA','미래종합','미래금현물'];
+  const PENSION_ACCS = ['미래연금저축','삼성연금저축','우리IRP'];
+  const ALL_ACCS     = [...STOCK_ACCS,...PENSION_ACCS];
 
   // 거래 집계
   const map = {};
   pfTx.forEach(r => {
-    const a = (r.account||'').replace(/\s/g,'');
-    if (!map[a]) map[a] = { cash:0, in:0, out:0, div:0 };
-    const amt = parseFloat(r.amount)||0, fee = parseFloat(r.fee)||0, tax = parseFloat(r.tax)||0;
-    map[a].cash += amt + fee + tax;
-    if (r.type==='입금')   map[a].in  += Math.abs(amt);
-    if (r.type==='출금')   map[a].out += Math.abs(amt);
-    if (r.type==='분배금') map[a].div += Math.abs(amt);
+    const a=(r.account||'').replace(/\s/g,'');
+    if(!map[a]) map[a]={cash:0,in:0,out:0,div:0};
+    const amt=parseFloat(r.amount)||0,fee=parseFloat(r.fee)||0,tax=parseFloat(r.tax)||0;
+    map[a].cash += amt+fee+tax;
+    if(r.type==='입금')   map[a].in  += Math.abs(amt);
+    if(r.type==='출금')   map[a].out += Math.abs(amt);
+    if(r.type==='분배금') map[a].div += Math.abs(amt);
   });
 
-  // 평가금액 (sheetPrices 기반)
-  let sheetPrices = {};
-  try { sheetPrices = JSON.parse(localStorage.getItem('pf_sheet_prices')||'{}'); } catch(e){}
-  const fifoHoldings = pfCalcFifo2();
-  const acctEvalFromSheet = {};
-  Object.values(fifoHoldings).forEach(h => {
-    const acc = (h.account||'').replace(/\s/g,'');
-    const cp = sheetPrices[h.name+'|'+(h.account||'').replace(/\s/g,'')] || sheetPrices[h.name] || 0;
-    if (cp > 0) acctEvalFromSheet[acc] = (acctEvalFromSheet[acc]||0) + h.qty * cp;
+  // 평가금액 (sheetPrices)
+  let sheetPrices={};
+  try { sheetPrices=JSON.parse(localStorage.getItem('pf_sheet_prices')||'{}'); } catch(e){}
+  const fifoH=pfCalcFifo2();
+  const acctEval={}, acctCost={};
+  Object.values(fifoH).forEach(h=>{
+    const acc=(h.account||'').replace(/\s/g,'');
+    const cp=sheetPrices[h.name+'|'+acc]||sheetPrices[h.name]||0;
+    if(cp>0) acctEval[acc]=(acctEval[acc]||0)+h.qty*cp;
+    acctCost[acc]=(acctCost[acc]||0)+h.costBasis;
   });
 
-  // 계좌별 실현손익
-  const realizedByAcc = {};
-  const _q = {};
-  [...pfTx].sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(r => {
+  // FIFO 실현손익 + ISA 통산
+  const KR_STOCK=new Set(['SK하이닉스','현대차2우B','DB손해보험','삼성전자','우리금융지주','하나금융지주']);
+  const KR_ETF=new Set(['KODEX200','ACEKRX금현물','KODEX머니마켓액티브','PLUS고배당주']);
+  const FOREIGN_ETF=new Set(['TIGER미국S&P500','ACE미국S&P500','TIGER미국배당다우존스','ACE미국배당다우존스','KODEX미국빅테크10(H)','PLUS미국고배당주액티브']);
+  const classify=name=>{if(KR_STOCK.has(name))return'kr_stock';if(KR_ETF.has(name))return'kr_etf';if(FOREIGN_ETF.has(name))return'foreign_etf';if(/미국|S&P|나스닥|다우존스|빅테크/.test(name))return'foreign_etf';return'unknown';};
+
+  const realizedByAcc={};
+  let isaTotal=0;
+  const _q={};
+  const sorted=[...pfTx].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
+  sorted.forEach(r=>{
     const key=(r.name||'')+'|'+(r.account||'');
     const acc=(r.account||'').replace(/\s/g,'');
     const qty=Math.abs(parseFloat(r.qty)||0);
     const amt=Math.abs(parseFloat(r.amount)||0);
-    const fee=parseFloat(r.fee)||0, tax=parseFloat(r.tax)||0;
+    const fee=parseFloat(r.fee)||0,tax=parseFloat(r.tax)||0;
+    const cat=classify(r.name||'');
+    const isISA=acc==='미래ISA';
     if(r.type==='매수'||r.type==='매수.'){if(!_q[key])_q[key]=[];_q[key].push({qty,cost:amt});}
     else if(r.type==='매도'||r.type==='매도.'){
       if(!_q[key])_q[key]=[];
       let rem=qty,cb=0;
       while(rem>0&&_q[key].length){const f=_q[key][0];if(f.qty<=rem){cb+=f.cost;rem-=f.qty;_q[key].shift();}else{const r2=rem/f.qty;cb+=f.cost*r2;f.cost-=f.cost*r2;f.qty-=rem;rem=0;}}
-      realizedByAcc[acc]=(realizedByAcc[acc]||0)+(amt-cb+fee+tax);
+      const pnl=amt-cb+fee+tax;
+      realizedByAcc[acc]=(realizedByAcc[acc]||0)+pnl;
+      if(isISA){let inc=cat==='foreign_etf'||(cat==='kr_stock'&&pnl<0);if(inc)isaTotal+=pnl;}
+    } else if(r.type==='분배금'&&isISA){ isaTotal+=amt; }
+  });
+
+  const activeAccts=ALL_ACCS.filter(a=>map[a]);
+  if(!activeAccts.length){
+    targets.forEach(t=>{ const el=document.getElementById(t.wrap); if(el) el.style.display='none'; });
+    return;
+  }
+
+  let 순입금=0,전체평가=0,전체예수=0,전체분배=0,전체매수원가=0,전체실현=0;
+  const totalIn=pfTx.filter(r=>r.type==='입금').reduce((s,r)=>s+Math.abs(parseFloat(r.amount)||0),0);
+  const totalOut=pfTx.filter(r=>r.type==='출금').reduce((s,r)=>s+Math.abs(parseFloat(r.amount)||0),0);
+  activeAccts.forEach(a=>{
+    순입금    +=map[a].in-map[a].out;
+    전체예수  +=map[a].cash;
+    전체분배  +=map[a].div;
+    전체평가  +=acctEval[a]||0;
+    전체실현  +=realizedByAcc[a]||0;
+    전체매수원가+=acctCost[a]||0;
+  });
+  const 전체미실현=전체평가>0?전체평가-전체매수원가:null;
+  const 총자산=전체평가+전체예수;
+  const 총수익=총자산-순입금;
+  const 수익률=순입금>0?총수익/순입금*100:null;
+  const ISA_LIMIT=4000000;
+  const isaRemain=ISA_LIMIT-isaTotal;
+
+  // 월별 수익률 계산 (FIFO 누적)
+  const allMons=[...new Set(pfTx.map(r=>(r.date||'').slice(0,7)).filter(Boolean))].sort();
+  const _q2={};let cumReal=0;
+  const monthlyReal={};
+  sorted.forEach(r=>{
+    const key=(r.name||'')+'|'+(r.account||'');
+    const mon=(r.date||'').slice(0,7);
+    const qty=Math.abs(parseFloat(r.qty)||0);
+    const amt=Math.abs(parseFloat(r.amount)||0);
+    const fee=parseFloat(r.fee)||0,tax=parseFloat(r.tax)||0;
+    if(r.type==='매수'||r.type==='매수.'){if(!_q2[key])_q2[key]=[];_q2[key].push({qty,cost:amt});}
+    else if(r.type==='매도'||r.type==='매도.'){
+      if(!_q2[key])_q2[key]=[];
+      let rem=qty,cb=0;
+      while(rem>0&&_q2[key].length){const f=_q2[key][0];if(f.qty<=rem){cb+=f.cost;rem-=f.qty;_q2[key].shift();}else{const r2=rem/f.qty;cb+=f.cost*r2;f.cost-=f.cost*r2;f.qty-=rem;rem=0;}}
+      monthlyReal[mon]=(monthlyReal[mon]||0)+(amt-cb+fee+tax);
     }
   });
 
-  // 전체 합산
-  let 전체입금=0, 전체출금=0, 전체투자=0, 전체평가=0, 전체예수=0, 전체분배=0, 전체매수원가=0;
-  const activeAccts = accts.filter(a => map[a]);
-  if (!activeAccts.length) { if(wrap) wrap.style.display='none'; if(wrap2) wrap2.style.display='none'; return; }
-
-  activeAccts.forEach(a => {
-    전체입금 += map[a].in; 전체출금 += map[a].out;
-    전체투자 += map[a].in - map[a].out;
-    전체예수 += map[a].cash; 전체분배 += map[a].div;
-    전체평가 += acctEvalFromSheet[a] || 0;
+  // 월별 순입금 누적
+  const monthlyIn={}, monthlyOut={};
+  sorted.forEach(r=>{
+    const mon=(r.date||'').slice(0,7);
+    if(r.type==='입금') monthlyIn[mon]=(monthlyIn[mon]||0)+Math.abs(parseFloat(r.amount)||0);
+    if(r.type==='출금') monthlyOut[mon]=(monthlyOut[mon]||0)+Math.abs(parseFloat(r.amount)||0);
   });
-  Object.values(fifoHoldings).forEach(h => { 전체매수원가 += h.costBasis; });
-  const 전체미실현 = 전체평가 > 0 ? 전체평가 - 전체매수원가 : null;
-  const 전체실현 = Object.values(realizedByAcc).reduce((s,v)=>s+v, 0);
-  const 전체총자산 = 전체평가 + 전체예수;
-  const 전체수익 = 전체총자산 - 전체투자;
-  const 전체수익률 = 전체투자 > 0 ? 전체수익/전체투자*100 : null;
-  const 전체색 = 전체수익 >= 0 ? 'var(--green)' : 'var(--red)';
+  let cumIn=0,cumOut=0,cumRe=0;
+  const rateData=[];
+  allMons.forEach(mon=>{
+    cumIn+=(monthlyIn[mon]||0); cumOut+=(monthlyOut[mon]||0); cumRe+=(monthlyReal[mon]||0);
+    const ni=cumIn-cumOut;
+    if(ni>0) rateData.push({mon:mon.slice(2).replace('-','.'), rate:cumRe/ni*100});
+  });
+  // 마지막 달에 미실현 포함 수익률도 (현재가 있을 때만)
+  const lastRate=수익률;
+  const lastUnreal=전체미실현!==null&&순입금>0?총수익/순입금*100:null;
 
-  const fmt = v => Math.abs(Math.round(v)).toLocaleString()+'원';
-  const fmtS = (v, plus=false) => (plus&&v>0?'+':'') + Math.round(v).toLocaleString()+'원';
-  const clr = v => v >= 0 ? 'var(--green)' : 'var(--red)';
-  const accDot = a => a.includes('ISA')?'#4ade80':a.includes('연금')?'var(--purple)':a.includes('IRP')?'var(--blue)':a.includes('금')?'var(--yellow)':'var(--txt3)';
+  const W=n=>Math.abs(Math.round(n)).toLocaleString()+'원';
+  const S=n=>(n>=0?'+':'-')+Math.abs(Math.round(n)).toLocaleString()+'원';
+  const C=n=>n>=0?'var(--green)':'var(--red)';
+  const CG=n=>n>=0?'#34d399':'#f87171';
+  const dot=a=>a.includes('ISA')?'#4ade80':a.includes('연금')?'#a78bfa':a.includes('IRP')?'#60a5fa':a.includes('금')?'#fbbf24':'#94a3b8';
 
-  // ─── 대시보드 HTML ───
-  const html = `
-  <style>
-    .pf-dash { font-family:'IBM Plex Sans KR',sans-serif; }
-    .pf-flow { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--bd); border-radius:14px; overflow:hidden; margin-bottom:16px; }
-    .pf-flow-cell { background:var(--bg2); padding:16px 20px; position:relative; }
-    .pf-flow-cell .lbl { font-size:10px; color:var(--txt3); font-weight:600; letter-spacing:.06em; text-transform:uppercase; margin-bottom:6px; }
-    .pf-flow-cell .val { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.2; }
-    .pf-flow-cell .sub { font-size:11px; color:var(--txt3); margin-top:4px; font-variant-numeric:tabular-nums; }
-    .pf-flow-cell.accent { background:var(--bg3); }
-    .pf-flow-cell.highlight { background:linear-gradient(135deg,#1a2535 0%,#1e3a5f 100%); }
-    .pf-flow-cell.highlight .lbl { color:rgba(255,255,255,.5); }
-    .pf-flow-cell.highlight .val { color:#fff; }
-    .pf-flow-cell.highlight .sub { color:rgba(255,255,255,.4); }
-    .pf-arrow { position:absolute; right:-1px; top:50%; transform:translateY(-50%); width:20px; height:20px; background:var(--bd); clip-path:polygon(0 0,100% 50%,0 100%); z-index:1; display:none; }
-    .pf-section-title { font-size:10px; font-weight:700; color:var(--txt3); letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px; padding:0 4px; }
-    .pf-total-bar { background:linear-gradient(135deg,#0f1923 0%,#1a3a5c 100%); border-radius:12px; padding:18px 24px; display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
-    .pf-total-bar .main-num { font-size:28px; font-weight:800; color:#fff; font-variant-numeric:tabular-nums; }
-    .pf-total-bar .rate { text-align:right; }
-    .pf-total-bar .rate-pct { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
-    .pf-total-bar .rate-amt { font-size:12px; font-variant-numeric:tabular-nums; margin-top:2px; opacity:.8; }
-    .pf-acc-table { background:var(--bg2); border:1px solid var(--bd); border-radius:12px; overflow:hidden; }
-    .pf-acc-header { display:grid; grid-template-columns:110px 1fr 1fr 1fr 1fr 1fr 90px; gap:0; padding:10px 16px; background:var(--bg3); border-bottom:1px solid var(--bd); font-size:10px; font-weight:700; color:var(--txt3); letter-spacing:.06em; }
-    .pf-acc-header span { text-align:right; }
-    .pf-acc-header span:first-child { text-align:left; }
-    .pf-acc-row { display:grid; grid-template-columns:110px 1fr 1fr 1fr 1fr 1fr 90px; gap:0; padding:14px 16px; border-bottom:.5px solid var(--bd); align-items:center; transition:background .15s; }
-    .pf-acc-row:last-child { border-bottom:none; }
-    .pf-acc-row:hover { background:var(--bg3); }
-    .pf-acc-row .cell { text-align:right; }
-    .pf-acc-row .cell .v { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; }
-    .pf-acc-row .cell .s { font-size:10px; color:var(--txt3); margin-bottom:2px; }
-  </style>
+  // 계좌별 분배금 TOP3
+  const divTop=activeAccts.map(a=>({a,div:map[a].div})).filter(x=>x.div>0).sort((a,b)=>b.div-a.div).slice(0,4);
+  const maxDiv=divTop.length?divTop[0].div:1;
+  const monthsCount=allMons.length||1;
+  const avgMonthlyDiv=Math.round(전체분배/monthsCount);
 
-  <div class="pf-dash">
-    <!-- 총자산 바 -->
-    <div class="pf-total-bar">
-      <div>
-        <div style="font-size:11px;color:rgba(255,255,255,.45);margin-bottom:6px;font-weight:600;letter-spacing:.08em">총 자산</div>
-        <div class="main-num">${Math.round(전체총자산).toLocaleString()}원</div>
-        <div style="font-size:11px;color:rgba(255,255,255,.4);margin-top:4px">평가 ${Math.round(전체평가).toLocaleString()}원 + 예수 ${Math.round(전체예수).toLocaleString()}원</div>
-      </div>
-      <div class="rate">
-        <div class="rate-pct" style="color:${전체색}">${전체수익률!==null?(전체수익률>=0?'+':'')+전체수익률.toFixed(2)+'%':'—'}</div>
-        <div class="rate-amt" style="color:${전체색}">${fmtS(전체수익,true)}</div>
-        <div style="font-size:10px;color:rgba(255,255,255,.3);margin-top:4px">총자산 - 순입금 기준</div>
-      </div>
-    </div>
+  var rows=activeAccts.map(function(a){
+    var v=map[a];
+    var ni=v.in-v.out;
+    var ev=acctEval[a]||0;
+    var co=acctCost[a]||0;
+    var tot=ev+v.cash;
+    var 수익=tot+v.div-ni;
+    var 율=ni>0?수익/ni*100:null;
+    var barW=율!==null?Math.min(Math.abs(율),100):0;
+    var grp=STOCK_ACCS.includes(a)?'📈':'🏦';
+    var rc=(율||0)>=0?'#1d9e75':'#d85a30';
+    return '<tr>'
+      +'<td style="padding:11px 12px"><div style="display:flex;align-items:center;gap:7px">'
+      +'<span style="width:7px;height:7px;border-radius:50%;background:'+dot(a)+';flex-shrink:0"></span>'
+      +'<div><div style="font-weight:500;font-size:12px">'+a+'</div>'
+      +'<div style="font-size:10px;color:var(--txt3);margin-top:1px">'+grp+'</div></div></div></td>'
+      +'<td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px">'+W(ni)+'</td>'
+      +'<td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:var(--txt2)">'+W(co)+'</td>'
+      +'<td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#378add;font-weight:500">'+(ev?W(ev):'—')+'</td>'
+      +'<td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#1d9e75">'+W(v.cash)+'</td>'
+      +'<td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#7f77dd">'+(v.div?'+'+W(v.div):'—')+'</td>'
+      +'<td style="padding:11px 12px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;font-weight:500">'+W(tot)+'</td>'
+      +'<td style="padding:11px 12px;text-align:right;min-width:90px">'
+      +'<div style="font-size:13px;font-weight:500;color:'+rc+'">'+(율!==null?(율>=0?'+':'')+율.toFixed(1)+'%':'—')+'</div>'
+      +'<div style="height:2px;background:var(--bd);border-radius:99px;margin:4px 0 2px;overflow:hidden">'
+      +'<div style="height:100%;width:'+barW+'%;background:'+rc+';border-radius:99px"></div></div>'
+      +'<div style="font-size:10px;color:'+rc+';font-variant-numeric:tabular-nums">'+S(수익)+'</div>'
+      +'</td></tr>';
+  }).join('');
 
-    <!-- 자금 흐름 그리드 -->
-    <div class="pf-section-title">💰 자금 흐름</div>
-    <div class="pf-flow">
-      <div class="pf-flow-cell">
-        <div class="lbl">입금 합계</div>
-        <div class="val">${Math.round(전체입금).toLocaleString()}원</div>
-      </div>
-      <div class="pf-flow-cell accent">
-        <div class="lbl">출금 합계</div>
-        <div class="val" style="color:var(--red)">-${Math.round(전체출금).toLocaleString()}원</div>
-      </div>
-      <div class="pf-flow-cell">
-        <div class="lbl">순입금 (투자원금)</div>
-        <div class="val">${Math.round(전체투자).toLocaleString()}원</div>
-      </div>
-      <div class="pf-flow-cell accent">
-        <div class="lbl">매수원가</div>
-        <div class="val">${Math.round(전체매수원가).toLocaleString()}원</div>
-        <div class="sub">현재 보유 종목</div>
-      </div>
-      <div class="pf-flow-cell">
-        <div class="lbl">평가금액</div>
-        <div class="val" style="color:var(--blue)">${전체평가?Math.round(전체평가).toLocaleString()+'원':'현재가 필요'}</div>
-      </div>
-      <div class="pf-flow-cell accent">
-        <div class="lbl">미실현손익</div>
-        <div class="val" style="color:${전체미실현!==null?clr(전체미실현):'var(--txt3)'}">${전체미실현!==null?(전체미실현>=0?'+':'')+Math.round(전체미실현).toLocaleString()+'원':'현재가 필요'}</div>
-      </div>
-      <div class="pf-flow-cell">
-        <div class="lbl">실현손익</div>
-        <div class="val" style="color:${clr(전체실현)}">${(전체실현>=0?'+':'')+Math.round(전체실현).toLocaleString()}원</div>
-        <div class="sub">매도 확정 수익</div>
-      </div>
-      <div class="pf-flow-cell accent">
-        <div class="lbl">분배금 누적</div>
-        <div class="val" style="color:var(--purple)">+${Math.round(전체분배).toLocaleString()}원</div>
-      </div>
-      <div class="pf-flow-cell">
-        <div class="lbl">예수금</div>
-        <div class="val" style="color:var(--green)">${Math.round(전체예수).toLocaleString()}원</div>
-        <div class="sub">현금 잔고</div>
-      </div>
-    </div>
+  // Chart.js 데이터
+  const chartLabels=JSON.stringify(rateData.map(d=>d.mon));
+  const chartRates=JSON.stringify(rateData.map(d=>Math.round(d.rate*100)/100));
 
-    <!-- 계좌별 테이블 -->
-    <div class="pf-section-title" style="margin-top:8px">📋 계좌별 현황</div>
-    <div class="pf-acc-table">
-      <div class="pf-acc-header">
-        <span>계좌</span>
-        <span>투자원금</span>
-        <span>총자산</span>
-        <span>실현손익</span>
-        <span>예수금</span>
-        <span>분배금</span>
-        <span>수익률</span>
-      </div>
-      ${activeAccts.map(a => {
-        const v = map[a];
-        const 투자 = v.in - v.out;
-        const 예수 = v.cash;
-        const 평가 = acctEvalFromSheet[a] || 0;
-        const 총 = 평가 + 예수;
-        const 실현 = realizedByAcc[a] || 0;
-        const 수익 = 총 + v.div - 투자;
-        const 수익률 = 투자 > 0 ? 수익/투자*100 : null;
-        const 색 = 수익 >= 0 ? 'var(--green)' : 'var(--red)';
-        return `<div class="pf-acc-row">
-          <div style="display:flex;align-items:center;gap:7px">
-            <span style="width:8px;height:8px;border-radius:50%;background:${accDot(a)};flex-shrink:0"></span>
-            <span style="font-weight:700;font-size:12px">${a}</span>
-          </div>
-          <div class="cell"><div class="s">투자원금</div><div class="v">${Math.round(투자).toLocaleString()}원</div></div>
-          <div class="cell"><div class="s">총자산</div><div class="v" style="color:var(--blue)">${총>0?Math.round(총).toLocaleString()+'원':'—'}</div></div>
-          <div class="cell"><div class="s">실현손익</div><div class="v" style="color:${clr(실현)}">${실현!==0?(실현>=0?'+':'')+Math.round(실현).toLocaleString()+'원':'—'}</div></div>
-          <div class="cell"><div class="s">예수금</div><div class="v" style="color:var(--green)">${Math.round(예수).toLocaleString()}원</div></div>
-          <div class="cell"><div class="s">분배금</div><div class="v" style="color:var(--purple)">${v.div?'+'+Math.round(v.div).toLocaleString()+'원':'—'}</div></div>
-          <div class="cell" style="text-align:right">
-            <div class="v" style="color:${색};font-size:14px;font-weight:800">${수익률!==null?(수익률>=0?'+':'')+수익률.toFixed(1)+'%':'—'}</div>
-            <div style="font-size:10px;color:${색};font-variant-numeric:tabular-nums">${fmtS(수익,true)}</div>
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
+  const html=
+    // 히어로
+    '<div style="background:#0a1628;border-radius:14px;padding:20px 22px;margin-bottom:10px">'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.3);letter-spacing:.05em;margin-bottom:14px">주식 · 연금 자산 현황</div>'
+    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px">'
+    +'<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px 14px;flex:1">'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.28);margin-bottom:4px">순입금</div>'
+    +'<div style="font-size:14px;font-weight:500;color:#fff;font-variant-numeric:tabular-nums">'+W(순입금)+'</div>'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.22);margin-top:3px">입금 '+Math.round(totalIn/10000)+'만 − 출금 '+Math.round(totalOut/10000)+'만</div>'
+    +'</div>'
+    +'<div style="color:rgba(255,255,255,.2);font-size:14px;flex-shrink:0">→</div>'
+    +'<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px 14px;flex:1">'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.28);margin-bottom:4px">매수원가</div>'
+    +'<div style="font-size:14px;font-weight:500;color:#fff;font-variant-numeric:tabular-nums">'+W(전체매수원가)+'</div>'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.22);margin-top:3px">현재 보유 종목</div>'
+    +'</div>'
+    +'<div style="color:rgba(255,255,255,.2);font-size:14px;flex-shrink:0">→</div>'
+    +'<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px 14px;flex:1">'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.28);margin-bottom:4px">평가금액</div>'
+    +'<div style="font-size:14px;font-weight:500;color:#60a5fa;font-variant-numeric:tabular-nums">'+(전체평가?W(전체평가):'현재가 필요')+'</div>'
+    +(전체미실현!==null?'<div style="font-size:10px;color:#34d399;margin-top:3px">'+S(전체미실현)+' 미실현</div>':'')
+    +'</div>'
+    +'<div style="color:rgba(255,255,255,.2);font-size:16px;flex-shrink:0;font-weight:300">+</div>'
+    +'<div style="background:rgba(255,255,255,.05);border-radius:10px;padding:12px 14px;flex:1">'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.28);margin-bottom:4px">예수금</div>'
+    +'<div style="font-size:14px;font-weight:500;color:#34d399;font-variant-numeric:tabular-nums">'+W(전체예수)+'</div>'
+    +'<div style="font-size:10px;color:#a78bfa;margin-top:3px">분배금 +'+W(전체분배)+'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-end;background:rgba(255,255,255,.04);border-radius:10px;padding:13px 16px">'
+    +'<div><div style="font-size:10px;color:rgba(255,255,255,.28);margin-bottom:4px">= 총자산</div>'
+    +'<div style="font-size:26px;font-weight:500;color:#fff;font-variant-numeric:tabular-nums;letter-spacing:-.02em">'+W(총자산)+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.25);margin-top:3px">평가 '+W(전체평가)+' + 예수 '+W(전체예수)+'</div>'
+    +'</div>'
+    +'<div style="text-align:right">'
+    +'<div style="font-size:24px;font-weight:500;color:'+CG(총수익)+';font-variant-numeric:tabular-nums">'+(수익률!==null?(수익률>=0?'+':'')+수익률.toFixed(2)+'%':'—')+'</div>'
+    +'<div style="font-size:12px;color:'+CG(총수익)+';font-variant-numeric:tabular-nums">'+S(총수익)+'</div>'
+    +'<div style="font-size:10px;color:rgba(255,255,255,.2);margin-top:2px">총자산 − 순입금</div>'
+    +'</div></div></div>'
 
-  if(wrap && cards)  { cards.innerHTML = html;  wrap.style.display='block'; }
-  if(wrap2 && cards2){ cards2.innerHTML = html; wrap2.style.display='block'; }
+    // 수익률 그래프
+    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:10px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.05em">월별 수익률 추이</div>'
+    +'<div style="display:flex;gap:12px;font-size:10px;color:var(--txt3)">'
+    +'<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:2px;background:#34d399;display:inline-block;border-radius:99px"></span>실현기준</span>'
+    +(lastUnreal!==null?'<span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:0;border-top:2px dashed #60a5fa;display:inline-block"></span>평가포함</span>':'')
+    +'</div></div>'
+    +'<div style="position:relative;height:140px"><canvas id="pf-rate-chart" role="img" aria-label="월별 수익률 추이">월별 수익률 추이</canvas></div>'
+    +'</div>'
+
+    // 실현손익 + 분배금
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">'
+    // 실현손익
+    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.05em;margin-bottom:10px">실현손익 개요</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">'
+    +'<div style="background:var(--bg3);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:10px;color:var(--txt3);margin-bottom:4px">전체</div>'
+    +'<div style="font-size:15px;font-weight:500;color:'+C(전체실현)+';font-variant-numeric:tabular-nums">'+S(전체실현)+'</div>'
+    +'</div>'
+    +'<div style="background:var(--bg3);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:10px;color:var(--txt3);margin-bottom:4px">ISA 통산</div>'
+    +'<div style="font-size:15px;font-weight:500;color:'+C(isaTotal)+';font-variant-numeric:tabular-nums">'+S(isaTotal)+'</div>'
+    +'<div style="font-size:9px;color:var(--txt3);margin-top:2px">'+(isaTotal<0?'손실→세금없음':'수익')+'</div>'
+    +'</div>'
+    +'<div style="background:var(--bg3);border-radius:8px;padding:10px 12px">'
+    +'<div style="font-size:10px;color:var(--txt3);margin-bottom:4px">ISA 한도</div>'
+    +'<div style="font-size:15px;font-weight:500;font-variant-numeric:tabular-nums">'+Math.round(isaRemain/10000)+'만원</div>'
+    +'<div style="font-size:9px;color:var(--txt3);margin-top:2px">400만 중 남음</div>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    // 분배금
+    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+    +'<div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.05em">분배금 현황</div>'
+    +'<div style="font-size:10px;color:var(--txt3)">목표 월 50만원</div>'
+    +'</div>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--bg3);border-radius:8px;margin-bottom:10px">'
+    +'<div><div style="font-size:10px;color:var(--txt3);margin-bottom:3px">누적 분배금</div>'
+    +'<div style="font-size:17px;font-weight:500;color:var(--purple);font-variant-numeric:tabular-nums">+'+W(전체분배)+'</div></div>'
+    +'<div style="text-align:right"><div style="font-size:10px;color:var(--txt3);margin-bottom:3px">월평균</div>'
+    +'<div style="font-size:15px;font-weight:500;font-variant-numeric:tabular-nums">~'+avgMonthlyDiv.toLocaleString()+'원</div>'
+    +'<div style="font-size:10px;color:var(--txt3);margin-top:2px">목표 대비 '+Math.round(avgMonthlyDiv/5000)+'%</div>'
+    +'</div></div>'
+    +divTop.map(x=>'<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--bd);font-size:12px">'
+      +'<span style="color:var(--txt2);font-weight:500;min-width:70px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">'+x.a+'</span>'
+      +'<div style="flex:1;height:4px;background:var(--bd);border-radius:99px;overflow:hidden">'
+      +'<div style="height:100%;width:'+Math.round(x.div/maxDiv*100)+'%;background:var(--purple);border-radius:99px"></div></div>'
+      +'<span style="color:var(--purple);font-variant-numeric:tabular-nums;min-width:70px;text-align:right">+'+W(x.div)+'</span>'
+      +'</div>').join('')
+    +'</div>'
+    +'</div>'
+
+    // 계좌별 테이블
+    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+    +'<thead><tr style="background:var(--bg3);border-bottom:1px solid var(--bd)">'
+    +'<th style="padding:9px 12px;text-align:left;font-size:10px;font-weight:600;color:var(--txt3)">계좌</th>'
+    +'<th style="padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">순입금</th>'
+    +'<th style="padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">매수원가</th>'
+    +'<th style="padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">평가금액</th>'
+    +'<th style="padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">예수금</th>'
+    +'<th style="padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">분배금</th>'
+    +'<th style="padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">총자산</th>'
+    +'<th style="padding:9px 12px;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">수익률</th>'
+    +'</tr></thead>'
+    +'<tbody>'+rows+'</tbody>'
+    +'</table></div>'
+
+    // 그래프는 렌더 후 전역 함수로 초기화
+    _pfRateChartData = {labels: chartLabels, rates: chartRates, lastUnreal: lastUnreal};
+
+  targets.forEach(t=>{
+    const wrap=document.getElementById(t.wrap);
+    const cards=document.getElementById(t.cards);
+    if(wrap&&cards){ cards.innerHTML=html; wrap.style.display='block'; }
+  });
+  const e15=document.getElementById('p15-empty'); if(e15) e15.style.display='none';
+  setTimeout(_initPfRateChart, 100);
 }
 // ── 거래내역 렌더 ──
 
