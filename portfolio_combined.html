@@ -269,19 +269,6 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 </style>
 </head>
 <body>
-<div id="debug-error" style="display:none;position:fixed;top:0;left:0;right:0;background:#ff000088;color:#fff;font-size:12px;padding:8px;z-index:99999;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow:auto"></div>
-<script>
-window.onerror = function(msg, src, line, col, err) {
-  var d = document.getElementById('debug-error');
-  if(d) { d.style.display='block'; d.textContent += '[ERROR] '+msg+' (line '+line+')
-'; }
-};
-window.addEventListener('unhandledrejection', function(e) {
-  var d = document.getElementById('debug-error');
-  if(d) { d.style.display='block'; d.textContent += '[PROMISE] '+e.reason+'
-'; }
-});
-</script>
 
 <!-- ── 비밀번호 ── -->
 <div id="lock">
@@ -688,9 +675,8 @@ window.addEventListener('unhandledrejection', function(e) {
   </div>
 
   <span id="ta-hh-sav-rate2" style="display:none"></span>
-  <span id="ta-hh-trend-sec" style="display:none"><div id="ta-hh-trend"></div></span>
-  <span id="hist-month" style="display:none"></span>
-</div>
+
+  </div>
 
 
 <div id="p6" class="panel gb-panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
@@ -1061,7 +1047,7 @@ window.addEventListener('unhandledrejection', function(e) {
 </div>
 
 
-<div id="pf-toast" class="toast"></div>
+
 <div id="pf-toast" class="toast"></div>
 <div id="toast" class="toast"></div>
 
