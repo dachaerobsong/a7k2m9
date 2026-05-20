@@ -491,8 +491,6 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 <!-- ════════════════════════════════════════════
   탭 14 : 손익/분배금
 ═════════════════════════════════════════════ -->
-<div id="p3" class="panel"></div>
-
 <div id="p14" class="panel">
   <div style="font-size:16px;font-weight:700;margin-bottom:16px">📈 손익 / 분배금</div>
 
@@ -575,6 +573,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
       <div style="font-size:10px;color:var(--txt3);margin-bottom:4px">평가금액 합계</div>
       <div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--blue)" id="hld2-eval">—</div>
       <div style="font-size:10px;color:var(--txt3);margin-top:2px">매수원가: <span id="hld2-cost-compare" style="font-variant-numeric:tabular-nums">—</span></div>
+    </div>
     <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;text-align:center">
       <div style="font-size:10px;color:var(--txt3);margin-bottom:4px">미실현 손익</div>
       <div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums" id="hld2-pnl">—</div>
@@ -675,8 +674,9 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 
   <span id="ta-hh-sav-rate2" style="display:none"></span>
-
-  </div>
+  <span id="ta-hh-trend-sec" style="display:none"><div id="ta-hh-trend"></div></span>
+  <span id="hist-month" style="display:none"></span>
+</div>
 
 
 <div id="p6" class="panel gb-panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
@@ -980,58 +980,6 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 </div>
 
 
-<!-- ════════════════════════════════════════════
-  탭 11 : 주식·투자 설정 (URL 미설정 시 리다이렉트)
-═════════════════════════════════════════════ -->
-<div id="p11" class="panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
-  <div class="card">
-    <div class="ct" style="display:flex;align-items:center;gap:7px">
-      📊 주식·투자 시트 연동
-      <div id="pf-dot" style="width:7px;height:7px;border-radius:50%;background:var(--hint)"></div>
-    </div>
-    <div style="font-size:12px;color:var(--txt3);margin-bottom:14px;line-height:1.7">
-      가계부와 동일한 Apps Script URL을 사용합니다.<br>
-      아래에 입력하면 모든 탭에 자동으로 적용됩니다.
-    </div>
-    <div class="field" style="margin-bottom:12px">
-      <label style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">Apps Script URL</label>
-      <input id="cfg-pf-url" type="url" placeholder="https://script.google.com/macros/s/.../exec"
-        style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;color:var(--txt);font-size:13px;outline:none;box-sizing:border-box"
-        oninput="try{localStorage.setItem('scriptUrl',this.value.trim());if(typeof syncUrlInputs==='function')syncUrlInputs();}catch(e){}"/>
-    </div>
-    <div class="field" style="margin-bottom:14px">
-      <label style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px">비밀번호 변경 (선택)</label>
-      <input id="cfg-pw" type="password" placeholder="새 비밀번호 입력"
-        style="width:100%;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;color:var(--txt);font-size:13px;outline:none;box-sizing:border-box"/>
-    </div>
-    <button onclick="savePfConfig()"
-      style="width:100%;padding:12px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">
-      저장 &amp; 연결
-    </button>
-    <div id="cfg-msg" style="font-size:12px;color:var(--green);text-align:center;min-height:18px"></div>
-  </div>
-  <div class="card" style="margin-top:0">
-    <div class="ct">데이터 불러오기</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      <button onclick="loadPfData()"
-        style="padding:11px;background:var(--bg3);color:var(--blue);border:1px solid var(--bd);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
-        📊 주식 불러오기
-      </button>
-      <button onclick="loadFromSheet()"
-        style="padding:11px;background:var(--bg3);color:var(--blue);border:1px solid var(--bd);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
-        💰 가계부 불러오기
-      </button>
-    </div>
-    <div id="p11-load-status" style="margin-top:8px;font-size:12px;color:var(--txt3);text-align:center"></div>
-  </div>
-  <div class="card" style="border-color:var(--bd);background:var(--bg3)">
-    <div style="font-size:11px;color:var(--txt3);line-height:1.8">
-      💡 <b>시트 ID</b>와 <b>Script URL</b>은 가계부 설정 탭(⚙️ 설정)에서도 함께 관리됩니다.<br>
-      어느 탭에서 저장해도 양쪽에 적용됩니다.
-    </div>
-  </div>
-</div>
-
 
 <div id="p12" class="panel on" style="max-width:900px;margin:0 auto">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
@@ -1099,7 +1047,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 </div>
 
 
-
+<div id="pf-toast" class="toast"></div>
 <div id="pf-toast" class="toast"></div>
 <div id="toast" class="toast"></div>
 
@@ -1186,11 +1134,7 @@ function showTab(i) {
   if(i===8) { setTimeout(function(){ if(typeof renderBalance==='function') renderBalance(); }, 50); }
   if(i===9) { setTimeout(function(){ if(typeof renderAsset==='function') renderAsset(); }, 50); }
   if(i===10) { setTimeout(function(){ if(typeof renderSetup==="function") renderSetup(); }, 50); }
-  if(i===11) {
-    var _pfu=document.getElementById("cfg-pf-url"); if(_pfu){ _pfu.value=getPfUrl()||''; }
-    var _dot=document.getElementById("pf-dot"); if(_dot) _dot.style.background=getPfUrl()?'var(--green)':'var(--hint)';
-    var _st11=document.getElementById("p11-load-status"); if(_st11) _st11.textContent=getPfUrl()?'URL 연결됨 ✓':'URL을 입력하고 저장해주세요';
-  }
+  if(i===11) { var _pfu=document.getElementById("cfg-pf-url"); if(_pfu){ var _sv=getPfUrl(); if(_sv) _pfu.value=_sv; } }
   if(i===12) { setTimeout(function(){ renderTotalAsset(); }, 50); }
 }
 
@@ -3961,24 +3905,16 @@ function renderTodayTx() {
 
 // ── 설정 저장 ──
 function savePfConfig() {
-  const url = (document.getElementById('cfg-pf-url')||{}).value||'';
-  const pw  = (document.getElementById('cfg-pw')||{}).value||'';
-  const trimUrl = url.trim();
-  if (trimUrl) {
-    try { localStorage.setItem(PF_URL_KEY, trimUrl); } catch(e) {}
+  const url = document.getElementById('cfg-pf-url').value.trim();
+  const pw  = document.getElementById('cfg-pw').value;
+  if (url) {
+    try {
+      localStorage.setItem(PF_URL_KEY, url);
+    } catch(e) {}
     syncUrlInputs();
-    if(typeof renderSetup==='function') renderSetup();
   }
   if (pw) { try{ localStorage.setItem(PF_PW_KEY, btoa(encodeURIComponent(pw))); }catch(e){} }
-  const msg = document.getElementById('cfg-msg'); if(msg) msg.textContent = '저장됐어요! 데이터를 불러오는 중...';
-  const dot = document.getElementById('pf-dot'); if(dot) dot.style.background = trimUrl ? 'var(--green)' : 'var(--hint)';
-  const st = document.getElementById('p11-load-status'); if(st) st.textContent = trimUrl ? 'URL 연결됨 ✓' : '';
-  if(trimUrl) {
-    setTimeout(function(){
-      if(typeof loadPfData==='function') loadPfData();
-      if(typeof loadFromSheet==='function') loadFromSheet();
-    }, 300);
-  }
+  (document.getElementById('cfg-msg')||{}).textContent = '저장됐어요! 새로고침하면 적용돼요.';
 }
 
 // ── 투자 플랜 렌더링 ──
@@ -4208,7 +4144,7 @@ window.addEventListener('DOMContentLoaded', ()=>{
 // ── URL 입력 동기화 & 로드 ──
 function syncUrlInputs() {
   const url = getPfUrl(); // 통합키 'scriptUrl' 사용
-  ['pf-url-input','pf-url-input2','cfg-pf-url','script-url2'].forEach(id => {
+  ['pf-url-input','pf-url-input2'].forEach(id => {
     const el = document.getElementById(id);
     if (el && el.value !== url) el.value = url;
   });
@@ -7195,5 +7131,47 @@ function saveSheetConfig(){
     </div>
   </div>
 </div>
+
+<script>
+window.addEventListener('error', function(e){
+  console.error('[GLOBAL ERROR]', e.message, e.filename, e.lineno);
+
+  // 패널 전체 숨김 방지
+  try{
+    const active = document.querySelector('.panel.on');
+    if(!active){
+      const p12 = document.getElementById('p12');
+      const p15 = document.getElementById('p15');
+      if(p12) p12.classList.add('on');
+      else if(p15) p15.classList.add('on');
+    }
+  }catch(err){}
+});
+
+document.addEventListener('DOMContentLoaded', function(){
+  setTimeout(()=>{
+    try{
+      // 아무 패널도 안 보이면 강제로 하나 표시
+      const visible = [...document.querySelectorAll('.panel')]
+        .some(p => getComputedStyle(p).display !== 'none');
+
+      if(!visible){
+        const p12 = document.getElementById('p12');
+        const p15 = document.getElementById('p15');
+        if(p12){
+          p12.style.display='block';
+          p12.classList.add('on');
+        }else if(p15){
+          p15.style.display='block';
+          p15.classList.add('on');
+        }
+      }
+    }catch(e){
+      console.error(e);
+    }
+  },500);
+});
+</script>
+
 </body>
 </html>
