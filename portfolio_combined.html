@@ -1940,7 +1940,7 @@ function renderDashboard() {
   const ppEl=document.getElementById('pay-progress');
   if(ppEl) ppEl.innerHTML=
     limitBar('🏦 연금저축 납입 (세액공제 한도 600만)',pen26,6000000,'var(--purple)',p26Monthly)+
-    limitBar('📈 ISA 납입 (연 1,000만 한도)',isa26,10000000,'var(--teal)',i26Monthly)+
+    limitBar('📈 ISA 납입 (연 2,000만 한도)',isa26,20000000,'var(--teal)',i26Monthly)+
     `<div style="font-size:11px;color:var(--txt3);padding:8px 0 0;border-top:.5px solid var(--bd)">세액공제 환급 예상 <b style="color:var(--purple)">${fmtW(taxRefund)}</b> · 연금저축 납입 ${fmtW(pen26)} × 16.5%</div>`;
 
   // ⑩ k2-* 구형 KPI도 업데이트 (연금ISA 탭에서 사용)
@@ -4406,7 +4406,7 @@ function pfRenderAcctBalance() {
   const 총자산    = 전체평가 + 전체예수;
   const 총수익    = 총자산 - 순입금;
   const 수익률    = 순입금>0 ? 총수익/순입금*100 : null;
-  const ISA_LIMIT = 4000000;
+  const ISA_LIMIT = 2000000; // 일반형 비과세 한도 200만
   const isaRemain = ISA_LIMIT - isaTotal;
 
   // 보유 종목 중 20% 이상 수익 달성 종목
@@ -4567,7 +4567,7 @@ function pfRenderAcctBalance() {
     +'<div style="font-size:17px;font-weight:700;font-variant-numeric:tabular-nums">'+Math.round(isaRemain/10000)+'만원 <span style="font-size:11px;color:var(--txt3)">남음</span></div>'
     +'<div style="height:4px;background:var(--bd);border-radius:99px;margin:8px 0 4px;overflow:hidden">'
     +'<div style="height:100%;width:'+Math.min(Math.abs(isaTotal)/ISA_LIMIT*100,100).toFixed(0)+'%;background:'+(isaTotal<0?'#60a5fa':'var(--green)')+';border-radius:99px"></div></div>'
-    +'<div style="font-size:10px;color:var(--txt3)">400만 한도 · '+(isaTotal<0?'손실':'수익')+' '+S(isaTotal)+'</div>'
+    +'<div style="font-size:10px;color:var(--txt3)">200만 한도(일반형) · '+(isaTotal<0?'손실':'수익')+' '+S(isaTotal)+'</div>'
     +'</div>'
     // 매도 기준 (20%)
     +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px">'
@@ -4581,9 +4581,9 @@ function pfRenderAcctBalance() {
     +'<div style="font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:4px">연금 '+Math.round(penYear/10000)+'만 <span style="font-size:10px;color:var(--txt3)">/600만</span></div>'
     +'<div style="height:4px;background:var(--bd);border-radius:99px;margin:0 0 6px;overflow:hidden">'
     +'<div style="height:100%;width:'+Math.min(penYear/6000000*100,100).toFixed(0)+'%;background:var(--purple);border-radius:99px"></div></div>'
-    +'<div style="font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:4px">ISA '+Math.round(isaYear/10000)+'만 <span style="font-size:10px;color:var(--txt3)">/1000만</span></div>'
+    +'<div style="font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;margin-bottom:4px">ISA '+Math.round(isaYear/10000)+'만 <span style="font-size:10px;color:var(--txt3)">/2000만</span></div>'
     +'<div style="height:4px;background:var(--bd);border-radius:99px;overflow:hidden">'
-    +'<div style="height:100%;width:'+Math.min(isaYear/10000000*100,100).toFixed(0)+'%;background:#4ade80;border-radius:99px"></div></div>'
+    +'<div style="height:100%;width:'+Math.min(isaYear/20000000*100,100).toFixed(0)+'%;background:#4ade80;border-radius:99px"></div></div>'
     +'</div>'
     +'</div>'
 
@@ -5193,7 +5193,7 @@ function pfRenderPnlDiv() {
   const nameEl = document.getElementById('pnl-by-name2');
   if (!nameEl) return;
 
-  const ISA_LIMIT = 4000000;
+  const ISA_LIMIT = 2000000; // 일반형 비과세 한도 200만
   let html = '';
 
   ACCS.filter(a => realByAcc[a] !== undefined || divByAcc[a]).forEach(acc => {
@@ -6779,6 +6779,11 @@ function loadFromSheet(silent,overwrite){
     var _pa=document.getElementById('p9');if(_pa&&_pa.classList.contains('on')){sheetAssetData=data.asset||sheetAssetData;renderAsset();}
     // 소분류 예산 포함 설정 화면 갱신
     if(typeof renderSetup==='function') renderSetup();
+    // 투자/연금 거래 데이터도 함께 갱신
+    if(typeof loadPfData==='function'){
+      window._pfLoading=false;
+      loadPfData();
+    }
   }).catch(function(err){if(st)st.textContent='\uC2E4\uD328: '+err.message;if(!silent)showToast('\uBD88\uB7EC\uC624\uAE30 \uC2E4\uD328');});
 }
 function toggleCfgSec(id){
@@ -7133,6 +7138,29 @@ function saveSheetConfig(){
 </div>
 
 <script>
+// ── HTML 버전 변경 감지 ──
+// 이 값은 HTML을 수정할 때마다 바뀌어야 합니다
+(function(){
+  var BUILD_VER = '20250521-v3';
+  var KEY = 'pf_build_ver';
+  try {
+    var prev = localStorage.getItem(KEY);
+    if(prev && prev !== BUILD_VER){
+      // 새 버전 HTML 감지: 기능 설정(URL, 비번)은 유지하고 UI 캐시만 초기화
+      var keep = ['scriptUrl','sheetId','pf_pw','initBal','initBalRaw',
+                  'gb_budget','gb_card_budget','gb_save_goals','gb_sub_budget',
+                  'gb_templates','gb_entries','cfgState','homeExpanded',
+                  'sheetAssetData','pf_tx_cache','manualEval','savedAcctEval'];
+      var saved = {};
+      keep.forEach(function(k){ try{ var v=localStorage.getItem(k); if(v!==null) saved[k]=v; }catch(e){} });
+      localStorage.clear();
+      Object.keys(saved).forEach(function(k){ try{ localStorage.setItem(k,saved[k]); }catch(e){} });
+      console.log('[버전변경] '+prev+' → '+BUILD_VER+' · UI 캐시 초기화, 데이터 보존');
+    }
+    localStorage.setItem(KEY, BUILD_VER);
+  } catch(e){}
+})();
+
 window.addEventListener('error', function(e){
   console.error('[GLOBAL ERROR]', e.message, e.filename, e.lineno);
 
