@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html data-version="1779341686" lang="ko">
 <head>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>포트폴리오 · 가계부</title>
+<title>포트폴리오 · 가계부 v177934</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
@@ -7278,5 +7278,20 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
+
+<script>
+(function(){
+  var V = '1779341686';
+  var stored = localStorage.getItem('_appVersion');
+  if (stored && stored !== V) {
+    localStorage.setItem('_appVersion', V);
+    // 쿼리스트링 바꿔서 강제 새로고침
+    var url = location.href.split('?')[0] + '?_v=' + V;
+    location.replace(url);
+  } else {
+    localStorage.setItem('_appVersion', V);
+  }
+})();
+</script>
 </body>
 </html>
