@@ -511,74 +511,34 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     </div>
   </div>
 
-  <!-- 누적 손익 그래프 -->
-  <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.04em">누적 손익 추이</div>
-      <div style="display:flex;gap:12px;font-size:10px;color:var(--txt3)">
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:var(--green);display:inline-block;border-radius:2px"></span>실현손익</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:2px;background:var(--purple);display:inline-block;border-radius:2px"></span>분배금</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:0;border-top:2px dashed var(--blue);display:inline-block"></span>ISA통산</span>
-      </div>
-    </div>
-    <div style="position:relative">
-      <div id="pnl-tt" style="position:absolute;background:var(--bg2);border:.5px solid var(--bd);border-radius:8px;padding:8px 10px;font-size:11px;pointer-events:none;display:none;white-space:nowrap;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,.08)"></div>
-      <svg id="pnl-chart" viewBox="0 0 712 165" xmlns="http://www.w3.org/2000/svg" style="width:100%;cursor:crosshair">
-        <defs>
-          <linearGradient id="pg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0b9e6a" stop-opacity=".15"/><stop offset="100%" stop-color="#0b9e6a" stop-opacity="0"/></linearGradient>
-          <linearGradient id="pg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7f77dd" stop-opacity=".1"/><stop offset="100%" stop-color="#7f77dd" stop-opacity="0"/></linearGradient>
-        </defs>
-        <line x1="44" y1="15" x2="44" y2="145" stroke="var(--bd)" stroke-width="0.5"/>
-        <line x1="44" y1="145" x2="668" y2="145" stroke="var(--bd)" stroke-width="0.5"/>
-        <line id="pnl-vline" x1="0" y1="15" x2="0" y2="145" stroke="var(--blue)" stroke-width="0.5" opacity="0"/>
-      </svg>
-    </div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-    <!-- ISA 손익통산 -->
+  <div style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px">
+    <!-- 계좌별 실현손익 (ISA 통산 인라인) -->
     <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px 18px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-        <div>
-          <div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.04em;margin-bottom:3px">ISA 손익통산</div>
-          <div style="font-size:11px;color:var(--txt3)">서민형 400만 비과세 한도</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;color:var(--txt3);margin-bottom:2px">통산 합계</div>
-          <div style="font-size:18px;font-weight:600;font-variant-numeric:tabular-nums" id="pnl-isa-total">—</div>
-        </div>
-      </div>
-      <div style="height:5px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-bottom:6px">
-        <div id="pnl-isa-bar" style="height:100%;width:0%;border-radius:99px;background:var(--blue)"></div>
-      </div>
-      <div style="font-size:11px;color:var(--txt3);margin-bottom:14px" id="pnl-isa-desc">—</div>
-      <div style="overflow-x:auto">
-        <table style="width:100%;border-collapse:collapse;font-size:11px">
-          <thead><tr style="border-bottom:.5px solid var(--bd)">
-            <th style="padding:6px 0;text-align:left;font-size:10px;font-weight:600;color:var(--txt3)">날짜</th>
-            <th style="padding:6px 8px;text-align:left;font-size:10px;font-weight:600;color:var(--txt3)">종목</th>
-            <th style="padding:6px 0;text-align:left;font-size:10px;font-weight:600;color:var(--txt3)">분류</th>
-            <th style="padding:6px 0;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">손익</th>
-            <th style="padding:6px 0;text-align:right;font-size:10px;font-weight:600;color:var(--txt3)">통산</th>
-          </tr></thead>
-          <tbody id="pnl-isa-rows"><tr><td colspan="5" style="padding:12px 0;color:var(--txt3);text-align:center">데이터 없음</td></tr></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- 계좌별 실현손익 -->
-    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px 18px">
-      <div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.04em;margin-bottom:12px">계좌별 실현손익</div>
+      <div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.04em;margin-bottom:4px">계좌별 실현손익</div>
       <div id="pnl-by-name2"><div style="color:var(--txt3);font-size:12px;padding:12px 0">데이터를 먼저 로드하세요</div></div>
     </div>
+
+    <!-- 분배금 -->
+    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px 18px">
+      <div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.04em;margin-bottom:12px">분배금</div>
+      <div style="position:relative;height:140px;margin-bottom:12px">
+        <canvas id="pnl-div-chart" role="img" aria-label="월별 분배금">월별 분배금</canvas>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;font-size:11px;color:var(--txt3)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;background:#7F77DD;border-radius:2px;display:inline-block"></span>분배금</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:0;border-top:2px dashed #378ADD;display:inline-block"></span>목표 50만</span>
+      </div>
+      <div id="pnl-div-accs"><div style="color:var(--txt3);font-size:12px">로드 후 표시</div></div>
+    </div>
   </div>
 
-  <!-- 숨겨진 호환성 요소 -->
   <div style="display:none">
-    <div id="pnl-by-acc"></div>
-    <div id="div-by-acc"></div>
-    <div id="pnl-by-name"></div>
-    <div id="div-by-name"></div>
+    <div id="pnl-by-acc"></div><div id="div-by-acc"></div>
+    <div id="pnl-by-name"></div><div id="div-by-name"></div>
+    <div id="pnl-isa-rows"></div><div id="pnl-isa-total"></div>
+    <div id="pnl-isa-bar"></div><div id="pnl-isa-desc"></div>
+    <svg id="pnl-chart"><line id="pnl-vline" x1="0" y1="0" x2="0" y2="0"/></svg>
+    <div id="pnl-tt"></div>
   </div>
 </div>
 <div id="p13" class="panel">
@@ -5154,265 +5114,182 @@ function pfRenderHoldings2() {
 function pfRenderPnlDiv() {
   if (!pfTx.length) return;
 
-  const fmt = v => (v >= 0 ? '+' : '') + Math.round(v).toLocaleString() + '원';
-  const fmtAbs = v => Math.abs(Math.round(v)).toLocaleString() + '원';
-  const color = v => v >= 0 ? 'var(--green)' : 'var(--red)';
+  const ACCS = ['미래ISA','미래연금저축','삼성연금저축','우리IRP','미래종합','미래금현물'];
+  const DOT  = a => a.includes('ISA')?'#4ade80':a.includes('연금')?'#a78bfa':a.includes('IRP')?'#60a5fa':a.includes('금')?'#fbbf24':'#94a3b8';
+  const C    = n => n >= 0 ? 'var(--green)' : 'var(--red)';
+  const fmt  = n => (n>=0?'+':'')+Math.round(n).toLocaleString()+'원';
+  const fmtA = n => Math.abs(Math.round(n)).toLocaleString()+'원';
 
-  const sorted = [...pfTx].sort((a, b) => (a.date||'').localeCompare(b.date||''));
+  // ISA 분류
+  const KR_STOCK_PROFIT = name => !(/미국|S&P|나스닥|다우존스|빅테크|배당|TIGER|ACE|KODEX|ARIRANG|KINDEX|ETF/.test(name));
+  const classify = (name, pnl) => {
+    const isKr = KR_STOCK_PROFIT(name);
+    if (isKr && pnl > 0) return 'exclude';  // 국내주식 수익: 통산 제외
+    if (isKr && pnl < 0) return 'include';  // 국내주식 손실: 포함
+    if (!isKr)            return 'include';  // 해외ETF: 포함
+    return 'exclude';
+  };
 
-  // FIFO + 월별 누적
-  const queues = {};
-  const monthlyReal = {}, monthlyDiv = {}, monthlyISA = {};
-  const isaDetail = [];
+  // FIFO 계산
+  const _q = {}, realByAcc = {}, divByAcc = {};
   let totalRealized = 0, totalDiv = 0, isaTotal = 0;
+  const isaItems = []; // {date, name, cat, pnl, incl}
 
-  const KR_STOCK = new Set(['SK하이닉스','현대차2우B','DB손해보험','삼성전자','우리금융지주','하나금융지주']);
-  const KR_ETF   = new Set(['KODEX200','ACEKRX금현물','KODEX머니마켓액티브','PLUS고배당주']);
-  const FOREIGN_ETF = new Set(['TIGER미국S&P500','ACE미국S&P500','TIGER미국배당다우존스','ACE미국배당다우존스','KODEX미국빅테크10(H)','PLUS미국고배당주액티브']);
-
-  function classify(name) {
-    if (KR_STOCK.has(name)) return 'kr_stock';
-    if (KR_ETF.has(name))   return 'kr_etf';
-    if (FOREIGN_ETF.has(name)) return 'foreign_etf';
-    if (/미국|S&P|나스닥|다우존스|빅테크/.test(name)) return 'foreign_etf';
-    return 'unknown';
-  }
-
+  const sorted = [...pfTx].sort((a,b)=>(a.date||'').localeCompare(b.date||''));
   sorted.forEach(r => {
-    const key = (r.name||'')+'|'+(r.account||'');
     const acc = (r.account||'').replace(/\s/g,'');
-    const mon = (r.date||'').slice(0,7);
+    const key = (r.name||'')+'|'+acc;
     const qty = Math.abs(parseFloat(r.qty)||0);
     const amt = Math.abs(parseFloat(r.amount)||0);
     const fee = parseFloat(r.fee)||0, tax = parseFloat(r.tax)||0;
-    const cat = classify(r.name||'');
-    const isISA = acc === '미래ISA';
-
     if (r.type==='매수'||r.type==='매수.') {
-      if (!queues[key]) queues[key] = [];
-      queues[key].push({qty, cost:amt});
+      if(!_q[key]) _q[key]=[];
+      _q[key].push({qty, cost:amt});
     } else if (r.type==='매도'||r.type==='매도.') {
-      if (!queues[key]) queues[key] = [];
+      if(!_q[key]) _q[key]=[];
       let rem=qty, cb=0;
-      while(rem>0&&queues[key].length){const f=queues[key][0];if(f.qty<=rem){cb+=f.cost;rem-=f.qty;queues[key].shift();}else{const r2=rem/f.qty;cb+=f.cost*r2;f.cost-=f.cost*r2;f.qty-=rem;rem=0;}}
-      const pnl = amt - cb + fee + tax;
-      monthlyReal[mon] = (monthlyReal[mon]||0) + pnl;
+      while(rem>0&&_q[key].length){const f=_q[key][0];if(f.qty<=rem){cb+=f.cost;rem-=f.qty;_q[key].shift();}else{const r2=rem/f.qty;cb+=f.cost*r2;f.cost-=f.cost*r2;f.qty-=rem;rem=0;}}
+      const pnl = amt-cb+fee+tax;
+      realByAcc[acc] = (realByAcc[acc]||0)+pnl;
       totalRealized += pnl;
-      if (isISA) {
-        let included = false;
-        if (cat==='foreign_etf') included = true;
-        else if (cat==='kr_stock') included = pnl < 0;
-        if (included) { monthlyISA[mon] = (monthlyISA[mon]||0) + pnl; isaTotal += pnl; }
-        isaDetail.push({date:r.date, name:r.name||'', pnl:Math.round(pnl), included, cat});
+      if (acc==='미래ISA') {
+        const incl = classify(r.name||'', pnl)==='include';
+        if (incl) isaTotal += pnl;
+        isaItems.push({date:(r.date||'').slice(0,10).replace(/-/g,'·'), name:r.name||'', pnl, incl});
       }
     } else if (r.type==='분배금') {
-      monthlyDiv[mon] = (monthlyDiv[mon]||0) + amt;
+      divByAcc[acc] = (divByAcc[acc]||0)+amt;
       totalDiv += amt;
-      if (isISA) { monthlyISA[mon] = (monthlyISA[mon]||0) + amt; isaTotal += amt; }
+      if (acc==='미래ISA') { isaTotal += amt; isaItems.push({date:(r.date||'').slice(0,10).replace(/-/g,'·'), name:r.name||'', pnl:amt, incl:true, isDiv:true}); }
     }
   });
 
-  // 투자원금
-  const netIn = pfTx.reduce((s,r)=>{
-    if(r.type==='입금') return s+Math.abs(parseFloat(r.amount)||0);
-    if(r.type==='출금') return s-Math.abs(parseFloat(r.amount)||0);
-    return s;
-  },0);
-
-  // 미실현손익
-  let sheetPrices = {};
-  try { sheetPrices = JSON.parse(localStorage.getItem('pf_sheet_prices')||'{}'); } catch(e){}
-  const holdings = pfCalcFifo2();
-  let unrealized = 0, hasPrice = false;
-  Object.values(holdings).forEach(h => {
-    const cp = sheetPrices[h.name+'|'+(h.account||'').replace(/\s/g,'')] || sheetPrices[h.name] || 0;
-    if (cp > 0) { unrealized += h.qty * cp - h.costBasis; hasPrice = true; }
+  // 월별 분배금 집계 (차트용)
+  const divByMon = {};
+  sorted.forEach(r => {
+    if (r.type==='분배금') {
+      const mon = (r.date||'').slice(0,7);
+      divByMon[mon] = (divByMon[mon]||0)+Math.abs(parseFloat(r.amount)||0);
+    }
   });
+  const divMons = Object.keys(divByMon).sort();
+  const monthsCount = divMons.length||1;
+  const avgDiv = totalDiv/monthsCount;
 
-  // 월별 누적 계산
-  const allMons = [...new Set([...Object.keys(monthlyReal),...Object.keys(monthlyDiv)])].sort();
-  let cumReal=0, cumDiv=0, cumISA=0;
-  const chartData = allMons.map(mon => {
-    cumReal += monthlyReal[mon]||0;
-    cumDiv  += monthlyDiv[mon]||0;
-    cumISA  += monthlyISA[mon]||0;
-    return {mon: mon.slice(2).replace('-','.'), real:Math.round(cumReal), div:Math.round(cumDiv), isa:Math.round(cumISA)};
-  });
+  // KPI 업데이트
+  const totalIn  = pfTx.filter(r=>r.type==='입금').reduce((s,r)=>s+Math.abs(parseFloat(r.amount)||0),0);
+  const totalOut = pfTx.filter(r=>r.type==='출금').reduce((s,r)=>s+Math.abs(parseFloat(r.amount)||0),0);
+  const netIn = totalIn-totalOut;
+  const el = id => document.getElementById(id);
+  if(el('pnl-netin'))     el('pnl-netin').textContent     = Math.round(netIn).toLocaleString()+'원';
+  if(el('pnl-realized'))  { el('pnl-realized').textContent = fmt(totalRealized); el('pnl-realized').style.color=C(totalRealized); }
+  if(el('pnl-div'))       el('pnl-div').textContent        = '+'+Math.round(totalDiv).toLocaleString()+'원';
 
-  // 그래프 계산
-  const maxVal = Math.max(...chartData.map(d=>Math.max(d.real, d.div)), 100);
-  const minVal = Math.min(...chartData.map(d=>Math.min(d.real, d.isa)), 0);
-  const range = maxVal - minVal || 1;
-  const GX = 44, GW = 624, GY1 = 15, GY2 = 145, GH = GY2-GY1;
-  const px = (i) => GX + (i/(chartData.length-1||1))*GW;
-  const py = (v) => GY2 - ((v-minVal)/range)*GH;
+  // pnl-chart SVG 툴팁 (기존 유지)
+  _pnlChartData = [];
+  setTimeout(_initPnlChart, 50);
 
-  const realPts  = chartData.map((d,i) => px(i)+','+py(d.real)).join(' ');
-  const divPts   = chartData.map((d,i) => px(i)+','+py(d.div)).join(' ');
-  const isaPts   = chartData.map((d,i) => px(i)+','+py(d.isa)).join(' ');
-  const realArea = 'M'+chartData.map((d,i)=>px(i)+','+py(d.real)).join(' L')+' L'+px(chartData.length-1)+','+GY2+' L'+GX+','+GY2+' Z';
-  const divArea  = 'M'+chartData.map((d,i)=>px(i)+','+py(d.div)).join(' L')+' L'+px(chartData.length-1)+','+GY2+' L'+GX+','+GY2+' Z';
-
-  const last = chartData[chartData.length-1] || {real:0,div:0,isa:0};
-  const W = n => Math.abs(Math.round(n)).toLocaleString()+'원';
-  const S = n => (n>=0?'+':'-')+Math.abs(Math.round(n)).toLocaleString()+'원';
-  const C = n => n>=0?'var(--green)':'var(--red)';
-
-  // ISA 상세 테이블
-  const isaRows = isaDetail.map(d => {
-    const catLabel = d.cat==='foreign_etf'?'해외ETF':d.cat==='kr_stock'?'국내주식':d.cat==='div'?'분배금':'국내ETF';
-    const badge = d.included
-      ? '<span style="font-size:10px;background:#e8f5e9;color:#1b5e20;padding:2px 6px;border-radius:4px">✅ 포함</span>'
-      : '<span style="font-size:10px;background:#fce4e4;color:#b71c1c;padding:2px 6px;border-radius:4px">❌ 제외</span>';
-    return '<tr style="border-bottom:.5px solid var(--bd)">'
-      +'<td style="padding:8px 12px;font-size:11px">'+d.date+'</td>'
-      +'<td style="padding:8px 12px;font-size:11px;font-weight:500">'+d.name+'</td>'
-      +'<td style="padding:8px 12px;font-size:11px;color:var(--txt3)">'+catLabel+'</td>'
-      +'<td style="padding:8px 12px;font-size:11px;text-align:right;font-variant-numeric:tabular-nums;color:'+C(d.pnl)+'">'+S(d.pnl)+'</td>'
-      +'<td style="padding:8px 12px;text-align:right">'+badge+'</td>'
-      +'</tr>';
-  }).join('');
+  // ── 계좌별 실현손익 + ISA 통산 통합 렌더 ──
+  const nameEl = document.getElementById('pnl-by-name2');
+  if (!nameEl) return;
 
   const ISA_LIMIT = 4000000;
-  const isaRemain = ISA_LIMIT - isaTotal;
-  const isaBarW = Math.min(Math.abs(isaTotal)/ISA_LIMIT*100, 100);
+  let html = '';
 
-  // 툴팁 데이터
-  const ttData = JSON.stringify(chartData).replace(/"/g,'&quot;');
+  ACCS.filter(a => realByAcc[a] !== undefined || divByAcc[a]).forEach(acc => {
+    const pnl   = realByAcc[acc]||0;
+    const isISA = acc==='미래ISA';
+    const dot   = DOT(acc);
 
-  const el = document.getElementById('p14');
-  if (!el) return;
+    html += '<div style="border-top:.5px solid var(--bd);padding:12px 0 10px">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:'+(isISA?'10px':'0')+';">'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<span style="width:7px;height:7px;border-radius:50%;background:'+dot+';display:inline-block;flex-shrink:0"></span>'
+      +'<span style="font-size:13px;font-weight:600">'+acc+'</span>'
+      +'</div>'
+      +'<span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:'+C(pnl)+'">'+fmt(pnl)+'</span>'
+      +'</div>';
 
-  el.innerHTML =
-    '<div style="font-size:16px;font-weight:700;margin-bottom:16px">📈 손익 / 분배금</div>'
+    // ISA: 손익통산 블록 인라인
+    if (isISA) {
+      const barW = Math.min(Math.abs(isaTotal)/ISA_LIMIT*100, 100).toFixed(0);
+      const remain = ISA_LIMIT-isaTotal;
+      html += '<div style="background:#eeedfe;border-radius:8px;padding:9px 12px;margin-bottom:6px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
+        +'<span style="font-size:11px;color:#534ab7;font-weight:500">손익통산</span>'
+        +'<span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:'+(isaTotal<0?'var(--red)':'var(--green)')+'">'+fmt(isaTotal)+'</span>'
+        +'</div>'
+        +'<div style="height:4px;background:rgba(83,74,183,.15);border-radius:99px;overflow:hidden;margin-bottom:4px">'
+        +'<div style="height:100%;width:'+barW+'%;background:#534ab7;border-radius:99px"></div>'
+        +'</div>'
+        +'<div style="font-size:11px;color:#534ab7">'
+        +(isaTotal<0
+          ? '손실 상태 → 수익 '+fmtA(isaTotal)+'까지 세금 없음 · 한도 '+Math.round(remain).toLocaleString()+'원 남음'
+          : '수익 '+fmtA(isaTotal)+' · 한도 '+(remain>0?Math.round(remain).toLocaleString()+'원 남음':'소진')
+        )
+        +'</div></div>';
 
-    // 요약
-    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">'
-    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">투자원금</div><div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums">'+W(netIn)+'</div></div>'
-    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">실현손익</div><div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:'+C(totalRealized)+'">'+fmt(totalRealized)+'</div></div>'
-    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">미실현손익</div><div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:'+C(unrealized)+'">'+(hasPrice?fmt(unrealized):'현재가 필요')+'</div></div>'
-    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:var(--txt3);margin-bottom:4px">분배금 누적</div><div style="font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--purple)">+'+W(totalDiv)+'</div></div>'
-    +'</div>'
-
-    // 누적 손익 그래프
-    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px 18px;margin-bottom:12px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.05em">누적 손익 추이</div>'
-    +'<div style="display:flex;gap:12px">'
-    +'<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt3)"><div style="width:12px;height:2px;background:var(--green);border-radius:99px"></div>실현손익</div>'
-    +'<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt3)"><div style="width:12px;height:2px;background:var(--purple);border-radius:99px"></div>분배금</div>'
-    +'<div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt3)"><div style="width:12px;height:0;border-top:2px dashed #60a5fa"></div>ISA통산</div>'
-    +'</div></div>'
-    +'<div style="position:relative">'
-    +'<div id="pnl-tt" style="position:absolute;background:#1a2435;border:.5px solid #2a3a55;border-radius:8px;padding:8px 10px;font-size:11px;color:#fff;pointer-events:none;display:none;white-space:nowrap;z-index:10"></div>'
-    +'<svg id="pnl-chart" viewBox="0 0 712 165" xmlns="http://www.w3.org/2000/svg" style="width:100%;cursor:crosshair">'
-    +'<defs>'
-    +'<linearGradient id="pg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0b9e6a" stop-opacity=".25"/><stop offset="100%" stop-color="#0b9e6a" stop-opacity="0"/></linearGradient>'
-    +'<linearGradient id="pg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6c4ab0" stop-opacity=".15"/><stop offset="100%" stop-color="#6c4ab0" stop-opacity="0"/></linearGradient>'
-    +'</defs>'
-    +'<line x1="'+GX+'" y1="'+GY1+'" x2="'+GX+'" y2="'+GY2+'" stroke="var(--bd)" stroke-width="0.5"/>'
-    +'<line x1="'+GX+'" y1="'+GY2+'" x2="'+(GX+GW)+'" y2="'+GY2+'" stroke="var(--bd)" stroke-width="0.5"/>'
-    +'<line x1="'+GX+'" y1="'+(GY1+(GH*0.33))+'" x2="'+(GX+GW)+'" y2="'+(GY1+(GH*0.33))+'" stroke="var(--bd)" stroke-width="0.5" stroke-dasharray="3,3" opacity=".4"/>'
-    +'<line x1="'+GX+'" y1="'+(GY1+(GH*0.66))+'" x2="'+(GX+GW)+'" y2="'+(GY1+(GH*0.66))+'" stroke="var(--bd)" stroke-width="0.5" stroke-dasharray="3,3" opacity=".4"/>'
-    +'<text x="38" y="'+(GY1+4)+'" text-anchor="end" font-size="9" fill="var(--txt3)">'+Math.round(maxVal/10000)+'만</text>'
-    +'<text x="38" y="'+(GY2+4)+'" text-anchor="end" font-size="9" fill="var(--txt3)">'+(minVal<0?Math.round(minVal/10000)+'만':'0')+'</text>'
-    +'<path d="'+divArea+'" fill="url(#pg2)"/>'
-    +'<polyline points="'+divPts+'" fill="none" stroke="var(--purple)" stroke-width="1.5" stroke-linejoin="round"/>'
-    +'<path d="'+realArea+'" fill="url(#pg1)"/>'
-    +'<polyline points="'+realPts+'" fill="none" stroke="var(--green)" stroke-width="2" stroke-linejoin="round"/>'
-    +(minVal < 0 ? '<polyline points="'+isaPts+'" fill="none" stroke="#60a5fa" stroke-width="1.5" stroke-dasharray="5,3" stroke-linejoin="round"/>' : '')
-    +'<text x="'+(GX+GW+6)+'" y="'+(py(last.real)+4)+'" font-size="9" fill="var(--green)">'+S(last.real)+'</text>'
-    +'<text x="'+(GX+GW+6)+'" y="'+(py(last.div)+4)+'" font-size="9" fill="var(--purple)">+'+W(last.div)+'</text>'
-    +'<g id="pnl-pts">'
-    +chartData.map((d,i)=>'<circle class="pnl-pt" cx="'+px(i)+'" cy="'+py(d.real)+'" r="4" fill="var(--green)" opacity="0" data-idx="'+i+'"/>').join('')
-    +'</g>'
-    +'<line id="pnl-vline" x1="0" y1="'+GY1+'" x2="0" y2="'+GY2+'" stroke="#60a5fa" stroke-width="0.5" opacity="0"/>'
-    +chartData.filter((_,i)=>i%3===0||i===chartData.length-1).map((d,_,arr)=>{
-      const origIdx = chartData.indexOf(d);
-      return '<text x="'+px(origIdx)+'" y="'+(GY2+12)+'" text-anchor="middle" font-size="8" fill="var(--txt3)"'+(origIdx===chartData.length-1?' font-weight="600"':'')+'>'+d.mon+'</text>';
-    }).join('')
-    +'</svg>'
-    +'</div></div>'
-
-    // ISA 손익통산
-    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden;margin-bottom:12px">'
-    +'<div style="padding:16px 18px 12px;display:flex;justify-content:space-between;align-items:flex-start">'
-    +'<div><div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.05em;margin-bottom:4px">🏦 ISA 손익통산</div>'
-    +'<div style="font-size:11px;color:var(--txt3)">서민형 연 400만원 비과세 한도</div></div>'
-    +'<div style="text-align:right">'
-    +'<div style="font-size:11px;color:var(--txt3);margin-bottom:3px">통산 합계</div>'
-    +'<div style="font-size:20px;font-weight:700;color:'+C(isaTotal)+';font-variant-numeric:tabular-nums">'+S(isaTotal)+'</div>'
-    +'<div style="font-size:11px;color:var(--txt3);margin-top:2px">'+(isaRemain>0?'한도 '+W(isaRemain)+' 남음':'한도 초과!')+'</div>'
-    +'</div></div>'
-    +'<div style="padding:0 18px 14px">'
-    +'<div style="height:6px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-bottom:5px">'
-    +'<div style="height:100%;width:'+Math.min(isaBarW,100)+'%;background:'+(isaTotal>0?'var(--green)':'#60a5fa')+';border-radius:99px"></div></div>'
-    +'<div style="font-size:10px;color:var(--txt3)">'+(isaTotal<0?'현재 손실 상태 → 수익이 '+W(Math.abs(isaTotal))+' 생겨도 세금 없음':'현재 '+S(isaTotal)+' / 한도 '+W(ISA_LIMIT))+'</div>'
-    +'</div>'
-    +'<div style="border-top:.5px solid var(--bd);overflow-x:auto">'
-    +'<table style="width:100%;border-collapse:collapse;font-size:11px">'
-    +'<thead><tr style="background:var(--bg3)">'
-    +'<th style="padding:7px 12px;text-align:left;font-weight:500;color:var(--txt3)">날짜</th>'
-    +'<th style="padding:7px 12px;text-align:left;font-weight:500;color:var(--txt3)">종목</th>'
-    +'<th style="padding:7px 12px;text-align:left;font-weight:500;color:var(--txt3)">분류</th>'
-    +'<th style="padding:7px 12px;text-align:right;font-weight:500;color:var(--txt3)">손익</th>'
-    +'<th style="padding:7px 12px;text-align:right;font-weight:500;color:var(--txt3)">통산여부</th>'
-    +'</tr></thead>'
-    +'<tbody>'+isaRows+'</tbody>'
-    +'</table></div></div>'
-
-    // 종목별 실현손익
-    +'<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:14px 16px">'
-    +'<div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.05em;margin-bottom:10px">종목별 실현손익 (전체)</div>'
-    +'<div id="pnl-by-name2"></div>'
-    +'</div>';
-
-  // 종목별 실현손익 (계좌별 그룹)
-  const queues2={}, byAcctName={};
-  sorted.forEach(r=>{
-    const acc=(r.account||'').replace(/\s/g,'');
-    const qty=Math.abs(parseFloat(r.qty)||0);
-    const amt=Math.abs(parseFloat(r.amount)||0);
-    const fee=parseFloat(r.fee)||0,tax=parseFloat(r.tax)||0;
-    const key=(r.name||'')+'|'+acc;
-    if(r.type==='매수'||r.type==='매수.'){if(!queues2[key])queues2[key]=[];queues2[key].push({qty,cost:amt});}
-    else if(r.type==='매도'||r.type==='매도.'){
-      if(!queues2[key])queues2[key]=[];
-      let rem=qty,cb=0;
-      while(rem>0&&queues2[key].length){const f=queues2[key][0];if(f.qty<=rem){cb+=f.cost;rem-=f.qty;queues2[key].shift();}else{const r2=rem/f.qty;cb+=f.cost*r2;f.cost-=f.cost*r2;f.qty-=rem;rem=0;}}
-      const pnl=amt-cb+fee+tax;
-      if(!byAcctName[acc])byAcctName[acc]=[];
-      byAcctName[acc].push({name:r.name||'',pnl});
+      // ISA 종목별
+      isaItems.forEach(it => {
+        const badge = it.incl
+          ? '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:#eeedfe;color:#3c3489;font-weight:500;white-space:nowrap">'+(it.isDiv?'분배금':'통산포함')+'</span>'
+          : '<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--bg3);color:var(--txt3);font-weight:500;white-space:nowrap">통산제외</span>';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 6px 16px;border-top:.5px solid var(--bd);background:var(--bg3)">'
+          +'<div style="display:flex;flex-direction:column;min-width:0">'
+          +'<span style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+it.name+'</span>'
+          +'<span style="font-size:10px;color:var(--txt3)">'+it.date+'</span>'
+          +'</div>'
+          +'<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;padding-left:8px">'
+          +'<span style="font-size:12px;font-variant-numeric:tabular-nums;color:'+C(it.pnl)+'">'+fmt(it.pnl)+'</span>'
+          +badge
+          +'</div></div>';
+      });
     }
+
+    html += '</div>';
   });
 
-  setTimeout(_initPnlChart, 50);
-  const nameEl=document.getElementById('pnl-by-name2');
-  if(nameEl){
-    const ACCS=['미래ISA','미래연금저축','삼성연금저축','우리IRP','미래종합','미래금현물'];
-    const dotC=a=>a.includes('ISA')?'#4ade80':a.includes('연금')?'#a78bfa':a.includes('IRP')?'#60a5fa':a.includes('금')?'#fbbf24':'#94a3b8';
-    let html2='';
-    ACCS.filter(a=>byAcctName[a]&&byAcctName[a].length).forEach(acc=>{
-      const items=byAcctName[acc].sort((a,b)=>b.pnl-a.pnl);
-      const acctTotal=items.reduce((s,it)=>s+it.pnl,0);
-      const isISA=acc==='미래ISA';
-      html2+='<div style="margin-bottom:14px">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'
-        +'<div style="display:flex;align-items:center;gap:7px">'
-        +'<span style="width:7px;height:7px;border-radius:50%;background:'+dotC(acc)+'"></span>'
-        +'<span style="font-size:12px;font-weight:700">'+acc+'</span>'
-        +(isISA?'<span style="font-size:10px;color:var(--blue);background:rgba(49,130,246,.1);padding:2px 7px;border-radius:4px">손익통산 '+S(isaTotal)+'</span>':'')
+  nameEl.innerHTML = html || '<div style="color:var(--txt3);font-size:12px;padding:12px 0">실현손익 없음</div>';
+
+  // ── 분배금 차트 + 계좌별 바 ──
+  // 월별 차트
+  _pnlDivChartData = { labels: divMons.map(m=>m.slice(2).replace('-','.')), values: divMons.map(m=>divByMon[m]) };
+  setTimeout(_initDivChart, 80);
+
+  // 계좌별 분배금 바
+  const divAccEl = document.getElementById('pnl-div-accs');
+  if (divAccEl) {
+    const maxDiv2 = Math.max(...Object.values(divByAcc), 1);
+    const DIV_GOAL = 500000;
+    divAccEl.innerHTML = ACCS.filter(a=>divByAcc[a]).map(a => {
+      const v = divByAcc[a];
+      const w = Math.round(v/maxDiv2*100);
+      return '<div style="margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<span style="width:7px;height:7px;border-radius:50%;background:'+DOT(a)+';display:inline-block"></span>'+a+'</div>'
+        +'<span style="color:var(--purple);font-variant-numeric:tabular-nums;font-weight:500">+'+Math.round(v).toLocaleString()+'원</span>'
         +'</div>'
-        +'<span style="font-size:13px;font-weight:700;color:'+C(acctTotal)+';font-variant-numeric:tabular-nums">'+fmt(acctTotal)+'</span>'
-        +'</div>'
-        +items.map(it=>'<div style="display:flex;justify-content:space-between;padding:7px 0 7px 14px;border-bottom:.5px solid var(--bd)">'
-          +'<span style="font-size:12px">'+it.name+'</span>'
-          +'<span style="font-size:12px;font-variant-numeric:tabular-nums;color:'+C(it.pnl)+';font-weight:500">'+fmt(it.pnl)+'</span>'
-          +'</div>').join('')
-        +'</div>';
-    });
-    nameEl.innerHTML=html2||'<div style="color:var(--txt3);font-size:12px">실현손익 없음</div>';
+        +'<div style="height:4px;background:var(--bd);border-radius:99px;overflow:hidden">'
+        +'<div style="height:100%;width:'+w+'%;background:var(--purple);border-radius:99px"></div>'
+        +'</div></div>';
+    }).join('')
+    +'<div style="padding-top:8px;border-top:.5px solid var(--bd);display:flex;justify-content:space-between;margin-top:4px">'
+    +'<span style="font-size:11px;color:var(--txt3)">누적 합계</span>'
+    +'<span style="font-size:15px;font-weight:600;color:var(--purple);font-variant-numeric:tabular-nums">+'+Math.round(totalDiv).toLocaleString()+'원</span>'
+    +'</div>'
+    +'<div style="background:var(--bg3);border-radius:8px;padding:9px 12px;margin-top:8px">'
+    +'<div style="font-size:11px;color:var(--txt3);margin-bottom:3px">월평균 ~'+Math.round(avgDiv).toLocaleString()+'원 · 목표 50만 대비 '+Math.round(avgDiv/DIV_GOAL*100)+'%</div>'
+    +'<div style="height:4px;background:var(--bd);border-radius:99px;overflow:hidden">'
+    +'<div style="height:100%;width:'+Math.min(avgDiv/DIV_GOAL*100,100).toFixed(0)+'%;background:var(--purple);border-radius:99px"></div>'
+    +'</div></div>';
   }
+
+  // 기존 호환용
+  const pnlNameEl = document.getElementById('pnl-by-name');
+  if(pnlNameEl) pnlNameEl.innerHTML='';
+  const divNameEl = document.getElementById('div-by-name');
+  if(divNameEl) divNameEl.innerHTML='';
 }
 
 
