@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html data-version="1779346646" lang="ko">
+<html data-version="1779347141" lang="ko">
 <head>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -5791,17 +5791,17 @@ function renderHome(){
   var ml=document.getElementById('month-label');
   if(ml) ml.textContent=y+'년 '+parseInt(m)+'월';
 
-  var monEntries=entries.filter(function(e){return e.date&&e.date.indexOf(curMon)===0;});
-  var mIn  =monEntries.filter(function(e){return e.type==='수입';}).reduce(function(s,e){return s+e.amount;},0);
-  var mOut =monEntries.filter(function(e){return e.type==='지출';}).reduce(function(s,e){return s+e.amount;},0);
-  var mSave=monEntries.filter(function(e){return e.type==='이동';}).reduce(function(s,e){return s+e.amount;},0);
-  var mBal =mIn-mOut-mSave;
+  var monE=entries.filter(function(e){return e.date&&e.date.indexOf(curMon)===0;});
+  var mIn  =monE.filter(function(e){return e.type==='수입';}).reduce(function(s,e){return s+e.amount;},0);
+  var mOut =monE.filter(function(e){return e.type==='지출';}).reduce(function(s,e){return s+e.amount;},0);
+  var mSave=monE.filter(function(e){return e.type==='이동';}).reduce(function(s,e){return s+e.amount;},0);
+  var mBal=mIn-mOut-mSave;
   var saveRate=mIn>0?Math.round(mSave/mIn*100):0;
 
   var curY=curMon.slice(0,4);
-  var yrEntries=entries.filter(function(e){return e.date&&e.date.startsWith(curY);});
-  var yrIn  =yrEntries.filter(function(e){return e.type==='수입';}).reduce(function(s,e){return s+e.amount;},0);
-  var yrSave=yrEntries.filter(function(e){return e.type==='이동';}).reduce(function(s,e){return s+e.amount;},0);
+  var yrE=entries.filter(function(e){return e.date&&e.date.startsWith(curY);});
+  var yrIn=yrE.filter(function(e){return e.type==='수입';}).reduce(function(s,e){return s+e.amount;},0);
+  var yrSave=yrE.filter(function(e){return e.type==='이동';}).reduce(function(s,e){return s+e.amount;},0);
   var yrRate=yrIn>0?Math.round(yrSave/yrIn*100):0;
 
   var W=function(n){return '₩'+Math.abs(Math.round(n)).toLocaleString();};
@@ -5817,32 +5817,22 @@ function renderHome(){
     el('gb-h-bal').style.color=mBal>=0?'var(--green)':'var(--red)';
   }
 
-  // 카테고리별 지출 계산 - cat 또는 cat2 기준
-  function catSpend(cats){
-    return monEntries.filter(function(e){
-      if(e.type!=='지출') return false;
-      var c=e.cat||'', c2=e.cat2||'';
-      // 이모지 제거 후 비교
-      var cClean=c.replace(/[\u{1F000}-\u{1FFFF}]|[\u2600-\u27FF]|\uFE0F|\u20E3|[\u{1F300}-\u{1F9FF}]/gu,'').trim();
-      var c2Clean=c2.replace(/[\u{1F000}-\u{1FFFF}]|[\u2600-\u27FF]|\uFE0F|\u20E3|[\u{1F300}-\u{1F9FF}]/gu,'').trim();
-      return cats.some(function(cat){
-        return c===cat||c2===cat||cClean===cat||c2Clean===cat||
-               c===getCatLabel('지출',cat)||c2===getCatLabel('지출',cat);
-      });
+  // entries.major = '🏠 주거비' 형태 (이모지 포함)
+  // BUDGET 키도 이모지 포함 형태
+  function catSpend(budgetKey){
+    return monE.filter(function(e){
+      return e.type==='지출' && e.major===budgetKey;
     }).reduce(function(s,e){return s+e.amount;},0);
   }
 
-  // 예산 가져오기 - 이모지 포함/제외 둘 다 시도
-  function getBudget(cat){
-    var label=getCatLabel('지출',cat);
-    return BUDGET[cat]||BUDGET[label]||0;
-  }
-
-  function budRow(cat,bud,spend){
+  function budRow(label, budgetKey, extraKeys){
+    var bud=BUDGET[budgetKey]||0;
+    var spend=catSpend(budgetKey);
+    // 추가 키 합산 (엄마건강 등)
+    if(extraKeys) extraKeys.forEach(function(k){spend+=catSpend(k);});
     var pct=bud>0?Math.round(spend/bud*100):0;
     var remain=bud-spend;
     var isOver=remain<0;
-    var pct2=Math.min(pct,100);
     var barC=isOver?'var(--red)':pct>=90?'#BA7517':'var(--blue)';
     var badge=isOver
       ?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#FCEBEB;color:#791F1F;font-weight:500">초과</span>'
@@ -5850,97 +5840,85 @@ function renderHome(){
     var amtTxt=isOver
       ?'<span style="font-size:11px;color:var(--red);white-space:nowrap">초과 '+W(Math.abs(remain))+'</span>'
       :'<span style="font-size:11px;color:var(--txt3);white-space:nowrap">잔 '+W(remain)+'</span>';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:.5px solid var(--bd)">'
-      +'<span style="min-width:58px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cat+'</span>'
+    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:.5px solid var(--bd)">'
+      +'<span style="min-width:60px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+label+'</span>'
       +'<div style="flex:1;height:4px;background:var(--bd);border-radius:99px;overflow:hidden">'
-      +'<div style="height:100%;width:'+pct2+'%;background:'+barC+';border-radius:99px"></div></div>'
+      +'<div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+barC+';border-radius:99px"></div></div>'
       +amtTxt+badge+'</div>';
   }
 
-  // 고정비
-  var FIXED=['주거비','보험','통신비','곗돈','엄마'];
+  // ── 고정비 ──
   var fixedEl=el('gb-fixed-budget');
   if(fixedEl){
-    var fh='';
-    FIXED.forEach(function(cat){
-      var spend=0;
-      if(cat==='엄마'){
-        spend=monEntries.filter(function(e){
-          return e.type==='지출'&&MAMA_FIXED.some(function(mf){return (e.cat2||e.cat||'')===(mf);});
-        }).reduce(function(s,e){return s+e.amount;},0);
-      } else {
-        spend=catSpend([cat]);
-      }
-      var bud=BUDGET['엄마고정']||getBudget(cat);
-      if(cat==='엄마') bud=BUDGET['엄마고정']||BUDGET['☀️ 엄마(고정)']||getBudget(cat);
-      fh+=budRow(cat,bud,spend);
-    });
-    fixedEl.innerHTML=fh||'<div style="padding:12px 14px;font-size:13px;color:var(--txt3)">예산 데이터 없음</div>';
+    fixedEl.innerHTML=
+      budRow('주거비',   '🏠 주거비')
+     +budRow('보험',     '🗃️ 보험')
+     +budRow('통신비',   '📞 통신비')
+     +budRow('곗돈',     '🍀 곗돈')
+     +budRow('엄마(고정)','☀️ 엄마(고정)');
   }
 
-  // 변동비
-  var VARI=['엄마건강','식비','생활용품','꾸밈비','자기계발','건강','교통비','경조사','문화생활','기타'];
+  // ── 변동비 ──
   var varEl=el('gb-var-budget');
   if(varEl){
-    var vh='';
-    VARI.forEach(function(cat){
-      var spend=0;
-      if(cat==='엄마건강'){
-        spend=monEntries.filter(function(e){
-          return e.type==='지출'&&(e.cat==='엄마'||e.cat2==='엄마')&&!MAMA_FIXED.some(function(mf){return (e.cat2||'')===(mf);});
-        }).reduce(function(s,e){return s+e.amount;},0);
-      } else {
-        spend=catSpend([cat]);
-      }
-      var bud=cat==='엄마건강'?(BUDGET['엄마건강']||BUDGET['☀️ 엄마(건강)']||0):getBudget(cat);
-      vh+=budRow(cat,bud,spend);
-    });
-    varEl.innerHTML=vh||'<div style="padding:12px 14px;font-size:13px;color:var(--txt3)">예산 데이터 없음</div>';
+    varEl.innerHTML=
+      budRow('엄마(건강)','☀️ 엄마(건강)')
+     +budRow('식비',     '🍽️ 식비')
+     +budRow('생활용품', '🛒 생활용품')
+     +budRow('꾸밈비',   '👗 꾸밈비')
+     +budRow('자기계발', '👩‍🎓 자기계발')
+     +budRow('건강',     '😷 건강')
+     +budRow('교통비',   '🚌 교통비')
+     +budRow('경조사',   '🎁 경조사')
+     +budRow('문화생활', '📺 문화생활')
+     +budRow('기타',     '✔️ 기타');
   }
 
-  // 카드별 잔액 - CAT_MV_SUBS['카드납부'] 기준
-  var CARD_KEYS=['롯카','삼카','신카','국카1','국카k','농카'];
-  var CARD_LABELS2={'롯카':'롯카 합산','삼카':'삼카 합산','신카':'신카 합산','국카1':'국카1','국카k':'국카k 합산','농카':'농카 합산'};
+  // ── 카드별 잔액 ──
+  // 이동(카드납부) sub 기준으로 집계
+  // CARD_BUDGET: {롯카:318910, 롯카-:13000, 신카:60000, 신카!:240000 ...}
+  // 카드별로 같은 카드 변형들 합산
+  var CARD_GROUPS={
+    '롯카': ['롯카','롯카-','롯카!'],
+    '삼카': ['삼카','삼카!'],
+    '신카': ['신카','신카!'],
+    '국카1': ['국카1'],
+    '국카k': ['국카k','국카k!','국카k!실미','국카k-'],
+    '농카': ['농카','농카!']
+  };
+  var CARD_LABELS2={
+    '롯카':'롯카 합산','삼카':'삼카 합산','신카':'신카 합산',
+    '국카1':'국카1','국카k':'국카k 합산','농카':'농카 합산'
+  };
+
   var cardEl=el('gb-card-grid');
   if(cardEl){
     var ch='';
-    CARD_KEYS.forEach(function(card){
-      var bud=CARD_BUDGET[card]||0;
+    Object.keys(CARD_GROUPS).forEach(function(card){
+      var variants=CARD_GROUPS[card];
+      // 예산 합산
+      var bud=variants.reduce(function(s,v){return s+(CARD_BUDGET[v]||0);},0);
       if(!bud) return;
-      // 해당 카드 모든 변형 집계
-      var cardVars=Object.keys(CAT_MV_SUBS['카드납부']||{}).filter?
-        (CAT_MV_SUBS['카드납부']||[]).filter(function(k){return k.replace(/[!-]/g,'')===card||k===card;}):
-        [card,card+'!',card+'-',card+'!실미'];
-      var spend=monEntries.filter(function(e){
-        if(e.type!=='이동') return false;
-        var c2=e.cat2||'';
-        return c2===card||c2===card+'!'||c2===card+'-'||c2===card+'!실미'||c2===card+'k!'||c2.startsWith(card);
+      // 이달 카드납부 이동 합산
+      var spend=monE.filter(function(e){
+        return e.type==='이동' && variants.indexOf(e.sub)>=0;
       }).reduce(function(s,e){return s+e.amount;},0);
-      // 이동 없으면 지출의 cat2로도 체크
-      if(spend===0){
-        spend=monEntries.filter(function(e){
-          return e.type==='지출'&&(e.cat2||'').replace(/[!-]/g,'')===card;
-        }).reduce(function(s,e){return s+e.amount;},0);
-      }
       var remain=bud-spend;
       var isOver=remain<0;
       var pct=bud>0?Math.round(spend/bud*100):0;
-      var barW=Math.min(pct,100);
-      var bg=isOver?'background:#FCEBEB;border:.5px solid #F09595':'background:var(--bg3);border:.5px solid var(--bd)';
       var vc=isOver?'var(--red)':'var(--green)';
-      ch+='<div style="'+bg+';border-radius:10px;padding:11px 13px">'
-        +'<div style="font-size:11px;color:'+(isOver?'#791F1F':'var(--txt3)')+';margin-bottom:4px">'+(CARD_LABELS2[card]||card)
-        +(isOver?'<span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#FCEBEB;color:#791F1F;font-weight:500;margin-left:4px">초과</span>':'')+'</div>'
+      ch+='<div style="'+(isOver?'background:#FCEBEB;border:.5px solid #F09595':'background:var(--bg3);border:.5px solid var(--bd)')+';border-radius:10px;padding:11px 13px">'
+        +'<div style="font-size:11px;color:'+(isOver?'#791F1F':'var(--txt3)')+';margin-bottom:4px">'+(CARD_LABELS2[card]||card)+(isOver?' <span style="font-size:10px;padding:1px 5px;border-radius:4px;background:#FCEBEB;color:#791F1F;font-weight:500">초과</span>':'')+'</div>'
         +'<div style="font-size:14px;font-weight:600;color:'+vc+';font-variant-numeric:tabular-nums">'+(isOver?'초과 '+W(Math.abs(remain)):'잔액 '+W(remain))+'</div>'
         +'<div style="height:4px;background:var(--bd);border-radius:99px;overflow:hidden;margin:5px 0 3px">'
-        +'<div style="height:100%;width:'+barW+'%;background:'+vc+';border-radius:99px"></div></div>'
+        +'<div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+vc+';border-radius:99px"></div></div>'
         +'<div style="font-size:11px;color:'+(isOver?'#791F1F':'var(--txt3)')+'">'+W(spend)+' / '+W(bud)+' · '+pct+'%</div>'
         +'</div>';
     });
     cardEl.innerHTML=ch||'<div style="padding:12px;font-size:13px;color:var(--txt3)">카드 예산 없음</div>';
   }
 
-  // 연간 차트
+  // ── 연간 차트 ──
   var yrTitle=el('gb-year-title');
   if(yrTitle) yrTitle.textContent=curY+'년 월별 추이';
   var mons=[];
@@ -5948,8 +5926,7 @@ function renderHome(){
     var ms=curY+'-'+(mm<10?'0':'')+mm;
     if(ms<=curMon) mons.push(ms);
   }
-  var yrInArr=[],yrOutArr=[],yrSaveArr=[];
-  var totIn=0,totOut=0,totSave=0;
+  var yrInArr=[],yrOutArr=[],yrSaveArr=[],totIn=0,totOut=0,totSave=0;
   mons.forEach(function(ms){
     var me=entries.filter(function(e){return e.date&&e.date.startsWith(ms);});
     var i2=me.filter(function(e){return e.type==='수입';}).reduce(function(s,e){return s+e.amount;},0);
@@ -5967,12 +5944,17 @@ function renderHome(){
   if(el('gb-yr-rate')) el('gb-yr-rate').textContent=avgRate+'%';
 
   var canvas=el('gb-year-chart');
-  if(canvas&&window.Chart){
+  if(canvas){
+    if(!window.Chart){
+      var sc=document.createElement('script');
+      sc.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+      sc.onload=renderHome; document.head.appendChild(sc); return;
+    }
     if(canvas._chartInst) canvas._chartInst.destroy();
     canvas._chartInst=new Chart(canvas,{type:'bar',data:{
       labels:mons.map(function(ms){return parseInt(ms.slice(5))+'월';}),
       datasets:[
-        {label:'수입',data:yrInArr,backgroundColor:'rgba(49,130,246,.2)',borderColor:'var(--blue)',borderWidth:1,borderRadius:3,order:2},
+        {label:'수입',data:yrInArr,backgroundColor:'rgba(49,130,246,.2)',borderColor:'#3182f6',borderWidth:1,borderRadius:3,order:2},
         {label:'지출',data:yrOutArr,backgroundColor:'rgba(240,68,82,.15)',borderColor:'#f04452',borderWidth:1,borderRadius:3,order:2},
         {label:'저축',data:yrSaveArr,type:'line',borderColor:'#0b9e6a',borderWidth:2,pointRadius:3,pointBackgroundColor:'#0b9e6a',fill:false,tension:0.3,order:1}
       ]
@@ -5980,12 +5962,7 @@ function renderHome(){
       plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
       scales:{x:{grid:{display:false},ticks:{font:{size:11},color:'#888',maxRotation:0,autoSkip:false}},
         y:{grid:{color:'rgba(128,128,128,.08)'},ticks:{font:{size:10},color:'#888',callback:function(v){return v+'만';}},beginAtZero:true}}}});
-  } else if(canvas&&!window.Chart){
-    var s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
-    s.onload=renderHome; document.head.appendChild(s);
   }
-
   var hm=document.getElementById('hist-month');
   if(hm) hm.textContent=y+'년 '+parseInt(m)+'월';
   try{var ta=document.getElementById('quick-memo');if(ta){var mv=localStorage.getItem('quickMemo_'+curMon);if(mv)ta.value=mv;}}catch(e){}
@@ -7361,7 +7338,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <script>
 (function(){
-  var V = '1779346646';
+  var V = '1779347141';
   var stored = localStorage.getItem('_appVersion');
   if (stored && stored !== V) {
     localStorage.setItem('_appVersion', V);
