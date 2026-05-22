@@ -167,7 +167,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   align-items:center;gap:3px;font-size:10px;color:var(--hint)}
 .nb.active{color:var(--blue)}
 .ni{font-size:20px}
-.page{display:none;max-width:480px;margin:0 auto;padding:16px 14px 90px}
+.page{display:none;padding:16px 24px 40px}
 .page.active{display:block}
 .card{background:var(--surface);border-radius:var(--r);border:.5px solid var(--border);padding:14px;margin-bottom:12px}
 .ct{font-size:13px;font-weight:700;color:var(--sub);margin-bottom:12px}
@@ -253,7 +253,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 .ftab.on{background:var(--blue);color:#fff;border-color:var(--blue)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;display:flex;align-items:flex-end;justify-content:center}
 .modal-bg.hidden{display:none}
-.modal{background:var(--surface);border-radius:var(--r) var(--r) 0 0;width:100%;max-width:480px;padding:20px 16px 40px;max-height:90vh;overflow-y:auto}
+.modal{background:var(--surface);border-radius:var(--r) var(--r) 0 0;width:100%;max-width:640px;padding:20px 24px 40px;max-height:90vh;overflow-y:auto}
 .modal-title{font-size:17px;font-weight:700;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
 .modal-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--hint)}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(10px);background:#1a1a1a;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;transition:all .2s;pointer-events:none;white-space:nowrap;z-index:999}
@@ -418,7 +418,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
 <!-- ════════════════════════════════════════════
   탭 15 : 주식·연금 홈
 ═════════════════════════════════════════════ -->
-<div id="p15" class="panel" style="padding:16px 14px 40px">
+<div id="p15" class="panel" style="padding:16px 24px 40px">
   <div id="acct-balance-wrap15" style="display:none">
     <div id="acct-balance-cards15"></div>
   </div>
@@ -614,8 +614,8 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   탭 3 : 배당/분배금
 ═════════════════════════════════════════════ -->
 <div id="p5" class="panel gb-panel" style="padding:14px 14px 40px">
-
   <!-- 월 네비 -->
+
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:8px">
       <button onclick="(function(){var p=curMon.split('-'),y=parseInt(p[0]),m=parseInt(p[1]),nd=new Date(y,m-2,1);curMon=nd.getFullYear()+'-'+String(nd.getMonth()+1).padStart(2,'0');renderHome();})()" style="padding:4px 10px;background:var(--bg2);border:1px solid var(--bd);border-radius:6px;cursor:pointer;font-size:14px">‹</button>
@@ -629,31 +629,37 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 
   <!-- KPI 3개 -->
+  <!-- KPI 3개 -->
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px">
-    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
-      <div style="font-size:13px;color:var(--txt3);margin-bottom:6px">수입</div>
-      <div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums" id="gb-h-in">—</div>
+    <div style="background:var(--blue-bg);border:1.5px solid var(--blue-lt);border-radius:12px;padding:14px 16px">
+      <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase">수입</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--blue)" id="gb-h-in">—</div>
+      <div style="font-size:12px;color:var(--blue);opacity:.7;margin-top:4px" id="gb-h-in-bud"></div>
     </div>
-    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
-      <div style="font-size:13px;color:var(--txt3);margin-bottom:6px">지출</div>
-      <div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--red)" id="gb-h-out">—</div>
+    <div style="background:var(--red-bg);border:1.5px solid var(--red-lt);border-radius:12px;padding:14px 16px">
+      <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase">지출</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--red)" id="gb-h-out">—</div>
+      <div style="font-size:12px;color:var(--red);opacity:.7;margin-top:4px" id="gb-h-out-bud"></div>
     </div>
-    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:12px;padding:14px 16px">
-      <div style="font-size:13px;color:var(--txt3);margin-bottom:6px">저축 · 저축률</div>
-      <div style="font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--green)" id="gb-h-save">—</div>
-      <div style="height:4px;background:var(--bd);border-radius:99px;overflow:hidden;margin:7px 0 4px">
+    <div style="background:var(--green-bg);border:1.5px solid var(--green-lt);border-radius:12px;padding:14px 16px">
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase">저축 · 저축률</div>
+      <div style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--green)" id="gb-h-save">—</div>
+      <div style="height:4px;background:var(--green-lt);border-radius:99px;overflow:hidden;margin:7px 0 4px">
         <div id="gb-h-save-bar" style="height:100%;width:0%;background:var(--green);border-radius:99px"></div>
       </div>
-      <div style="font-size:13px;color:var(--txt3)" id="gb-h-save-sub">—</div>
+      <div style="font-size:12px;color:var(--green);opacity:.8" id="gb-h-save-sub">—</div>
     </div>
   </div>
 
-  <!-- 수입 + 저축 가로 2열 (먼저) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:start">
-    <!-- 수입 내역 -->
+
+  <!-- 수입 | 저축 | 이동 3열 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;align-items:start">
     <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
-        <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">💰 수입 내역</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">💰 수입 내역</span>
+          <span id="gb-income-total" style="font-size:13px;font-weight:700;color:var(--txt2);font-variant-numeric:tabular-nums"></span>
+        </div>
         <div style="display:flex;gap:4px">
           <button onclick="gbExpandSec('income')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">펼치기</button>
           <button onclick="gbCollapseSec('income')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
@@ -661,10 +667,12 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
       </div>
       <div id="gb-income-budget"></div>
     </div>
-    <!-- 저축/이동 내역 -->
     <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
-        <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">🏦 저축/이동 내역</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">🏦 저축 내역</span>
+          <span id="gb-save-total" style="font-size:13px;font-weight:700;color:var(--txt2);font-variant-numeric:tabular-nums"></span>
+        </div>
         <div style="display:flex;gap:4px">
           <button onclick="gbExpandSec('save')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">펼치기</button>
           <button onclick="gbCollapseSec('save')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
@@ -672,14 +680,29 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
       </div>
       <div id="gb-save-budget"></div>
     </div>
-  </div>
-
-  <!-- 고정비 + 변동비 가로 2열 (나중) -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:start">
-    <!-- 고정비 내역 -->
     <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
-        <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">📌 고정비 내역</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">🎯 이동 내역</span>
+          <span id="gb-move-total" style="font-size:13px;font-weight:700;color:var(--txt2);font-variant-numeric:tabular-nums"></span>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button onclick="gbExpandSec('move')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">펼치기</button>
+          <button onclick="gbCollapseSec('move')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
+        </div>
+      </div>
+      <div id="gb-move-budget"></div>
+    </div>
+  </div>
+
+  <!-- 고정비 | 변동비 2열 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:0;align-items:start">
+    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">📌 고정비 내역</span>
+          <span id="gb-fixed-total" style="font-size:13px;font-weight:700;color:var(--txt2);font-variant-numeric:tabular-nums"></span>
+        </div>
         <div style="display:flex;gap:4px">
           <button onclick="gbExpandSec('fixed')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">펼치기</button>
           <button onclick="gbCollapseSec('fixed')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
@@ -687,10 +710,12 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
       </div>
       <div id="gb-fixed-budget"></div>
     </div>
-    <!-- 변동비 내역 -->
     <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
-        <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">📊 변동비 내역</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">📊 변동비 내역</span>
+          <span id="gb-var-total" style="font-size:13px;font-weight:700;color:var(--txt2);font-variant-numeric:tabular-nums"></span>
+        </div>
         <div style="display:flex;gap:4px">
           <button onclick="gbExpandSec('var')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">펼치기</button>
           <button onclick="gbCollapseSec('var')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
@@ -700,56 +725,46 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     </div>
   </div>
 
+  <!-- 빈칸 | 변동비2 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;align-items:start">
+    <div></div>
+    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">🎭 변동비2 내역</span>
+          <span id="gb-var2-total" style="font-size:13px;font-weight:700;color:var(--txt2);font-variant-numeric:tabular-nums"></span>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button onclick="gbExpandSec('var2')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">펼치기</button>
+          <button onclick="gbCollapseSec('var2')" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
+        </div>
+      </div>
+      <div id="gb-var2-budget"></div>
+    </div>
+  </div>
+
   <!-- 카드별 잔액 -->
   <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;overflow:hidden;margin-bottom:10px">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 8px">
       <span style="font-size:13px;font-weight:600;color:var(--txt3);letter-spacing:.04em">💳 카드별 잔액</span>
-      <button id="gb-card-toggle" onclick="gbToggleSection('card')" style="font-size:12px;padding:2px 8px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
+      <div style="display:flex;gap:4px">
+        <button onclick="gbCardExpandAll()" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">펼치기</button>
+        <button onclick="gbCardCollapseAll()" style="font-size:11px;padding:2px 6px;border:.5px solid var(--bd);border-radius:99px;background:transparent;color:var(--txt3);cursor:pointer">접기</button>
+      </div>
     </div>
     <div id="gb-card-grid" style="padding:0 0 4px"></div>
   </div>
 
-  <!-- 연간 차트 -->
-  <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:10px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <span style="font-size:13px;font-weight:600;color:var(--txt3)" id="gb-year-title">연간 추이</span>
-      <div style="display:flex;gap:12px;font-size:13px;color:var(--txt3)">
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:3px;background:var(--blue);display:inline-block;border-radius:2px"></span>수입</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:3px;background:var(--red);display:inline-block;border-radius:2px"></span>지출</span>
-        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:3px;background:var(--green);display:inline-block;border-radius:2px"></span>저축</span>
-      </div>
-    </div>
-    <div style="position:relative;height:160px">
-      <canvas id="gb-year-chart" role="img" aria-label="연간 월별 수입 지출 저축 추이">연간 월별 추이</canvas>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px">
-      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
-        <div style="font-size:13px;color:var(--txt3);margin-bottom:3px">총 수입</div>
-        <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums" id="gb-yr-in">—</div>
-      </div>
-      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
-        <div style="font-size:13px;color:var(--txt3);margin-bottom:3px">총 지출</div>
-        <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--red)" id="gb-yr-out">—</div>
-      </div>
-      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
-        <div style="font-size:13px;color:var(--txt3);margin-bottom:3px">총 저축</div>
-        <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--green)" id="gb-yr-save">—</div>
-      </div>
-      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
-        <div style="font-size:13px;color:var(--txt3);margin-bottom:3px">평균 저축률</div>
-        <div style="font-size:14px;font-weight:600;color:var(--blue)" id="gb-yr-rate">—</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 숨김: 기존 호환 -->
+    <!-- 숨김: 기존 호환 -->
   <div style="display:none">
     <div id="hist-month"></div>
     <div id="quick-memo"></div>
   </div>
 </div>
 
-<div id="p6" class="panel gb-panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
+</div>
+</div>
+<div id="p6" class="panel gb-panel" style="padding:16px 24px 40px">
   <div style="display:flex;gap:8px;margin-bottom:6px">
     <button onclick="openTplModal()" style="flex:1;padding:10px;border:.5px solid var(--blue-lt);border-radius:var(--rs);background:var(--blue-bg);color:var(--blue);font-size:14px;font-weight:700;cursor:pointer">📋 템플릿 불러오기</button>
     <button onclick="openSaveTplModal()" style="padding:10px 14px;border:.5px solid var(--border-md);border-radius:var(--rs);background:transparent;color:var(--sub);font-size:14px;cursor:pointer">저장</button>
@@ -792,7 +807,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 
-<div id="p7" class="panel gb-panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
+<div id="p7" class="panel gb-panel" style="padding:16px 24px 40px">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
     <div style="display:flex;align-items:center;gap:4px">
       <button class="mb" onclick="changeHistMonth(-1)" style="font-size:20px;padding:2px 8px">&#8249;</button>
@@ -899,7 +914,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     </div>
   </div>
 </div>
-<div id="p8" class="panel gb-panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
+<div id="p8" class="panel gb-panel" style="padding:16px 24px 40px">
   <div class="sgrid" style="margin-bottom:12px">
     <div class="sc" style="grid-column:span 2"><div class="sl">현금/예금 합계</div><div class="sv" style="color:var(--blue)" id="bal-cash-total">&#8361;0</div></div>
     <div class="sc"><div class="sl">카드 미결제</div><div class="sv" style="color:var(--red)" id="bal-debt-total">&#8361;0</div></div>
@@ -924,7 +939,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 
-<div id="p9" class="panel gb-panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
+<div id="p9" class="panel gb-panel" style="padding:16px 24px 40px">
   <div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:8px">
     <button onclick="expandAllAst()" style="font-size:12px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 펴기</button>
     <button onclick="collapseAllAst()" style="font-size:12px;padding:3px 8px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">전체 접기</button>
@@ -998,7 +1013,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 
-<div id="p10" class="panel gb-panel" style="max-width:480px;margin:0 auto;padding:16px 14px 40px">
+<div id="p10" class="panel gb-panel" style="padding:16px 24px 40px">
   <div class="card">
     <div class="ct" style="display:flex;align-items:center;gap:7px">
       &#128202; 구글 시트 연동
@@ -1110,6 +1125,39 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
     <span id="ta-hh-sav-rate"></span><span id="ta-hh-sav-rate2"></span>
     <div id="ta-hh-saving-sec"><div id="ta-hh-saving"></div></div>
     <div id="ta-hh-trend-sec"><div id="ta-hh-trend"></div></div>
+
+  <!-- 연간 수입/지출/저축 추이 -->
+  <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-top:16px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:600;color:var(--txt3)" id="gb-year-title">연간 추이</span>
+      <div style="display:flex;gap:12px;font-size:13px;color:var(--txt3)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:3px;background:var(--blue);display:inline-block;border-radius:2px"></span>수입</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:3px;background:var(--red);display:inline-block;border-radius:2px"></span>지출</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:3px;background:var(--green);display:inline-block;border-radius:2px"></span>저축</span>
+      </div>
+    </div>
+    <div style="position:relative;height:180px">
+      <canvas id="gb-year-chart" role="img">연간 월별 추이</canvas>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px">
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:12px;color:var(--txt3);margin-bottom:3px">총 수입</div>
+        <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums" id="gb-yr-in">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:12px;color:var(--txt3);margin-bottom:3px">총 지출</div>
+        <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--red)" id="gb-yr-out">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:12px;color:var(--txt3);margin-bottom:3px">총 저축</div>
+        <div style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--green)" id="gb-yr-save">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:12px;color:var(--txt3);margin-bottom:3px">평균 저축률</div>
+        <div style="font-size:14px;font-weight:600;color:var(--blue)" id="gb-yr-rate">—</div>
+      </div>
+    </div>
+  </div>
   </div>
 </div>
 
@@ -2973,6 +3021,8 @@ function renderTotalAsset() {
   document.getElementById('ta-household').textContent = hhNetWorth > 0
     ? Math.round(hhNetWorth).toLocaleString()+'원' : '—';
   document.getElementById('ta-household-detail').innerHTML = hhDetailHtml;
+  // 연간 추이 차트
+  if(typeof renderYearChart==='function') renderYearChart();
 
   // ── 총합 ──
   const grandTotal = (evalTotal||0) + (hhNetWorth||0);
@@ -5761,13 +5811,23 @@ var CAT_IN_LABELS = {'근로소득':'👷 근로소득','금융소득':'💵 금
 var CAT_IN_SUBS = {'근로소득':['월급','보너스'],'금융소득':['이자소득'],'기타소득':['1/n, 카드환불','기타1','부수입']};
 var CAT_MV_KEYS = ['카드납부','계좌이체','예적금','연금','주식','목적','목적2'];
 var CAT_MV_LABELS = {'카드납부':'💳 카드납부','계좌이체':'🔄 계좌이체','예적금':'예적금','연금':'연금','주식':'주식','목적':'목적','목적2':'목적2'};
-var CAT_MV_SUBS = {'카드납부':['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'],'계좌이체':['급여이체','생활비이체','대출이자이체','카드비이체','기타이체'],'예적금':['주택청약저축','자유적금','전세대출원금'],'연금':['개인연금'],'주식':['ISA'],'목적':['집계약용','케이-집계약용'],'목적2':['비상금','덕질','케이-비상금','케이-덕질']};
+var CAT_MV_SUBS = {'카드납부':['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'],'계좌이체':['급여이체','생활비이체','대출이자이체','카드비이체','기타이체'],'예적금':['주택청약저축','자유적금','전세대출원금'],'연금':['개인연금'],'주식':['ISA'],'목적':['집계약용','케이-집계약용'],'비상금':['비상금','케이-비상금'],'덕질':['덕질','케이-덕질']};
 
 function getCatKeys(t){ return t=='지출'?CAT_OUT_KEYS:t=='수입'?CAT_IN_KEYS:CAT_MV_KEYS; }
 function getCatLabel(t,k){ return (t=='지출'?CAT_OUT_LABELS:t=='수입'?CAT_IN_LABELS:CAT_MV_LABELS)[k]||k; }
 function getCatSubs(t,k){ return (t=='지출'?CAT_OUT_SUBS:t=='수입'?CAT_IN_SUBS:CAT_MV_SUBS)[k]||[]; }
 
 var MAMA_FIXED = ['엄마대출원금','엄마대출이자','엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)'];
+// 엄마 고정비 예산 (하드코딩)
+var MAMA_SUB_BUDGET = {
+  '엄마생활비': 350000,
+  '엄마보험(삼성생명)': 201157,
+  '엄마보험(DB 손해)': 30250,
+  '엄마보험(보람상조)': 8000,
+  '엄마보험(라이나)': 42280,
+  '엄마핸드폰(LGU+)': 13000,
+  '엄마핸드폰(삼케)': 7500
+};
 
 var CARD_GROUP_KEYS = {'롯카':['롯카','롯카!','롯카!실미','롯카-'],'삼카':['삼카','삼카!','삼카!실미'],'신카':['신카','신카!','신카!실미'],'국카k':['국카k','국카k!','국카k!실미','국카k-'],'국카1':['국카1']};
 var CARD_GROUPS = [
@@ -5942,6 +6002,28 @@ function setHistAll(){
 }
 
 // ── 홈 ──
+function renderYearChart(){
+    var canvas=el('gb-year-chart');
+  if(canvas){
+    if(!window.Chart){
+      var sc=document.createElement('script');
+      sc.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+      sc.onload=renderHome; document.head.appendChild(sc); return;
+    }
+    if(canvas._chartInst) canvas._chartInst.destroy();
+    canvas._chartInst=new Chart(canvas,{type:'bar',data:{
+      labels:mons.map(function(ms){return parseInt(ms.slice(5))+'월';}),
+      datasets:[
+        {label:'수입',data:yrInArr,backgroundColor:'rgba(49,130,246,.2)',borderColor:'#3182f6',borderWidth:1,borderRadius:3,order:2},
+        {label:'지출',data:yrOutArr,backgroundColor:'rgba(240,68,82,.15)',borderColor:'#f04452',borderWidth:1,borderRadius:3,order:2},
+        {label:'저축',data:yrSaveArr,type:'line',borderColor:'#0b9e6a',borderWidth:2,pointRadius:3,pointBackgroundColor:'#0b9e6a',fill:false,tension:0.3,order:1}
+      ]
+    },options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{size:11},color:'#888',maxRotation:0,autoSkip:false}},
+        y:{grid:{color:'rgba(128,128,128,.08)'},ticks:{font:{size:10},color:'#888',callback:function(v){return v+'만';}},beginAtZero:true}}}});
+  }
+}
 function renderHome(){
   var p=curMon.split('-'),y=p[0],m=p[1];
   var ml=document.getElementById('month-label');
@@ -5969,23 +6051,32 @@ function renderHome(){
   if(el('gb-h-save')) el('gb-h-save').textContent=W(mSave);
   if(el('gb-h-save-bar')) el('gb-h-save-bar').style.width=Math.min(saveRate,100)+'%';
   if(el('gb-h-save-sub')) el('gb-h-save-sub').textContent=saveRate+'% · 연간 '+yrRate+'% 달성';
+  // 수입 예산 합계
+  var inBudTotal=Object.keys(CAT_IN_KEYS).reduce?0:CAT_IN_KEYS.reduce(function(s,k){return s+(BUDGET[k]||BUDGET[CAT_IN_LABELS[k]]||0);},0);
+  if(el('gb-h-in-bud')&&inBudTotal>0) el('gb-h-in-bud').textContent='예산 '+W(inBudTotal);
+  // 지출 예산 합계
+  var outBudTotal=['주거비','보험','통신비','곗돈','엄마(고정)','엄마(건강)','식비','생활용품','꾸밈비','자기계발','건강','교통비','경조사','문화생활','기타'].reduce(function(s,k){return s+(BUDGET[k]||0);},0);
+  if(el('gb-h-out-bud')&&outBudTotal>0) el('gb-h-out-bud').textContent='예산 '+W(outBudTotal);
   if(el('gb-h-bal')){
     el('gb-h-bal').textContent=(mBal>=0?'':'-')+W(mBal);
     el('gb-h-bal').style.color=mBal>=0?'var(--green)':'var(--red)';
   }
 
   // 지출 집계 - major 기준
+  // 이모지/괄호 제거 후 매칭하는 헬퍼
+  function _normKey(k){ return k.replace(/[\uD800-\uDFFF\u2600-\u27FF\u1F300-\u1F9FF]|[\u200d\uFE0F]/g,'').replace(/\s*[\(（][^\)）]*[\)）]/g,'').trim(); }
   function catSpend(budgetKey){
-    return monE.filter(function(e){return e.type==='지출'&&e.major===budgetKey;}).reduce(function(s,e){return s+e.amount;},0);
+    var norm=_normKey(budgetKey);
+    return monE.filter(function(e){return e.type==='지출'&&(e.major===budgetKey||e.major===norm);}).reduce(function(s,e){return s+e.amount;},0);
   }
-  // 세부항목(sub) 지출
   function subSpend(budgetKey, subKey){
-    return monE.filter(function(e){return e.type==='지출'&&e.major===budgetKey&&e.sub===subKey;}).reduce(function(s,e){return s+e.amount;},0);
+    var norm=_normKey(budgetKey);
+    return monE.filter(function(e){return e.type==='지출'&&(e.major===budgetKey||e.major===norm)&&e.sub===subKey;}).reduce(function(s,e){return s+e.amount;},0);
   }
 
   // 예산행 빌더 (접기/펼치기 + 세부항목)
   var _rowIdx=0;
-  function budRow(label, budgetKey, subs){
+  function budRow(label, budgetKey, subs, showAll){
     var bud=BUDGET[budgetKey]||0;
     var spend=catSpend(budgetKey);
     var pct=bud>0?Math.round(spend/bud*100):0;
@@ -6003,9 +6094,9 @@ function renderHome(){
     if(subs&&subs.length){
       subs.forEach(function(sub){
         var ss=subSpend(budgetKey,sub);
-        // 예산이 있거나 지출이 있는 항목만
-        if(ss===0) return;
-        var subBud=(SUB_BUDGET[budgetKey]&&SUB_BUDGET[budgetKey][sub])||0;
+        var subBud=(SUB_BUDGET[budgetKey]&&SUB_BUDGET[budgetKey][sub])||(MAMA_SUB_BUDGET[sub]||0);
+        // 지출도 예산도 없으면 숨김 (단, 고정비 subs는 항상 표시)
+        if(ss===0&&subBud===0&&!showAll) return;
         var subRemain=subBud>0?subBud-ss:null;
         var subOver=subRemain!==null&&subRemain<0;
         detailHtml+='<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0 7px 12px;border-top:.5px solid var(--bd);font-size:14px">'
@@ -6041,9 +6132,9 @@ function renderHome(){
    +budRow('보험','🗃️ 보험',CAT_OUT_SUBS['보험'])
    +budRow('통신비','📞 통신비',CAT_OUT_SUBS['통신비'])
    +budRow('곗돈','🍀 곗돈',CAT_OUT_SUBS['곗돈'])
-   +budRow('엄마(고정)','☀️ 엄마(고정)',MAMA_FIXED);
+   +budRow('엄마(고정)','☀️ 엄마(고정)',MAMA_FIXED,true);
 
-  // 변동비
+  // 변동비 (식비/생활/꾸밈/자기계발/건강/교통)
   var varEl=el('gb-var-budget');
   if(varEl) varEl.innerHTML=
     budRow('엄마(건강)','☀️ 엄마(건강)',[])
@@ -6052,8 +6143,12 @@ function renderHome(){
    +budRow('꾸밈비','👗 꾸밈비',CAT_OUT_SUBS['꾸밈비'])
    +budRow('자기계발','👩‍🎓 자기계발',CAT_OUT_SUBS['자기계발'])
    +budRow('건강','😷 건강',CAT_OUT_SUBS['건강'])
-   +budRow('교통비','🚌 교통비',CAT_OUT_SUBS['교통비'])
-   +budRow('경조사','🎁 경조사',CAT_OUT_SUBS['경조사'])
+   +budRow('교통비','🚌 교통비',CAT_OUT_SUBS['교통비']);
+
+  // 변동비2 (경조사/문화생활/기타)
+  var var2El=el('gb-var2-budget');
+  if(var2El) var2El.innerHTML=
+    budRow('경조사','🎁 경조사',CAT_OUT_SUBS['경조사'])
    +budRow('문화생활','📺 문화생활',CAT_OUT_SUBS['문화생활'])
    +budRow('기타','✔️ 기타',CAT_OUT_SUBS['기타']);
 
@@ -6062,18 +6157,18 @@ function renderHome(){
     var spend=monE.filter(function(e){return e.type==='수입'&&e.major===majorKey;}).reduce(function(s,e){return s+e.amount;},0);
     var bud=BUDGET[majorKey]||0;
     if(!bud){ var _lbl=CAT_IN_LABELS[majorKey]||majorKey; bud=BUDGET[_lbl]||0; }
-    // 예산도 없고 수입도 없으면 숨김
-    if(spend===0&&bud===0) return '';
+    // 금융소득/기타소득도 항상 표시
     var pct=bud>0?Math.round(spend/bud*100):0;
     var barC=spend>bud?'var(--red)':'var(--green)';
     var detailHtml='';
     if(subs&&subs.length){
       subs.forEach(function(sub){
         var ss=monE.filter(function(e){return e.type==='수입'&&e.major===majorKey&&e.sub===sub;}).reduce(function(s,e){return s+e.amount;},0);
-        if(ss===0) return;
+        // 예산(수입섹션)이 있으면 무조건 sub 표시
+        if(ss===0&&!bud) return; // 수입도 예산도 없으면 skip
         detailHtml+='<div style="display:flex;align-items:center;padding:8px 14px 8px 28px;border-top:.5px solid var(--bd);background:var(--bg3)">'
           +'<span style="font-size:13px;color:var(--txt2);flex:1">'+sub+'</span>'
-          +'<span style="font-size:13px;font-weight:600;color:var(--green);font-variant-numeric:tabular-nums">'+W(ss)+'</span></div>';
+          +'<span style="font-size:13px;font-weight:600;color:'+(ss>0?'var(--green)':'var(--txt3)')+';font-variant-numeric:tabular-nums">'+W(ss)+'</span></div>';
       });
     }
     var bid='gbri'+(++_rowIdx);
@@ -6096,51 +6191,50 @@ function renderHome(){
   var incomeEl=el('gb-income-budget');
   if(incomeEl){
     var incHtml='';
-    Object.keys(CAT_IN_SUBS).forEach(function(major){
+    CAT_IN_KEYS.forEach(function(major){
       var lbl=CAT_IN_LABELS[major]||major;
       incHtml+=inRow(lbl,major,CAT_IN_SUBS[major]);
     });
-    incHtml+='<div style="border-top:1px solid var(--bd2);padding:10px 14px;display:flex;justify-content:space-between;background:var(--bg3)">'
-      +'<span style="font-size:14px;font-weight:700;color:var(--txt2)">수입 합계</span>'
-      +'<span style="font-size:14px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums">'+W(mIn)+'</span></div>';
+    var inBudSum=CAT_IN_KEYS.reduce(function(s,k){return s+(BUDGET[k]||BUDGET[CAT_IN_LABELS[k]]||0);},0);
+    incHtml+='<div style="border-top:1px solid var(--bd2);padding:10px 14px;display:flex;justify-content:space-between;align-items:baseline;background:var(--bg3)">'      +'<span style="font-size:14px;font-weight:700;color:var(--txt2)">수입 합계</span>'      +'<div style="display:flex;align-items:baseline;gap:10px">'      +(inBudSum>0?'<span style="font-size:12px;color:var(--txt3);font-variant-numeric:tabular-nums">예산 '+W(inBudSum)+'</span>':'')      +'<span style="font-size:14px;font-weight:700;color:var(--green);font-variant-numeric:tabular-nums">'+W(mIn)+'</span></div></div>';
     incomeEl.innerHTML=incHtml||'<div style="padding:12px 14px;color:var(--txt3)">수입 없음</div>';
+    var _it=document.getElementById('gb-income-total');
+    if(_it) _it.textContent=mIn>0?W(mIn):'';
   }
 
-  // 저축 내역 - 카드 스타일, 예산있으면 0원도 표시
+  // 저축 행 빌더
   function saveRow2(major, subs){
-    // e.sub(대분류 선택값) 또는 e.inAcct(입금계좌명) 중 하나라도 subs 목록에 있으면 집계
-    var spend=monE.filter(function(e){return e.type==='이동'&&(subs.indexOf(e.sub)>=0||subs.indexOf(e.inAcct)>=0);}).reduce(function(s,e){return s+e.amount;},0);
-    // 저축 목표 찾기 (SAVE_GOALS)
+    var spend=monE.filter(function(e){return e.type==='이동'&&subs.indexOf(e.sub)>=0;}).reduce(function(s,e){return s+e.amount;},0);
     var bud=0;
     if(SAVE_GOALS&&SAVE_GOALS.length){
       SAVE_GOALS.forEach(function(g){
-        var matched=subs.some(function(sub){
-          return sub===g.mk||sub===g.n||g.mk.indexOf(sub)>=0||sub.indexOf(g.n)>=0;
-        });
+        var matched=subs.some(function(sub){return sub===g.mk||sub===g.n||g.mk.indexOf(sub)>=0;});
         if(matched) bud+=g.g||0;
       });
     }
     if(!bud) bud=BUDGET[major]||0;
-    // 예산도 없고 지출도 없으면 숨김
     if(spend===0&&bud===0) return '';
     var pct=bud>0?Math.round(spend/bud*100):0;
     var isOver=bud>0&&spend>bud;
     var barC=isOver?'var(--red)':'var(--blue)';
-    // 세부항목
     var detailHtml='';
     subs.forEach(function(sub){
-      var ss=monE.filter(function(e){return e.type==='이동'&&(e.sub===sub||e.inAcct===sub);}).reduce(function(s,e){return s+e.amount;},0);
+      // 집계약용은 케이-집계약용 실제값도 함께 집계
+      var _subMatch=sub==='집계약용'?['집계약용','케이-집계약용']:[sub];
+      if(sub==='케이-집계약용') return; // 집계약용에 통합 표시
+      var ss=monE.filter(function(e){return e.type==='이동'&&_subMatch.indexOf(e.sub)>=0;}).reduce(function(s,e){return s+e.amount;},0);
+      // 비상금은 케이-비상금 포함, 덕질은 케이-덕질 포함
+      if(sub==='비상금') ss+=monE.filter(function(e){return e.type==='이동'&&e.sub==='케이-비상금';}).reduce(function(s,e){return s+e.amount;},0);
+      if(sub==='덕질') ss+=monE.filter(function(e){return e.type==='이동'&&e.sub==='케이-덕질';}).reduce(function(s,e){return s+e.amount;},0);
       var subGoal=0;
       if(SAVE_GOALS&&SAVE_GOALS.length){
-        SAVE_GOALS.forEach(function(g){
-          if(sub===g.mk||sub===g.n||g.mk.indexOf(sub)>=0) subGoal+=g.g||0;
-        });
+        SAVE_GOALS.forEach(function(g){if(sub===g.mk||sub===g.n||g.mk.indexOf(sub)>=0) subGoal+=g.g||0;});
       }
       if(ss===0&&subGoal===0) return;
       detailHtml+='<div style="display:flex;align-items:center;padding:8px 14px 8px 28px;border-top:.5px solid var(--bd);background:var(--bg3)">'
         +'<div style="display:flex;align-items:baseline;gap:6px;flex:1">'
         +'<span style="font-size:13px;color:var(--txt2)">'+sub+'</span>'
-        +(subGoal?'<span style="font-size:12px;color:var(--txt3);font-variant-numeric:tabular-nums">'+W(subGoal)+'</span>':'')
+        +(subGoal?'<span style="font-size:12px;color:var(--txt3)">'+W(subGoal)+'</span>':'')
         +'</div>'
         +'<span style="font-size:13px;font-weight:600;color:'+(ss>0?'var(--blue)':'var(--txt3)')+';font-variant-numeric:tabular-nums">'+W(ss)+'</span></div>';
     });
@@ -6151,28 +6245,147 @@ function renderHome(){
       +(hasSubs?' onclick="gbBudRow(\''+bid+'\')"':'')+'>'
       +'<div style="display:flex;align-items:baseline;gap:6px;flex:1">'
       +'<span style="font-size:14px;font-weight:700;color:var(--txt)">'+major+'</span>'
-      +(bud?'<span style="font-size:12px;color:var(--txt3);font-variant-numeric:tabular-nums">'+W(bud)+'</span>':'')
+      +(bud?'<span style="font-size:12px;color:var(--txt3)">'+W(bud)+'</span>':'')
       +'</div>'
       +(bud?'<div style="width:50px;height:4px;background:var(--bd);border-radius:99px;overflow:hidden;margin-right:8px"><div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+barC+';border-radius:99px"></div></div>':'')
       +'<span style="font-size:14px;font-weight:700;color:'+(spend>0?'var(--blue)':'var(--txt3)')+';font-variant-numeric:tabular-nums">'+W(spend)+'</span>'
-      +(hasSubs?'<span class="gb-arr" style="font-size:11px;color:var(--txt3);flex-shrink:0;margin-left:8px">▼</span>':'')
+      +(hasSubs?'<span class="gb-arr" style="font-size:11px;color:var(--txt3);margin-left:8px">▼</span>':'')
       +'</div>'
       +(hasSubs?'<div id="'+bid+'" style="display:none">'+detailHtml+'</div>':'')
       +'</div>';
   }
 
+  // ── 저축 섹션 (예적금/연금/주식/목적) ──
+  var SAVE_GROUPS_1=['예적금','연금','주식','목적'];
+  var saveTotal1=0;
   var saveEl=el('gb-save-budget');
   if(saveEl){
     var svHtml='';
-    // 카드납부/계좌이체/연금/주식/목적 도 표시 (있는 것만)
-    var ALL_SAVE_GROUPS=['예적금','연금','주식','목적','목적2']; // 예적금=전세대출원금포함, 목적=집계약용, 목적2=비상금/덕질
-    ALL_SAVE_GROUPS.forEach(function(major){
-      if(CAT_MV_SUBS[major]) svHtml+=saveRow2(major, CAT_MV_SUBS[major]);
+    SAVE_GROUPS_1.forEach(function(major){
+      if(CAT_MV_SUBS[major]){
+        var s=monE.filter(function(e){return e.type==='이동'&&CAT_MV_SUBS[major].indexOf(e.sub)>=0;}).reduce(function(s,e){return s+e.amount;},0);
+        saveTotal1+=s;
+        svHtml+=saveRow2(major, CAT_MV_SUBS[major]);
+      }
     });
     svHtml+='<div style="border-top:1px solid var(--bd2);padding:10px 14px;display:flex;justify-content:space-between;background:var(--bg3)">'
       +'<span style="font-size:14px;font-weight:700;color:var(--txt2)">저축 합계</span>'
-      +'<span style="font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums">'+W(mSave)+'</span></div>';
+      +'<span style="font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums">'+W(saveTotal1)+'</span></div>';
     saveEl.innerHTML=svHtml||'<div style="padding:12px 14px;color:var(--txt3)">저축 없음</div>';
+    var _st=document.getElementById('gb-save-total');
+    if(_st) _st.textContent=saveTotal1>0?W(saveTotal1):'';
+  }
+
+  // ── 이동 섹션 (비상금/덕질) - 세부 항상 표시 ──
+  var MOVE_GROUPS=['비상금','덕질'];
+  var moveTotal=0;
+  var moveEl=el('gb-move-budget');
+  function moveRow(major, subs){
+    var spend=monE.filter(function(e){return e.type==='이동'&&subs.indexOf(e.sub)>=0;}).reduce(function(s,e){return s+e.amount;},0);
+    var bud=0;
+    if(SAVE_GOALS&&SAVE_GOALS.length){
+      SAVE_GOALS.forEach(function(g){
+        var matched=subs.some(function(sub){return sub===g.mk||sub===g.n||g.mk.indexOf(sub)>=0;});
+        if(matched) bud+=g.g||0;
+      });
+    }
+    if(spend===0&&bud===0) return '';
+    var pct=bud>0?Math.round(spend/bud*100):0;
+    var barC=spend>bud?'var(--red)':'var(--blue)';
+    var detailHtml='';
+    subs.forEach(function(sub){
+      var ss=monE.filter(function(e){return e.type==='이동'&&e.sub===sub;}).reduce(function(s,e){return s+e.amount;},0);
+      detailHtml+='<div style="display:flex;align-items:center;padding:8px 14px 8px 28px;border-top:.5px solid var(--bd);background:var(--bg3)">'
+        +'<span style="font-size:13px;color:var(--txt2);flex:1">'+sub+'</span>'
+        +'<span style="font-size:13px;font-weight:600;color:'+(ss>0?'var(--blue)':'var(--txt3)')+';font-variant-numeric:tabular-nums">'+W(ss)+'</span></div>';
+    });
+    var bid='gbrs'+(++_rowIdx);
+    return '<div style="border-top:.5px solid var(--bd)">'
+      +'<div style="display:flex;align-items:center;padding:11px 14px;cursor:pointer;user-select:none" onclick="gbBudRow(\''+bid+'\')">'
+      +'<div style="display:flex;align-items:baseline;gap:6px;flex:1">'
+      +'<span style="font-size:14px;font-weight:700;color:var(--txt)">'+major+'</span>'
+      +(bud?'<span style="font-size:12px;color:var(--txt3)">'+W(bud)+'</span>':'')
+      +'</div>'
+      +(bud?'<div style="width:50px;height:4px;background:var(--bd);border-radius:99px;overflow:hidden;margin-right:8px"><div style="height:100%;width:'+Math.min(pct,100)+'%;background:'+barC+';border-radius:99px"></div></div>':'')
+      +'<span style="font-size:14px;font-weight:700;color:'+(spend>0?'var(--blue)':'var(--txt3)')+';font-variant-numeric:tabular-nums">'+W(spend)+'</span>'
+      +'<span class="gb-arr" style="font-size:11px;color:var(--txt3);margin-left:8px">▼</span>'
+      +'</div>'
+      +'<div id="'+bid+'" style="display:none">'+detailHtml+'</div>'
+      +'</div>';
+  }
+
+  if(moveEl){
+    var mvHtml='';
+    MOVE_GROUPS.forEach(function(major){
+      if(CAT_MV_SUBS[major]){
+        var s=monE.filter(function(e){return e.type==='이동'&&CAT_MV_SUBS[major].indexOf(e.sub)>=0;}).reduce(function(s,e){return s+e.amount;},0);
+        moveTotal+=s;
+        mvHtml+=moveRow(major, CAT_MV_SUBS[major]);
+      }
+    });
+    mvHtml+='<div style="border-top:1px solid var(--bd2);padding:10px 14px;display:flex;justify-content:space-between;background:var(--bg3)">'
+      +'<span style="font-size:14px;font-weight:700;color:var(--txt2)">이동 합계</span>'
+      +'<span style="font-size:14px;font-weight:700;color:var(--blue);font-variant-numeric:tabular-nums">'+W(moveTotal)+'</span></div>';
+    moveEl.innerHTML=mvHtml||'<div style="padding:12px 14px;color:var(--txt3)">이동 없음</div>';
+    var _mt=document.getElementById('gb-move-total');
+    if(_mt) _mt.textContent=moveTotal>0?W(moveTotal):'';
+  }
+
+  // ── 고정비 섹션 합계 표시 ──
+  var fixedEl=el('gb-fixed-budget');
+  if(fixedEl){
+    var fixedHtml=
+      budRow('주거비','🏠 주거비',CAT_OUT_SUBS['주거비'])
+     +budRow('보험','🗃️ 보험',CAT_OUT_SUBS['보험'])
+     +budRow('통신비','📞 통신비',CAT_OUT_SUBS['통신비'])
+     +budRow('곗돈','🍀 곗돈',CAT_OUT_SUBS['곗돈'])
+     +budRow('엄마(고정)','☀️ 엄마(고정)',MAMA_FIXED);
+    var fixedTotal=['주거비','보험','통신비','곗돈'].reduce(function(s,k){return s+catSpend('🏠 '+k.charAt(0).toUpperCase())+catSpend(k);},0)
+      +MAMA_FIXED.reduce(function(s,sub){return s+subSpend('엄마','☀️ 엄마(고정)',sub)||monE.filter(function(e){return e.type==='지출'&&e.sub===sub;}).reduce(function(ss,e){return ss+e.amount;},0);},0);
+    // 실제 고정비 합계는 catSpend 기반
+    var fixedSpend=['🏠 주거비','🗃️ 보험','📞 통신비','🍀 곗돈','☀️ 엄마(고정)'].reduce(function(s,k){return s+catSpend(k);},0);
+    fixedHtml+='<div style="border-top:1px solid var(--bd2);padding:10px 14px;display:flex;justify-content:space-between;background:var(--bg3)">'
+      +'<span style="font-size:14px;font-weight:700;color:var(--txt2)">고정비 합계</span>'
+      +'<span style="font-size:14px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums">'+W(fixedSpend)+'</span></div>';
+    fixedEl.innerHTML=fixedHtml;
+    var _ft=document.getElementById('gb-fixed-total');
+    if(_ft) _ft.textContent=fixedSpend>0?W(fixedSpend):'';
+  }
+
+  // ── 변동비 섹션 합계 ──
+  var varEl=el('gb-var-budget');
+  if(varEl){
+    var varHtml=
+      budRow('엄마(건강)','☀️ 엄마(건강)',[])
+     +budRow('식비','🍽️ 식비',CAT_OUT_SUBS['식비'])
+     +budRow('생활용품','🛒 생활용품',CAT_OUT_SUBS['생활용품'])
+     +budRow('꾸밈비','👗 꾸밈비',CAT_OUT_SUBS['꾸밈비'])
+     +budRow('자기계발','👩‍🎓 자기계발',CAT_OUT_SUBS['자기계발'])
+     +budRow('건강','😷 건강',CAT_OUT_SUBS['건강'])
+     +budRow('교통비','🚌 교통비',CAT_OUT_SUBS['교통비']);
+    var varSpend=['☀️ 엄마(건강)','🍽️ 식비','🛒 생활용품','👗 꾸밈비','👩‍🎓 자기계발','😷 건강','🚌 교통비'].reduce(function(s,k){return s+catSpend(k);},0);
+    varHtml+='<div style="border-top:1px solid var(--bd2);padding:10px 14px;display:flex;justify-content:space-between;background:var(--bg3)">'
+      +'<span style="font-size:14px;font-weight:700;color:var(--txt2)">변동비 합계</span>'
+      +'<span style="font-size:14px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums">'+W(varSpend)+'</span></div>';
+    varEl.innerHTML=varHtml;
+    var _vt=document.getElementById('gb-var-total');
+    if(_vt) _vt.textContent=varSpend>0?W(varSpend):'';
+  }
+
+  // ── 변동비2 섹션 합계 ──
+  var var2El=el('gb-var2-budget');
+  if(var2El){
+    var var2Html=
+      budRow('경조사','🎁 경조사',CAT_OUT_SUBS['경조사'])
+     +budRow('문화생활','📺 문화생활',CAT_OUT_SUBS['문화생활'])
+     +budRow('기타','✔️ 기타',CAT_OUT_SUBS['기타']);
+    var var2Spend=['🎁 경조사','📺 문화생활','✔️ 기타'].reduce(function(s,k){return s+catSpend(k);},0);
+    var2Html+='<div style="border-top:1px solid var(--bd2);padding:10px 14px;display:flex;justify-content:space-between;background:var(--bg3)">'
+      +'<span style="font-size:14px;font-weight:700;color:var(--txt2)">변동비2 합계</span>'
+      +'<span style="font-size:14px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums">'+W(var2Spend)+'</span></div>';
+    var2El.innerHTML=var2Html;
+    var _v2t=document.getElementById('gb-var2-total');
+    if(_v2t) _v2t.textContent=var2Spend>0?W(var2Spend):'';
   }
 
   // 카드별 잔액 - 카드별 구분 명확 + 사용액→잔액 순서
@@ -6297,7 +6510,7 @@ function renderHome(){
   if(hm) hm.textContent=y+'년 '+parseInt(m)+'월';
   try{var ta=document.getElementById('quick-memo');if(ta){var mv=localStorage.getItem('quickMemo_'+curMon);if(mv)ta.value=mv;}}catch(e){}
   // ── 접기 상태 적용 (renderHome 호출마다) ──
-  ['fixed','var','income','save','card'].forEach(function(s){
+  ['fixed','var','var2','income','save','move','card'].forEach(function(s){
     var elS=document.getElementById('gb-'+s+'-budget');
     if(!elS&&s==='card') elS=document.getElementById('gb-card-grid');
     var btn=document.getElementById('gb-'+s+'-toggle');
@@ -6312,7 +6525,7 @@ function renderHome(){
   (function(){
     var allBtn=document.getElementById('gb-all-toggle');
     if(!allBtn) return;
-    var anyOpen=['fixed','var','income','save','card'].some(function(s){
+    var anyOpen=['fixed','var','var2','income','save','move','card'].some(function(s){
       var elS=document.getElementById('gb-'+s+'-budget');
       if(!elS&&s==='card') elS=document.getElementById('gb-card-grid');
       return elS&&elS.style.display!=='none';
@@ -6326,27 +6539,31 @@ function renderHome(){
 function gbExpandSec(sec){
   var wrap=document.getElementById('gb-'+sec+'-budget');
   if(!wrap) return;
-  wrap.querySelectorAll('[id^="gbr"]').forEach(function(el){
+  wrap.querySelectorAll('[id^="gbr"],[id^="gbri"],[id^="gbrs"]').forEach(function(el){
     el.style.display='block';
   });
-  wrap.querySelectorAll('.gb-arr').forEach(function(el){
-    el.textContent='▲';
-  });
+  wrap.querySelectorAll('.gb-arr').forEach(function(el){el.textContent='▲';});
 }
 function gbCollapseSec(sec){
   var wrap=document.getElementById('gb-'+sec+'-budget');
   if(!wrap) return;
-  wrap.querySelectorAll('[id^="gbr"]').forEach(function(el){
+  wrap.querySelectorAll('[id^="gbr"],[id^="gbri"],[id^="gbrs"]').forEach(function(el){
     el.style.display='none';
   });
-  wrap.querySelectorAll('.gb-arr').forEach(function(el){
-    el.textContent='▼';
-  });
+  wrap.querySelectorAll('.gb-arr').forEach(function(el){el.textContent='▼';});
 }
 
 var _gbCollapsed=(function(){
   try{var s=localStorage.getItem('gb_collapsed');return s?JSON.parse(s):{};} catch(e){return {};}
 })();
+function gbCardExpandAll(){
+  document.querySelectorAll('#gb-card-grid [id^="gbc"]').forEach(function(el){el.style.display='block';});
+  document.querySelectorAll('#gb-card-grid [id^="agbc"]').forEach(function(el){el.textContent='▲';});
+}
+function gbCardCollapseAll(){
+  document.querySelectorAll('#gb-card-grid [id^="gbc"]').forEach(function(el){el.style.display='none';});
+  document.querySelectorAll('#gb-card-grid [id^="agbc"]').forEach(function(el){el.textContent='▼';});
+}
 function gbCardToggle(cid){
   var d=document.getElementById(cid);
   var a=document.getElementById('a'+cid);
@@ -6376,7 +6593,7 @@ function gbToggleSection(sec){
   try{localStorage.setItem('gb_collapsed',JSON.stringify(_gbCollapsed));}catch(e){}
 }
 function gbToggleAll(){
-  var allSecs=['fixed','var','income','save','card'];
+  var allSecs=['fixed','var','var2','income','save','move','card'];
   var anyOpen=allSecs.some(function(s){
     var el=document.getElementById('gb-'+s+'-budget');
     if(!el&&s==='card') el=document.getElementById('gb-card-grid');
@@ -7245,12 +7462,7 @@ function showSubBudgetDebug(){
   el.style.display='block';
 }
 
-function saveSheetConfig(){
-  var sid=document.getElementById('sheet-id2').value.trim(),surl=document.getElementById('script-url2').value.trim();
-  if(!surl){showToast('Script URL\uC744 \uC785\uB825\uD574\uC8FC\uC138\uC694');return;}
-  try{if(sid)localStorage.setItem('sheetId',sid);localStorage.setItem('scriptUrl',surl);}catch(e){}
-  renderSetup();showToast('\uC5F0\uB3D9 \uC124\uC815 \uC800\uC7A5\uB410\uC5B4\uC694!');
-}
+// saveSheetConfig: 아래 재정의 버전 사용
 // ── 자동 동기화 (백그라운드, 조용히) ──
 // ── 자동 동기화 (읽기 전용 - 새 항목만 추가, 기존 데이터 절대 안건드림) ──
 // ── 자동 동기화 (3분마다, 앱 입력 항목만, ID 기준 중복체크) ──
@@ -7357,7 +7569,15 @@ function loadFromSheet(silent,overwrite){
       window._pfLoading=false;
       loadPfData();
     }
-  }).catch(function(err){if(st)st.textContent='\uC2E4\uD328: '+err.message;if(!silent)showToast('\uBD88\uB7EC\uC624\uAE30 \uC2E4\uD328');});
+  }).catch(function(err){
+    var msg=err.message||String(err);
+    var hint='';
+    if(msg.indexOf('fetch')>=0||msg.indexOf('Failed')>=0||msg.indexOf('Network')>=0){
+      hint=' (CORS 오류 — GAS 배포 설정에서 "액세스 권한: 모든 사용자" 확인)';
+    }
+    if(st)st.textContent='실패: '+msg+hint;
+    if(!silent)showToast('불러오기 실패: '+msg);
+  });
 }
 function toggleCfgSec(id){
   var b=document.getElementById('cfg-body-'+id),a=document.getElementById('cfg-arr-'+id);
@@ -7640,10 +7860,11 @@ function saveSheetConfig(){
     if(typeof loadFromSheet==='function') loadFromSheet();
     // pfTx 초기화 후 로드 (중복 방지)
     if(typeof loadPfData==='function') {
-      window._pfLoading = false; // 강제 리셋
-      loadPfData().then(function(){
-        if(typeof showTab==='function') showTab(12);
-      });
+      try {
+        window._pfLoading = false; // 강제 리셋
+        var _r = loadPfData();
+        if(_r && typeof _r.then==='function') _r.then(function(){ /* ok */ }).catch(function(){});
+      } catch(e) { console.warn('loadPfData error:', e); }
     }
   }, 500);
 }
@@ -7777,7 +7998,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <script>
 (function(){
-  var V = '1779413682';
+  var V = '1779430162';
   var stored = localStorage.getItem('_appVersion');
   if (stored && stored !== V) {
     localStorage.setItem('_appVersion', V);
