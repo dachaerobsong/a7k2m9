@@ -1324,7 +1324,7 @@ function showTab(i) {
   if(i===4) { if(!_pfRendered.holdings) { renderHoldingsTab(); _pfRendered.holdings=true; } }
   if(i===13) { pfRenderHoldings2(); }
   if(i===14) { pfRenderPnlDiv(); }
-  if(i===15) { pfRenderAcctBalance(); }
+  if(i===15) { pfRenderAcctBalance(); if(pfTx.length){ renderDashboard(); _pfRendered.dash=true; } }
   // 가계부 탭(5~9) — scriptUrl 없으면 설정 탭(10)으로 리다이렉트
   if(i>=5 && i<=9) {
     var gbUrl = localStorage.getItem('scriptUrl')||'';
@@ -8410,7 +8410,7 @@ function saveSheetConfig(){
 // ── HTML 버전 변경 감지 ──
 // 이 값은 HTML을 수정할 때마다 바뀌어야 합니다
 (function(){
-  var BUILD_VER = '20250526-v38';
+  var BUILD_VER = '20250526-v39';
   var KEY = 'pf_build_ver';
   try {
     var prev = localStorage.getItem(KEY);
