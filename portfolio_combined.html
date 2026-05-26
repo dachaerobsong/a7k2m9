@@ -2240,17 +2240,37 @@ function renderStockHome(d){
   homeEl.style.display='flex';
   if(emptyEl) emptyEl.style.display='none';
 
+  // 현재가: holdingsData + pf_sheet_prices 둘 다 참조
+  let sheetPrices={};
+  try{sheetPrices=JSON.parse(localStorage.getItem('pf_sheet_prices')||'{}');}catch(e){}
+  const getPrice=(name,account)=>{
+    // 1) holdingsData 우선
+    const hd=d.holdingsData[name];
+    if(hd&&parseFloat(hd.currentPrice)>0) return parseFloat(hd.currentPrice);
+    // 2) pf_sheet_prices: "종목명|계좌" 또는 "종목명"
+    const accKey=account?name+'|'+account.replace(/\s/g,''):'';
+    if(accKey&&sheetPrices[accKey]>0) return parseFloat(sheetPrices[accKey]);
+    if(sheetPrices[name]>0) return parseFloat(sheetPrices[name]);
+    return 0;
+  };
+
   const W=v=>v!=null?Math.abs(Math.round(v)).toLocaleString()+'원':'—';
   const Wm=v=>v!=null?Math.round(Math.abs(v)/10000)+'만':'—';
   const sign=v=>v>=0?'+':'−';
   const col=v=>v>=0?'var(--green)':'var(--red)';
   const se=(id,v,c)=>{const el=document.getElementById(id);if(el){el.textContent=v;if(c)el.style.color=c;}};
 
-  // 총자산: totalEvalAmt(현재가×수량 합) + 예수금
-  // totalEvalAmt가 있으면 그걸 우선, 없으면 acctEvalMap 합계
-  const acctOrder=['미래ISA','미래연금저축','삼성연금저축','우리IRP','미래종합','미래금현물'];
-  const evalSum=acctOrder.reduce((s,a)=>s+(d.acctEvalMap[a]||0),0);
-  const evalAmt=d.totalEvalAmt>0?d.totalEvalAmt:evalSum;
+  // totalEvalAmt: pf_sheet_prices 포함해서 재계산
+  let recalcEval=0;
+  const holdByAccName2=d.fifo.holdByAccName||{};
+  Object.values(holdByAccName2).forEach(h=>{
+    const cp=getPrice(h.name, h.account);
+    if(cp>0) recalcEval+=cp*h.qty;
+  });
+  // pf_acct_eval(수동입력 연금 등)도 반영
+  let acctEvalSum=0;
+  try{const ae=JSON.parse(localStorage.getItem('pf_acct_eval')||'{}');acctEvalSum=Object.values(ae).reduce((s,v)=>s+v,0);}catch(e){}
+  const evalAmt=recalcEval>0?recalcEval:(acctEvalSum>0?acctEvalSum:d.totalEvalAmt);
   const totalAsset=d.totalAsset>0?d.totalAsset:(evalAmt>0?evalAmt+d.deposit:0);
   const realDeposit=d.deposit;
   const unrealized=evalAmt>0?evalAmt-d.totalCostBasis:d.unrealized;
@@ -2371,8 +2391,7 @@ function renderStockHome(d){
         // 계좌 헤더행
         let accCost=0, accEval=0;
         items.forEach(([,h])=>{
-          const hd=d.holdingsData[h.name];
-          const cp=hd?parseFloat(hd.currentPrice)||0:0;
+          const cp=getPrice(h.name, h.account);
           accCost+=h.costBasis;
           if(cp>0) accEval+=cp*h.qty;
         });
@@ -2385,8 +2404,7 @@ function renderStockHome(d){
         </tr>`;
         // 종목 행
         items.forEach(([key,h])=>{
-          const hd=d.holdingsData[h.name];
-          const cp=hd?parseFloat(hd.currentPrice)||0:0;
+          const cp=getPrice(h.name, h.account);
           const evalAmt=cp>0?Math.round(cp*h.qty):0;
           const pnl=evalAmt>0?evalAmt-Math.round(h.costBasis):null;
           const pct2=pnl!=null&&h.costBasis>0?((pnl/h.costBasis)*100).toFixed(1):null;
@@ -8410,7 +8428,7 @@ function saveSheetConfig(){
 // ── HTML 버전 변경 감지 ──
 // 이 값은 HTML을 수정할 때마다 바뀌어야 합니다
 (function(){
-  var BUILD_VER = '20250526-v39';
+  var BUILD_VER = '20250526-v40';
   var KEY = 'pf_build_ver';
   try {
     var prev = localStorage.getItem(KEY);
