@@ -1691,6 +1691,60 @@ function getManualEval() {
   try { return JSON.parse(localStorage.getItem(MANUAL_EVAL_KEY)||'{}'); } catch(e){ return {}; }
 }
 
+// ── 공통 총자산 계산 함수 ──
+// 세 탭(전체자산/투자홈/주식홈) 모두 이 함수를 사용해 숫자를 통일한다
+function calcTotalAsset() {
+  // 1) FIFO 보유수량 (계좌별 종목 단위)
+  const fifo2 = pfCalcFifo2();
+  // 2) 현재가 소스: pf_sheet_prices 우선, 없으면 pf_holdings_data.currentPrice
+  let sheetPrices = {};
+  try { sheetPrices = JSON.parse(localStorage.getItem('pf_sheet_prices')||'{}'); } catch(e){}
+  let holdingsData = {};
+  try { holdingsData = JSON.parse(localStorage.getItem('pf_holdings_data')||'{}'); } catch(e){}
+  const manualEval = getManualEval();
+
+  // 3) 평가금액 = Σ(수량 × 현재가), 계좌별로도 집계
+  let evalTotal = 0;
+  const acctEvalMap = {};
+  Object.values(fifo2).forEach(h => {
+    const accKey = h.name + '|' + (h.account||'');
+    const cp = sheetPrices[accKey] || sheetPrices[h.name]
+            || parseFloat((holdingsData[h.name]||{}).currentPrice) || 0;
+    if (cp > 0 && h.qty > 0) {
+      const e = h.qty * cp;
+      evalTotal += e;
+      acctEvalMap[h.account] = (acctEvalMap[h.account]||0) + e;
+    }
+  });
+
+  // 4) 연금·금 수동입력 — 현재가로 계산된 값 없는 계좌만 보완
+  ['미래연금저축','삼성연금저축','우리IRP','미래금현물','미래금'].forEach(acc => {
+    const mv = parseFloat(manualEval[acc]) || 0;
+    if (mv > 0 && !(acctEvalMap[acc] > 0)) {
+      acctEvalMap[acc] = mv;
+      evalTotal += mv;
+    }
+  });
+
+  // 5) 예수금 = 입금 - 출금 - 매수 + 매도 + 분배금 (amount 부호 그대로 합산)
+  let deposit = 0;
+  let totalIn = 0, totalOut = 0, totalBuy = 0, totalSell = 0, totalDiv = 0;
+  pfTx.forEach(r => {
+    const amt = Math.abs(parseFloat(r.amount)||0);
+    if (r.type==='입금')                        { totalIn  += amt; deposit += amt; }
+    else if (r.type==='출금')                   { totalOut += amt; deposit -= amt; }
+    else if (r.type==='매수'||r.type==='매수.') { totalBuy += amt; deposit -= amt; }
+    else if (r.type==='매도'||r.type==='매도.') { totalSell+= amt; deposit += amt; }
+    else if (r.type==='분배금'||r.type==='배당'){ totalDiv += amt; deposit += amt; }
+  });
+
+  // 6) 총자산
+  const totalAsset = evalTotal > 0 ? evalTotal + deposit : 0;
+  const netIn = totalIn - totalOut;
+
+  return { evalTotal, deposit, totalAsset, netIn, totalIn, totalOut, totalBuy, totalSell, totalDiv, acctEvalMap };
+}
+
 // ── 보유종목 탭 (p4) 렌더링 ──
 function renderHoldingsTab() {
   const wrap = document.getElementById('hld-table-wrap');
@@ -1881,26 +1935,18 @@ function renderDashboard() {
 
   const fifo=calcFifoForDashboard(pfTx);
   const totalCostBasis=fifo.totalCostBasis;
-  const netIn=totalIn-totalOut;
-  const deposit=totalIn-totalOut-totalBuy+totalSell+totalDiv;
   const taxRefund=Math.round(Math.min(pen26,6000000)*0.165);
 
-  // 현재가 데이터
-  let holdingsData={};
-  try{ holdingsData=JSON.parse(localStorage.getItem('pf_holdings_data')||'{}'); }catch(e){}
+  // ★ 공통 함수로 통일된 총자산 계산
+  const _ca = calcTotalAsset();
+  const totalEvalAmt = _ca.evalTotal;
+  const deposit      = _ca.deposit;
+  const totalAsset   = _ca.totalAsset;
+  const netIn        = _ca.netIn;
+  const acctEvalMapDash = _ca.acctEvalMap;
 
-  // 수동 평가금액 (연금·금 계좌) 반영
-  const manualEval = getManualEval();
-
-  // 평가금액 계산
-  let totalEvalAmt=0;
-  Object.entries(fifo.holdByName).forEach(([name,h])=>{
-    const hd=holdingsData[name]; const cp=hd?(parseFloat(hd.currentPrice)||0):0;
-    if(cp>0) totalEvalAmt+=h.qty*cp;
-  });
   const unrealized=totalEvalAmt>0?totalEvalAmt-totalCostBasis:null;
   const totalPnl=totalRealized+totalDiv+(unrealized!==null?unrealized:0);
-  const totalAsset=totalEvalAmt>0?totalEvalAmt+deposit:0;
   const totalRate=netIn>0&&totalAsset>0?(totalAsset-netIn)/netIn*100:null;
 
   const se=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
@@ -1941,6 +1987,8 @@ function renderDashboard() {
   // 3행: 계좌별 현황
   const accOrderDash=['미래ISA','미래연금저축','삼성연금저축','우리IRP','미래종합','미래금현물'];
   const accColors3={'미래ISA':'#1D9E75','미래연금저축':'#7F77DD','삼성연금저축':'#7F77DD','우리IRP':'#378ADD','미래종합':'#8b95a1','미래금현물':'#f5a623'};
+  // ★ acctEvalMap 통일 정의 (calcTotalAsset 결과)
+  const acctEvalMap = acctEvalMapDash;
   const dashAccEl=document.getElementById('dash-acct-rows');
   if(dashAccEl){
     dashAccEl.innerHTML=accOrderDash.map(acc=>{
@@ -1966,43 +2014,19 @@ function renderDashboard() {
   if(profEl){ profEl.textContent=(totalPnl>=0?'+':'')+fmtW(totalPnl); profEl.style.color=col(totalPnl); }
 
   // ② 투자 판단 지표 (보유종목 기반)
+  let holdingsData={};
+  try{ holdingsData=JSON.parse(localStorage.getItem('pf_holdings_data')||'{}'); }catch(e){}
+  const manualEval = getManualEval();
   const holdItems=Object.entries(holdingsData);
-  let totalHoldEval=0, usEtfEval=0, krStkEval=0, etfEval=0, indivEval=0;
-  // pf_acct_eval: loadHoldingsFromSheet에서 계좌별로 정확히 집계한 값
-  // (같은 종목명이 여러 계좌에 있을 때 name key 덮어쓰기 문제 해결)
-  let savedAcctEval = {};
-  try { savedAcctEval = JSON.parse(localStorage.getItem('pf_acct_eval')||'{}'); } catch(e){}
-
-  const acctEvalMap={};
+  let totalHoldEval=totalEvalAmt, usEtfEval=0, krStkEval=0, etfEval=0, indivEval=0;
   holdItems.forEach(([name,hd])=>{
     const qty=parseFloat(hd.qty)||0; const cp=parseFloat(hd.currentPrice)||0;
     if(!qty||!cp) return;
-    const e=qty*cp; totalHoldEval+=e;
+    const e=qty*cp;
     const sec=hd.sector||'';
     if(sec.includes('미국ETF')) usEtfEval+=e;
     if(sec==='국내주식') krStkEval+=e;
     if(!sec.includes('주식')) etfEval+=e; else indivEval+=e;
-  });
-  // 계좌별 평가금액은 savedAcctEval 우선 (정확한 계좌별 집계)
-  // savedAcctEval이 없으면 holdingsData name 기반으로 폴백
-  if(Object.keys(savedAcctEval).length > 0) {
-    Object.assign(acctEvalMap, savedAcctEval);
-    totalHoldEval = Object.values(savedAcctEval).reduce((s,v)=>s+v, 0);
-  } else {
-    holdItems.forEach(([name,hd])=>{
-      const qty=parseFloat(hd.qty)||0; const cp=parseFloat(hd.currentPrice)||0;
-      if(!qty||!cp) return;
-      const acct=hd.account||'';
-      acctEvalMap[acct]=(acctEvalMap[acct]||0)+qty*cp;
-    });
-  }
-  // 수동 입력값 — savedAcctEval에 없는 계좌(연금·금)만 보완
-  ['미래연금저축','삼성연금저축','우리IRP','미래금현물'].forEach(acc=>{
-    const mv = manualEval[acc]||0;
-    if(mv>0 && !(acctEvalMap[acc]>0)) {
-      acctEvalMap[acc] = mv;
-      if(acc !== '미래금현물') { totalHoldEval+=mv; etfEval+=mv; usEtfEval+=mv; }
-    }
   });
 
   const penEval=(acctEvalMap['미래연금저축']||0)+(acctEvalMap['삼성연금저축']||0)+(acctEvalMap['우리IRP']||0);
@@ -2260,20 +2284,11 @@ function renderStockHome(d){
   const col=v=>v>=0?'var(--green)':'var(--red)';
   const se=(id,v,c)=>{const el=document.getElementById(id);if(el){el.textContent=v;if(c)el.style.color=c;}};
 
-  // totalEvalAmt: pf_sheet_prices 포함해서 재계산
-  let recalcEval=0;
-  const holdByAccName2=d.fifo.holdByAccName||{};
-  Object.values(holdByAccName2).forEach(h=>{
-    const cp=getPrice(h.name, h.account);
-    if(cp>0) recalcEval+=cp*h.qty;
-  });
-  // pf_acct_eval(수동입력 연금 등)도 반영
-  let acctEvalSum=0;
-  try{const ae=JSON.parse(localStorage.getItem('pf_acct_eval')||'{}');acctEvalSum=Object.values(ae).reduce((s,v)=>s+v,0);}catch(e){}
-  const evalAmt=recalcEval>0?recalcEval:(acctEvalSum>0?acctEvalSum:d.totalEvalAmt);
-  const totalAsset=d.totalAsset>0?d.totalAsset:(evalAmt>0?evalAmt+d.deposit:0);
-  const realDeposit=d.deposit;
-  const unrealized=evalAmt>0?evalAmt-d.totalCostBasis:d.unrealized;
+  // ★ 공통 함수로 통일 — 재계산 없이 d에서 바로 사용
+  const evalAmt    = d.totalEvalAmt;
+  const totalAsset = d.totalAsset;
+  const realDeposit= d.deposit;
+  const unrealized = evalAmt>0 ? evalAmt-d.totalCostBasis : d.unrealized;
 
   // ① 대시보드 — 내 돈 위치
   se('sh-netin', W(d.netIn));
@@ -3069,92 +3084,24 @@ function renderTotalAsset() {
   };
   const col = v => v>=0?'var(--green)':'var(--red)';
 
-  // ── 주식·연금 파트 ──
-  let holdingsData = {};
-  try { holdingsData = JSON.parse(localStorage.getItem('pf_holdings_data')||'{}'); } catch(e){}
-  const manualEval = getManualEval ? getManualEval() : {};
-  const priceTime = localStorage.getItem('pf_holdings_time')||'';
+  // ★ 공통 함수로 통일된 총자산 계산
+  const _caTA = calcTotalAsset();
+  const evalTotal    = _caTA.evalTotal;
+  const deposit      = _caTA.deposit;
+  const netIn        = _caTA.netIn;
+  const totalIn      = _caTA.totalIn;
+  const totalOut     = _caTA.totalOut;
+  const totalDiv     = _caTA.totalDiv;
+  const acctEvalMapTA = _caTA.acctEvalMap;
 
-  // FIFO 계산
+  // FIFO·실현손익 (표 표시용)
   const fifo = pfTx.length ? calcFifoForDashboard(pfTx) : {holdByName:{}, sellHistory:[], totalCostBasis:0};
   const pnlMap = pfTx.length ? calcRealizedPnL(pfTx) : {};
-
-  // 총 순납입(입금-출금) · 배당
-  let totalIn=0, totalOut=0, totalDiv=0;
-  pfTx.forEach(r=>{
-    const amt = Math.abs(parseFloat(r.amount)||0);
-    if(r.type==='입금')   totalIn  += amt;
-    if(r.type==='출금')   totalOut += amt;
-    if(r.type==='분배금'||r.type==='배당') totalDiv += amt;
-  });
-  const netIn = totalIn - totalOut; // 순납입
-
-  // 실현손익 합계
   const totalRealized = Object.values(pnlMap).reduce((s,v)=>s+v, 0);
-
-  // 평가금액 (보유종목 현재가 기반 + 수동입력)
-  // 평가금액: sheetPrices 기반 (pfRenderAcctBalance와 동일한 소스)
-  let sheetPricesTA = {};
-  try { sheetPricesTA = JSON.parse(localStorage.getItem('pf_sheet_prices')||'{}'); } catch(e){}
-  const fifoH2 = pfCalcFifo2();
-  let evalTotal = 0, evalAvail = 0;
-  Object.values(fifoH2).forEach(h => {
-    const cp = sheetPricesTA[h.name+'|'+(h.account||'').replace(/\s/g,'')] || sheetPricesTA[h.name] || 0;
-    if(cp > 0) { evalTotal += h.qty * cp; evalAvail++; }
-  });
-
-  // 예수금 (입금-출금-매수+매도 합)
-  // 예수금: pfRenderAcctBalance와 동일한 공식 (amount+fee+tax 부호 그대로)
-  let deposit = 0;
-  pfTx.forEach(r=>{
-    deposit += (parseFloat(r.amount)||0) + (parseFloat(r.fee)||0) + (parseFloat(r.tax)||0);
-  });
-
-  const unrealized = evalTotal > 0 ? evalTotal - fifo.totalCostBasis - deposit : null;
+  const unrealized = evalTotal > 0 ? evalTotal - fifo.totalCostBasis : null;
   const stockRate = netIn>0 && evalTotal>0 ? (evalTotal-netIn)/netIn*100 : null;
 
-  // 주식/연금 계좌 분류
-  const ISA_ACCS    = ['미래ISA','미래종합','미래금현물'];
-  const PENSION_ACCS = ['미래연금저축','삼성연금저축','우리IRP'];
-
-  // pfRenderAcctBalance의 map 재계산
-  const _mapTA = {};
-  pfTx.forEach(r => {
-    const a = (r.account||'').replace(/\s/g,'');
-    if (!_mapTA[a]) _mapTA[a] = { cash:0 };
-    _mapTA[a].cash += (parseFloat(r.amount)||0)+(parseFloat(r.fee)||0)+(parseFloat(r.tax)||0);
-  });
-  let sheetPricesTA2 = {};
-  try { sheetPricesTA2 = JSON.parse(localStorage.getItem('pf_sheet_prices')||'{}'); } catch(e){}
-  const fifoTA = pfCalcFifo2();
-  const acctEvalTA = {};
-  Object.values(fifoTA).forEach(h => {
-    const acc = (h.account||'').replace(/\s/g,'');
-    const cp = sheetPricesTA2[h.name+'|'+acc] || sheetPricesTA2[h.name] || 0;
-    if (cp > 0) acctEvalTA[acc] = (acctEvalTA[acc]||0) + h.qty * cp;
-  });
-
-  // 주식 총자산
-  let isaTotal = 0;
-  ISA_ACCS.forEach(a => { isaTotal += (acctEvalTA[a]||0) + (_mapTA[a]?.cash||0); });
-  // 연금 총자산
-  let pensionTotal = 0;
-  PENSION_ACCS.forEach(a => { pensionTotal += (acctEvalTA[a]||0) + (_mapTA[a]?.cash||0); });
-
-  const _setEl = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-  const allStockPension = isaTotal + pensionTotal;
-  _setEl('ta-stock-isa', allStockPension > 0 ? Math.round(allStockPension).toLocaleString()+'원' : '데이터 필요');
-  _setEl('ta-stock-pension', pensionTotal > 0 ? Math.round(pensionTotal).toLocaleString()+'원' : '데이터 필요');
-  const allEval = [...ISA_ACCS,...PENSION_ACCS].reduce((s,a)=>s+(acctEvalTA[a]||0),0);
-  const allCash = [...ISA_ACCS,...PENSION_ACCS].reduce((s,a)=>s+(_mapTA[a]?.cash||0),0);
-  _setEl('ta-stock-isa-sub', `평가 ${Math.round(allEval).toLocaleString()}원 + 예수 ${Math.round(allCash).toLocaleString()}원`);
-
-  // ta-stock-rate 제거됨
-
-
-
-  // 주식 계좌별 상세
-  // 1단계: 거래내역에서 계좌별 순납입·매수원가 집계 (항상 가능)
+  // 계좌별 거래 집계 (납입원금 표시용)
   const acctTxMap = {};
   pfTx.forEach(r => {
     const acc = r.account||''; if(!acc) return;
@@ -3162,38 +3109,29 @@ function renderTotalAsset() {
     const amt = Math.abs(parseFloat(r.amount)||0);
     if(r.type==='입금')                          acctTxMap[acc].in   += amt;
     else if(r.type==='출금')                     acctTxMap[acc].out  += amt;
-    else if(r.type==='매수'||r.type==='매수')   acctTxMap[acc].buy  += amt;
-    else if(r.type==='매도'||r.type==='매도')   acctTxMap[acc].sell += amt;
+    else if(r.type==='매수'||r.type==='매수.')   acctTxMap[acc].buy  += amt;
+    else if(r.type==='매도'||r.type==='매도.')   acctTxMap[acc].sell += amt;
     else if(r.type==='분배금'||r.type==='배당')  acctTxMap[acc].div  += amt;
   });
 
-  // 2단계: 현재가 기반 평가금액 (현재가 갱신 후)
-  let savedAcctEvalTA = {};
-  try { savedAcctEvalTA = JSON.parse(localStorage.getItem('pf_acct_eval')||'{}'); } catch(e){}
-  // 현재가 갱신 안 됐으면 holdingsData에서 재집계
-  if(!Object.keys(savedAcctEvalTA).length) {
-    Object.entries(fifo.holdByName).forEach(([name, h]) => {
-      const hd = holdingsData[name] || {};
-      const cp = parseFloat(hd.currentPrice) || 0;
-      const acc = hd.account || h.account || '';
-      if(cp > 0 && acc) savedAcctEvalTA[acc] = (savedAcctEvalTA[acc]||0) + Math.round(h.qty*cp);
-    });
-  }
+  // acctEvalMap = 공통 함수 결과 사용
+  const acctEvalMap = acctEvalMapTA;
 
-  // 3단계: 계좌별 최종 평가금액 — eval있으면 eval, 없으면 매수원가(보유중인 것) 기준
-  const acctEvalMap = {};
-  Object.keys(acctTxMap).forEach(acc => {
-    const t = acctTxMap[acc];
-    const netCost = t.buy - t.sell; // 현재 보유 원가 추정
-    acctEvalMap[acc] = savedAcctEvalTA[acc] > 0
-      ? savedAcctEvalTA[acc]
-      : (netCost > 0 ? netCost : 0);
-  });
-  // 수동입력 계좌 (연금·금) 보완
-  ['삼성연금저축','미래연금저축','우리IRP','미래금현물','미래금'].forEach(acc => {
-    const mv = parseFloat(manualEval[acc]) || 0;
-    if(mv > 0) acctEvalMap[acc] = mv;
-  });
+  // 주식/연금 계좌 분류 (상단 KPI) — 평가+예수 = calcTotalAsset() 총자산과 동일하게
+  const ISA_ACCS    = ['미래ISA','미래종합','미래금현물'];
+  const PENSION_ACCS = ['미래연금저축','삼성연금저축','우리IRP'];
+  const allEvalKPI = [...ISA_ACCS,...PENSION_ACCS].reduce((s,a)=>s+(acctEvalMap[a]||0),0);
+  // 총자산(evalTotal+deposit)을 기준으로 KPI 표시 — 계좌별 예수 재계산 안 함
+  const allStockPensionKPI = evalTotal + deposit;
+
+  const _setEl = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  _setEl('ta-stock-isa', allStockPensionKPI > 0 ? Math.round(allStockPensionKPI).toLocaleString()+'원' : '데이터 필요');
+  _setEl('ta-stock-pension', Math.round((acctEvalMap['미래연금저축']||0)+(acctEvalMap['삼성연금저축']||0)+(acctEvalMap['우리IRP']||0)).toLocaleString()+'원');
+  _setEl('ta-stock-isa-sub', `평가 ${Math.round(evalTotal).toLocaleString()}원 + 예수 ${Math.round(deposit).toLocaleString()}원`);
+
+
+
+
 
   // 계좌 표시 순서 및 색상
   const ACC_ORDER = ['미래ISA','미래연금저축','삼성연금저축','우리IRP','미래종합','미래금현물','미래금'];
@@ -3201,6 +3139,7 @@ function renderTotalAsset() {
     '미래ISA':'var(--teal)', '미래연금저축':'var(--purple)', '삼성연금저축':'#8b5cf6',
     '우리IRP':'var(--blue)', '미래종합':'var(--green)', '미래금현물':'var(--yellow)', '미래금':'var(--yellow)'
   };
+  const priceTime = localStorage.getItem('pf_holdings_time')||'';
   // 정렬: ACC_ORDER 순 → 나머지 (값 없어도 거래내역 있으면 표시)
   const acctWithData = new Set([...Object.keys(acctEvalMap), ...Object.keys(acctTxMap)]);
   const orderedAccts = [
@@ -3211,9 +3150,8 @@ function renderTotalAsset() {
   let stockDetailHtml = '';
   orderedAccts.forEach(acc => {
     const v = acctEvalMap[acc] || 0;
-    const hasSavedEval = (savedAcctEvalTA[acc]||0) > 0;
     const isManual = ['삼성연금저축','미래연금저축','우리IRP','미래금현물'].includes(acc);
-    const label = hasSavedEval ? '' : isManual ? ' <span style="font-size:11px;color:var(--txt3)">(수동)</span>' : ' <span style="font-size:11px;color:var(--yellow)">(원가추정)</span>';
+    const label = v>0 ? '' : isManual ? ' <span style="font-size:11px;color:var(--txt3)">(수동)</span>' : '';
     const c = ACC_COLOR[acc] || 'var(--txt2)';
     stockDetailHtml += `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid var(--bd);font-size:14px">
       <span style="color:${c};font-weight:600">${acc}${label}</span>
