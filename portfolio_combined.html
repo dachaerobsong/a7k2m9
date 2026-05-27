@@ -296,6 +296,7 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   <div class="topnav-tab"   onclick="showTab(6)">입력</div>
   <div class="topnav-tab"   onclick="showTab(7)">내역</div>
   <div class="topnav-tab"   onclick="showTab(8)">잔고</div>
+  <div class="topnav-tab"   onclick="showTab(16)">📅 연간</div>
 
   <div class="topnav-sep"></div>
   <div class="topnav-group-label">📊 투자/연금</div>
@@ -1111,6 +1112,66 @@ html,body{background:var(--bg);font-family:-apple-system,'Apple SD Gothic Neo','
   </div>
 </div>
 
+<div id="p16" class="panel gb-panel" style="padding:16px 16px 60px">
+  <!-- 연간 분석 탭 -->
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div style="display:flex;gap:6px;align-items:center">
+      <button onclick="annualPrevYear()" style="font-size:16px;padding:2px 10px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--txt2);cursor:pointer">‹</button>
+      <span id="ann-year-label" style="font-size:16px;font-weight:700;min-width:60px;text-align:center">2026년</span>
+      <button onclick="annualNextYear()" style="font-size:16px;padding:2px 10px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--txt2);cursor:pointer">›</button>
+    </div>
+    <button onclick="annualSyncMemos()" style="font-size:12px;padding:4px 12px;border:.5px solid var(--border-md);border-radius:99px;background:transparent;color:var(--sub);cursor:pointer">☁️ 메모 동기화</button>
+  </div>
+
+  <!-- KPI 4개 -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:4px">연 총수입</div>
+      <div id="ann-total-in" style="font-size:20px;font-weight:700;color:var(--blue)">—</div>
+      <div id="ann-avg-in" style="font-size:11px;color:var(--hint);margin-top:2px">월평균 —</div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:4px">연 총지출</div>
+      <div id="ann-total-out" style="font-size:20px;font-weight:700;color:var(--red)">—</div>
+      <div id="ann-avg-out" style="font-size:11px;color:var(--hint);margin-top:2px">월평균 —</div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:4px">연 총저축</div>
+      <div id="ann-total-save" style="font-size:20px;font-weight:700;color:var(--green)">—</div>
+      <div id="ann-avg-save" style="font-size:11px;color:var(--hint);margin-top:2px">저축률 —</div>
+    </div>
+    <div class="card" style="padding:12px 14px">
+      <div style="font-size:11px;color:var(--sub);margin-bottom:4px">예산 달성률</div>
+      <div id="ann-budget-rate" style="font-size:20px;font-weight:700">—</div>
+      <div id="ann-budget-sub" style="font-size:11px;color:var(--hint);margin-top:2px">초과달수 —</div>
+    </div>
+  </div>
+
+  <!-- 저축 월별 그래프 -->
+  <div class="card" style="margin-bottom:12px;padding:14px 14px 10px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">💰 월별 저축 흐름</div>
+    <canvas id="ann-save-chart" height="140"></canvas>
+  </div>
+
+  <!-- 항목별 예산 대비 -->
+  <div class="card" style="margin-bottom:12px;padding:14px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">📊 항목별 월평균 vs 예산</div>
+    <div id="ann-budget-table"></div>
+  </div>
+
+  <!-- 지출 TOP 5 -->
+  <div class="card" style="margin-bottom:12px;padding:14px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">🔥 지출 많은 항목 TOP 5</div>
+    <div id="ann-top-cats"></div>
+  </div>
+
+  <!-- 월별 메모 (수입/지출 사유) -->
+  <div class="card" style="padding:14px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:10px">📝 월별 메모 <span style="font-size:11px;font-weight:400;color:var(--sub)">(보너스·특이사항 등)</span></div>
+    <div id="ann-memos"></div>
+  </div>
+</div>
+
 <div id="p10" class="panel gb-panel" style="padding:16px 24px 40px">
   <div class="card">
     <div class="ct" style="display:flex;align-items:center;gap:7px">
@@ -1302,7 +1363,7 @@ function showTab(i) {
     if(match) t.classList.toggle('on', parseInt(match[1])===i);
   });
   // 패널 전환 — 패널 ID → 탭 번호 직접 매핑
-  var panelMap = {'p0':0,'p1':1,'p2':2,'p3':3,'p4':4,'p5':5,'p6':6,'p7':7,'p8':8,'p9':9,'p10':10,'p11':11,'p12':12,'p13':13,'p14':14,'p15':15};
+  var panelMap = {'p0':0,'p1':1,'p2':2,'p3':3,'p4':4,'p5':5,'p6':6,'p7':7,'p8':8,'p9':9,'p10':10,'p11':11,'p12':12,'p13':13,'p14':14,'p15':15,'p16':16};
   Object.entries(panelMap).forEach(function(kv){
     var el = document.getElementById(kv[0]);
     if(el) el.classList.toggle('on', i===kv[1]);
@@ -1325,12 +1386,13 @@ function showTab(i) {
   if(i===13) { pfRenderHoldings2(); }
   if(i===14) { pfRenderPnlDiv(); }
   if(i===15) { pfRenderAcctBalance(); if(pfTx.length){ renderDashboard(); _pfRendered.dash=true; } }
+  if(i===16) { if(typeof renderAnnual==='function') renderAnnual(); }
   // 가계부 탭(5~9) — scriptUrl 없으면 설정 탭(10)으로 리다이렉트
-  if(i>=5 && i<=9) {
+  if((i>=5 && i<=9) || i===16) {
     var gbUrl = localStorage.getItem('scriptUrl')||'';
     if(!gbUrl) {
       // 모든 패널 끄고 설정 탭으로
-      ['p5','p6','p7','p8','p9'].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.remove('on'); });
+      ['p5','p6','p7','p8','p9','p16'].forEach(function(id){ var el=document.getElementById(id); if(el) el.classList.remove('on'); });
       var p10=document.getElementById('p10'); if(p10) p10.classList.add('on');
       // 설정 탭 버튼도 active
       document.querySelectorAll('.topnav-tab').forEach(function(t){
@@ -6093,7 +6155,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── 카테고리 ──
 var CAT_OUT_KEYS = ['주거비','보험','통신비','곗돈','엄마','식비','생활용품','꾸밈비','자기계발','건강','교통비','경조사','문화생활','기타'];
 var CAT_OUT_LABELS = {'주거비':'🏠 주거비','보험':'🗃️ 보험','통신비':'📞 통신비','곗돈':'🍀 곗돈','엄마':'☀️ 엄마','식비':'🍽️ 식비','생활용품':'🛒 생활용품','꾸밈비':'👗 꾸밈비','자기계발':'👩‍🎓 자기계발','건강':'😷 건강','교통비':'🚌 교통비','경조사':'🎁 경조사','문화생활':'📺 문화생활','기타':'✔️ 기타'};
-var CAT_OUT_SUBS = {'주거비':['전세대출이자','관리비','전기세','도시가스','상수도비','기타세금','구독비','TV수신료'],'보험':['우체국보험','메리츠화재','메리츠화재2','삼성화재'],'통신비':['LGU+','삼케','LG알뜰(우릉교)'],'곗돈':['가족곗돈','대딩곗돈','친척곗돈'],'엄마':['엄마대출원금','엄마대출이자','엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)','엄마건강'],'식비':['식자재','배달식비','외식','카페류','가족식비'],'생활용품':['생활소모품','가전/가구','침구/인테리어'],'꾸밈비':['의류/잡화','미용/헤어','세탁/수선'],'자기계발':['스터디/수강','운동','도서'],'건강':['병원/약국','건강보조','예방/검진','목욕'],'교통비':['대중교통','택시비','기차'],'경조사':['가족/친척','지인/동료'],'문화생활':['공연/전시','OTT','기타 입장료','덕질'],'기타':['회비','기타2','집 관련 지출']};
+var CAT_OUT_SUBS = {'주거비':['전세대출이자','관리비','전기세','도시가스','상수도비','기타세금','구독비','TV수신료'],'보험':['우체국보험','메리츠화재','메리츠화재2','삼성화재'],'통신비':['LGU+','삼케','LG알뜰(우릉교)'],'곗돈':['가족곗돈','대딩곗돈','친척곗돈'],'엄마':['엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)','엄마건강'],'식비':['식자재','배달식비','외식','카페류','가족식비'],'생활용품':['생활소모품','가전/가구','침구/인테리어'],'꾸밈비':['의류/잡화','미용/헤어','세탁/수선'],'자기계발':['스터디/수강','운동','도서'],'건강':['병원/약국','건강보조','예방/검진','목욕'],'교통비':['대중교통','택시비','기차'],'경조사':['가족/친척','지인/동료'],'문화생활':['공연/전시','OTT','기타 입장료','덕질'],'기타':['회비','기타2','집 관련 지출']};
 var CAT_IN_KEYS = ['근로소득','금융소득','기타소득'];
 var CAT_IN_LABELS = {'근로소득':'👷 근로소득','금융소득':'💵 금융소득','기타소득':'💰 기타소득'};
 var CAT_IN_SUBS = {'근로소득':['월급','보너스'],'금융소득':['이자소득'],'기타소득':['1/n, 카드환불','기타1','부수입']};
@@ -6105,7 +6167,7 @@ function getCatKeys(t){ return t=='지출'?CAT_OUT_KEYS:t=='수입'?CAT_IN_KEYS:
 function getCatLabel(t,k){ return (t=='지출'?CAT_OUT_LABELS:t=='수입'?CAT_IN_LABELS:CAT_MV_LABELS)[k]||k; }
 function getCatSubs(t,k){ return (t=='지출'?CAT_OUT_SUBS:t=='수입'?CAT_IN_SUBS:CAT_MV_SUBS)[k]||[]; }
 
-var MAMA_FIXED = ['엄마대출원금','엄마대출이자','엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)'];
+var MAMA_FIXED = ['엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)'];
 // 엄마 고정비 예산 (하드코딩)
 var MAMA_SUB_BUDGET = {
   '엄마생활비': 350000,
@@ -7715,6 +7777,217 @@ function applyAstState(){
     if(!b)return;
     if(astExpanded[id]){b.classList.add('open');if(a)a.classList.add('open');}
     else{b.classList.remove('open');if(a)a.classList.remove('open');}
+  });
+}
+
+// ════════════════════════════════════════════
+// 연간 분석 탭 (p16)
+// ════════════════════════════════════════════
+var annualYear = new Date().getFullYear();
+var annualMemos = {};
+var annualChartInst = null;
+
+(function(){
+  try { annualMemos = JSON.parse(localStorage.getItem('gb_annual_memos')||'{}'); } catch(e){}
+})();
+
+function annualPrevYear(){ annualYear--; renderAnnual(); }
+function annualNextYear(){ annualYear++; renderAnnual(); }
+
+function renderAnnual(){
+  var yr = String(annualYear);
+  var _el = function(id){ return document.getElementById(id); };
+  if(_el('ann-year-label')) _el('ann-year-label').textContent = yr+'년';
+
+  var yrE = entries.filter(function(e){ return e.date && e.date.startsWith(yr); });
+  var months = [1,2,3,4,5,6,7,8,9,10,11,12];
+
+  var byMonth = {};
+  months.forEach(function(m){
+    var mm = yr+'-'+(m<10?'0':'')+m;
+    var mE = yrE.filter(function(e){ return e.date.indexOf(mm)===0; });
+    byMonth[mm] = {
+      in:   mE.filter(function(e){ return e.type==='수입'; }).reduce(function(s,e){ return s+e.amount; },0),
+      out:  mE.filter(function(e){ return e.type==='지출'; }).reduce(function(s,e){ return s+e.amount; },0),
+      save: mE.filter(function(e){ return e.type==='이동'; }).reduce(function(s,e){ return s+e.amount; },0),
+    };
+  });
+
+  var activeMons = months.filter(function(m){
+    var mm = yr+'-'+(m<10?'0':'')+m;
+    return byMonth[mm].in>0||byMonth[mm].out>0||byMonth[mm].save>0;
+  });
+  var cnt = activeMons.length || 1;
+
+  var totalIn   = Object.values(byMonth).reduce(function(s,v){ return s+v.in; },0);
+  var totalOut  = Object.values(byMonth).reduce(function(s,v){ return s+v.out; },0);
+  var totalSave = Object.values(byMonth).reduce(function(s,v){ return s+v.save; },0);
+  var saveRate  = totalIn>0 ? Math.round(totalSave/totalIn*100) : 0;
+
+  var W  = function(n){ return '\u20a9'+Math.round(Math.abs(n)).toLocaleString(); };
+  var Wm = function(n){ return Math.round(Math.abs(n)/10000)+'\ub9cc'; };
+
+  if(_el('ann-total-in'))    _el('ann-total-in').textContent    = W(totalIn);
+  if(_el('ann-avg-in'))      _el('ann-avg-in').textContent      = '\uc6d4\ud3c9\uade0 '+Wm(totalIn/cnt);
+  if(_el('ann-total-out'))   _el('ann-total-out').textContent   = W(totalOut);
+  if(_el('ann-avg-out'))     _el('ann-avg-out').textContent     = '\uc6d4\ud3c9\uade0 '+Wm(totalOut/cnt);
+  if(_el('ann-total-save'))  _el('ann-total-save').textContent  = W(totalSave);
+  if(_el('ann-avg-save'))    _el('ann-avg-save').textContent    = '\uc800\ucd95\ub960 '+saveRate+'%';
+
+  var outBudget = ['주거비','보험','통신비','곗돈','엄마','식비','생활용품','꾸밈비','자기계발','건강','교통비','경조사','문화생활','기타'].reduce(function(s,k){ return s+(BUDGET[k]||0); },0);
+  var overMons = 0;
+  if(outBudget>0){
+    activeMons.forEach(function(m){
+      var mm = yr+'-'+(m<10?'0':'')+m;
+      if(byMonth[mm].out > outBudget) overMons++;
+    });
+    var budRate = Math.round((cnt-overMons)/cnt*100);
+    if(_el('ann-budget-rate')){ _el('ann-budget-rate').textContent=budRate+'%'; _el('ann-budget-rate').style.color=budRate>=70?'var(--green)':'var(--red)'; }
+    if(_el('ann-budget-sub'))  _el('ann-budget-sub').textContent='\uc608\uc0b0\ucd08\uacfc '+overMons+'\ub2ec / '+cnt+'\ub2ec';
+  } else {
+    if(_el('ann-budget-rate')) _el('ann-budget-rate').textContent='\uc608\uc0b0 \ubbf8\uc124\uc815';
+    if(_el('ann-budget-sub'))  _el('ann-budget-sub').textContent='\ud648\uc5d0\uc11c \uc608\uc0b0 \uc124\uc815\ud558\uc138\uc694';
+  }
+
+  // 저축 차트
+  var labels   = activeMons.map(function(m){ return m+'\uc6d4'; });
+  var saveData = activeMons.map(function(m){ var mm=yr+'-'+(m<10?'0':'')+m; return Math.round(byMonth[mm].save/10000); });
+  var inData   = activeMons.map(function(m){ var mm=yr+'-'+(m<10?'0':'')+m; return Math.round(byMonth[mm].in/10000); });
+  var outData  = activeMons.map(function(m){ var mm=yr+'-'+(m<10?'0':'')+m; return Math.round(byMonth[mm].out/10000); });
+
+  var ctx = _el('ann-save-chart');
+  if(ctx && typeof Chart !== 'undefined'){
+    if(annualChartInst){ try{ annualChartInst.destroy(); }catch(ex){} }
+    annualChartInst = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels:labels,
+        datasets:[
+          {label:'\uc218\uc785(\ub9cc)',data:inData,  backgroundColor:'rgba(59,130,246,0.18)',borderColor:'rgba(59,130,246,0.7)',borderWidth:1.5,borderRadius:4},
+          {label:'\uc9c0\ucd9c(\ub9cc)',data:outData, backgroundColor:'rgba(239,68,68,0.18)', borderColor:'rgba(239,68,68,0.7)', borderWidth:1.5,borderRadius:4},
+          {label:'\uc800\ucd95(\ub9cc)',data:saveData,backgroundColor:'rgba(34,197,94,0.5)',  borderColor:'rgba(34,197,94,0.9)', borderWidth:1.5,borderRadius:4},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{labels:{font:{size:11},boxWidth:10}}},
+        scales:{
+          y:{ticks:{font:{size:10},callback:function(v){return v+'\ub9cc';}},grid:{color:'rgba(128,128,128,0.1)'}},
+          x:{ticks:{font:{size:10}},grid:{display:false}}
+        }
+      }
+    });
+  }
+
+  // 항목별 예산 대비 테이블
+  var budTbl = _el('ann-budget-table');
+  if(budTbl){
+    var catRows = CAT_OUT_KEYS.map(function(k){
+      var bud  = BUDGET[k]||0;
+      var subs = CAT_OUT_SUBS[k]||[];
+      var total = yrE.filter(function(e){
+        return e.type==='지출' && (subs.length>0 ? subs.indexOf(e.sub)>=0 : (e.major===k||(CAT_OUT_LABELS[k]&&e.major===CAT_OUT_LABELS[k])));
+      }).reduce(function(s,e){ return s+e.amount; },0);
+      var avg = Math.round(total/cnt);
+      return {k:k, label:CAT_OUT_LABELS[k]||k, bud:bud, avg:avg, total:total};
+    }).filter(function(r){ return r.total>0||r.bud>0; });
+
+    budTbl.innerHTML = catRows.map(function(r){
+      var diff = r.bud>0 ? r.avg-r.bud : null;
+      var barW = r.bud>0 ? Math.min(Math.round(r.avg/r.bud*100),100) : 0;
+      var barC = diff===null?'var(--blue)':diff>0?'var(--red)':'var(--green)';
+      var diffStr = diff===null?'':(diff>0?' <span style="color:var(--red)">+'+Wm(diff)+'\ucd08\uacfc</span>':diff<0?' <span style="color:var(--green)">'+Wm(diff)+'\uc808\uac10</span>':'');
+      return '<div style="padding:8px 0;border-bottom:.5px solid var(--border-lt)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<span style="font-size:13px">'+r.label+'</span>'
+          +'<div style="text-align:right">'
+            +'<span style="font-size:13px;font-weight:600;color:'+barC+'">'+Wm(r.avg)+'/\uc6d4</span>'
+            +(r.bud>0?'<span style="font-size:11px;color:var(--sub);margin-left:6px">\uc608\uc0b0 '+Wm(r.bud)+diffStr+'</span>':'')
+          +'</div>'
+        +'</div>'
+        +(r.bud>0?'<div style="height:4px;background:var(--border-lt);border-radius:2px"><div style="height:4px;width:'+barW+'%;background:'+barC+';border-radius:2px;transition:width .3s"></div></div>':'')
+      +'</div>';
+    }).join('') || '<div style="color:var(--hint);font-size:13px">\ub370\uc774\ud130 \uc5c6\uc74c</div>';
+  }
+
+  // TOP 5
+  var topEl = _el('ann-top-cats');
+  if(topEl){
+    var catTotals = CAT_OUT_KEYS.map(function(k){
+      var subs = CAT_OUT_SUBS[k]||[];
+      var total = yrE.filter(function(e){
+        return e.type==='지출'&&(subs.length>0?subs.indexOf(e.sub)>=0:(e.major===k||(CAT_OUT_LABELS[k]&&e.major===CAT_OUT_LABELS[k])));
+      }).reduce(function(s,e){ return s+e.amount; },0);
+      var peakMon='', peakAmt=0;
+      activeMons.forEach(function(m){
+        var mm=yr+'-'+(m<10?'0':'')+m;
+        var mAmt=yrE.filter(function(e){ return e.date.indexOf(mm)===0&&e.type==='지출'&&(subs.length>0?subs.indexOf(e.sub)>=0:(e.major===k||(CAT_OUT_LABELS[k]&&e.major===CAT_OUT_LABELS[k]))); }).reduce(function(s,e){return s+e.amount;},0);
+        if(mAmt>peakAmt){peakAmt=mAmt;peakMon=m+'\uc6d4';}
+      });
+      return {label:CAT_OUT_LABELS[k]||k, total:total, peakMon:peakMon, peakAmt:peakAmt};
+    }).filter(function(r){return r.total>0;}).sort(function(a,b){return b.total-a.total;}).slice(0,5);
+
+    var maxTotal = catTotals[0]?catTotals[0].total:1;
+    var colors = ['var(--red)','#f97316','#eab308','var(--blue)','var(--sub)'];
+    topEl.innerHTML = catTotals.map(function(r,i){
+      var barW = Math.round(r.total/maxTotal*100);
+      return '<div style="padding:8px 0;border-bottom:.5px solid var(--border-lt)">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+          +'<span style="font-size:13px;font-weight:600">'+(i+1)+'. '+r.label+'</span>'
+          +'<span style="font-size:13px;font-weight:700;color:'+colors[i]+'">'+W(r.total)+'</span>'
+        +'</div>'
+        +'<div style="height:4px;background:var(--border-lt);border-radius:2px;margin-bottom:4px"><div style="height:4px;width:'+barW+'%;background:'+colors[i]+';border-radius:2px"></div></div>'
+        +(r.peakMon?'<div style="font-size:11px;color:var(--hint)">\ucd5c\uace0 \uc9c0\ucd9c: '+r.peakMon+' '+W(r.peakAmt)+'</div>':'')
+      +'</div>';
+    }).join('') || '<div style="color:var(--hint);font-size:13px">\ub370\uc774\ud130 \uc5c6\uc74c</div>';
+  }
+
+  renderAnnualMemos(yr, activeMons, byMonth);
+}
+
+function renderAnnualMemos(yr, activeMons, byMonth){
+  var _el = function(id){ return document.getElementById(id); };
+  var W   = function(n){ return '\u20a9'+Math.round(Math.abs(n)).toLocaleString(); };
+  var container = _el('ann-memos');
+  if(!container) return;
+  var months = [1,2,3,4,5,6,7,8,9,10,11,12];
+  container.innerHTML = months.map(function(m){
+    var mm   = yr+'-'+(m<10?'0':'')+m;
+    var hasData = activeMons.indexOf(m)>=0;
+    var memo = annualMemos[mm]||'';
+    var mIn  = byMonth&&byMonth[mm] ? byMonth[mm].in  : 0;
+    var mOut = byMonth&&byMonth[mm] ? byMonth[mm].out : 0;
+    var mSave= byMonth&&byMonth[mm] ? byMonth[mm].save: 0;
+    return '<div style="padding:10px 0;border-bottom:.5px solid var(--border-lt)">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+        +'<span style="font-size:13px;font-weight:600;color:'+(hasData?'var(--txt)':'var(--hint)')+'">'+m+'\uc6d4</span>'
+        +(hasData?'<span style="font-size:11px;color:var(--sub)">\uc218\uc785 '+W(mIn)+' \u00b7 \uc9c0\ucd9c '+W(mOut)+' \u00b7 \uc800\ucd95 '+W(mSave)+'</span>':'<span style="font-size:11px;color:var(--hint)">\uae30\ub85d \uc5c6\uc74c</span>')
+      +'</div>'
+      +'<textarea id="ann-memo-'+mm+'" rows="2" '
+        +'placeholder="'+m+'\uc6d4 \ud2b9\uc774\uc0ac\ud56d (\ubcf4\ub108\uc2a4, \ud070 \uc9c0\ucd9c \uc0ac\uc720 \ub4f1...)" '
+        +'style="width:100%;font-size:12px;padding:7px 10px;border:.5px solid var(--border-md);border-radius:8px;background:var(--surface);color:var(--txt);resize:none;box-sizing:border-box;outline:none" '
+        +'oninput="annualMemoChanged(\''+mm+'\')">'+(memo.replace(/</g,'&lt;'))+'</textarea>'
+    +'</div>';
+  }).join('');
+}
+
+function annualMemoChanged(ym){
+  var ta = document.getElementById('ann-memo-'+ym);
+  if(!ta) return;
+  annualMemos[ym] = ta.value;
+  try{ localStorage.setItem('gb_annual_memos', JSON.stringify(annualMemos)); }catch(e){}
+}
+
+function annualSyncMemos(){
+  var url = getScriptUrl();
+  if(!url){ alert('GAS URL \uc124\uc815 \ud544\uc694'); return; }
+  var keys = Object.keys(annualMemos).filter(function(k){ return annualMemos[k]; });
+  if(!keys.length){ alert('\uc800\uc7a5\ub41c \uba54\ubaa8 \uc5c6\uc74c'); return; }
+  var done=0, total=keys.length;
+  keys.forEach(function(ym){
+    fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'saveCatMemo',yearMonth:ym,memo:annualMemos[ym]})
+    }).then(function(){ done++; if(done===total) alert('\u2705 '+total+'\uac1c \uba54\ubaa8 \uc2dc\ud2b8 \uc800\uc7a5 \uc644\ub8cc'); }).catch(function(){});
   });
 }
 
