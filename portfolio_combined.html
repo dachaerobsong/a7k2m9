@@ -2704,102 +2704,85 @@ function renderDashboard16() {
   const col = n => n>=0?'var(--green)':'var(--red)';
 
   // ── 데이터 계산 ──
-  const am = {};
+  const am = {}, _real = {}, monthInMap = {}, monthDivMap = {};
   const _pnlMap = calcRealizedPnL(pfTx);
-  const _real = {};
-  const monthInMap = {}, monthDivMap = {};
 
   pfTx.forEach(r => {
     const acc = r.account||''; if(!acc) return;
-    if(!am[acc]) am[acc] = {in:0,out:0,buy:0,sell:0,div:0};
-    const a = Math.abs(parseFloat(r.amount)||0);
-    const date = r.date||'';
-    const ym = date.slice(0,7);
-
-    if(r.type==='입금'){
-      am[acc].in+=a;
-      if(ym){ if(!monthInMap[ym])monthInMap[ym]={}; monthInMap[ym][acc]=(monthInMap[ym][acc]||0)+a; }
-    }
+    if(!am[acc]) am[acc]={in:0,out:0,buy:0,sell:0,div:0};
+    const a=Math.abs(parseFloat(r.amount)||0), ym=(r.date||'').slice(0,7);
+    if(r.type==='입금'){am[acc].in+=a;if(ym){if(!monthInMap[ym])monthInMap[ym]={};monthInMap[ym][acc]=(monthInMap[ym][acc]||0)+a;}}
     else if(r.type==='출금') am[acc].out+=a;
     else if(r.type==='매수'||r.type==='매수.') am[acc].buy+=a;
-    else if(r.type==='매도'||r.type==='매도.'){
-      am[acc].sell+=a;
-      if(_pnlMap[r.rowIndex]!==undefined) _real[acc]=(_real[acc]||0)+_pnlMap[r.rowIndex];
-    }
-    else if(r.type==='분배금'){
-      am[acc].div+=a;
-      if(ym) monthDivMap[ym]=(monthDivMap[ym]||0)+a;
-    }
+    else if(r.type==='매도'||r.type==='매도.'){am[acc].sell+=a;if(_pnlMap[r.rowIndex]!==undefined)_real[acc]=(_real[acc]||0)+_pnlMap[r.rowIndex];}
+    else if(r.type==='분배금'){am[acc].div+=a;if(ym)monthDivMap[ym]=(monthDivMap[ym]||0)+a;}
   });
 
   // 평가금액
-  const _eval = {};
-  try{ Object.assign(_eval, JSON.parse(localStorage.getItem('pf_acct_eval')||'{}')); }catch(e){}
+  const _eval={};
+  try{Object.assign(_eval,JSON.parse(localStorage.getItem('pf_acct_eval')||'{}'));}catch(e){}
   if(!Object.keys(_eval).length){
-    let hD={};
-    try{hD=JSON.parse(localStorage.getItem('pf_holdings_data')||'{}');}catch(e){}
-    Object.entries(hD).forEach(([,hd])=>{
-      const acc=hd.account||''; const qty=parseFloat(hd.qty)||0; const cp=parseFloat(hd.currentPrice)||0;
-      if(acc&&qty&&cp) _eval[acc]=(_eval[acc]||0)+Math.round(qty*cp);
-    });
+    let hD={};try{hD=JSON.parse(localStorage.getItem('pf_holdings_data')||'{}');}catch(e){}
+    Object.entries(hD).forEach(([,hd])=>{const acc=hd.account||'',qty=parseFloat(hd.qty)||0,cp=parseFloat(hd.currentPrice)||0;if(acc&&qty&&cp)_eval[acc]=(_eval[acc]||0)+Math.round(qty*cp);});
     const me=getManualEval();
-    ['삼성연금저축','미래연금저축','우리IRP','미래금현물'].forEach(a=>{ if((me[a]||0)>0&&!_eval[a]) _eval[a]=me[a]; });
+    ['삼성연금저축','미래연금저축','우리IRP','미래금현물'].forEach(a=>{if((me[a]||0)>0&&!_eval[a])_eval[a]=me[a];});
   }
 
   // FIFO 매수원가
-  const _cost = {};
-  try{
-    const f=calcFifoForDashboard(pfTx);
-    Object.values(f.holdByName).forEach(h=>{ _cost[h.account||'']= (_cost[h.account||'']||0)+h.costBasis; });
-  }catch(e){}
-
-  // 전체 합산
-  let totalEval=0, totalCap=0, totalRunIn=0, totalDiv=0, totalReal=0;
-  ['미래ISA','미래연금저축','삼성연금저축','우리IRP','미래금현물'].forEach(k=>{
-    totalEval += _eval[k]||0;
-    totalCap  += (am[k]?am[k].in-am[k].out:0);
-    totalRunIn+= am[k]?am[k].in:0;
-    totalDiv  += am[k]?am[k].div:0;
-    totalReal += _real[k]||0;
-  });
-
-  // 연환산 배당
-  const divMonths = Object.keys(monthDivMap).sort().slice(-12);
-  const div12m = divMonths.reduce((s,m)=>s+monthDivMap[m],0);
-  const monthlyDiv = Math.round(div12m/Math.max(divMonths.length,1));
-  const annualDiv = Math.round(div12m/Math.max(divMonths.length,1)*12);
-
-  // ISA
-  const isaProfit = (_real['미래ISA']||0) + (am['미래ISA']?am['미래ISA'].div:0);
-  const taxFreeLimit=5000000, taxFreeRemain=Math.max(0,taxFreeLimit-isaProfit);
-  const taxPct=Math.min(100,isaProfit/taxFreeLimit*100);
+  const _cost={};
+  try{const f=calcFifoForDashboard(pfTx);Object.values(f.holdByName).forEach(h=>{_cost[h.account||'']=(_cost[h.account||'']||0)+h.costBasis;});}catch(e){}
 
   // 계좌 정의
-  const DEFS = [
-    {key:'미래ISA',       label:'미래ISA',    color:'#1D9E75'},
-    {key:'미래연금저축',  label:'미래연금',   color:'#378ADD'},
-    {key:'삼성연금저축',  label:'삼성연금',   color:'#E24B4A'},
-    {key:'우리IRP',       label:'우리IRP',    color:'#BA7517'},
-    {key:'미래금현물',    label:'미래금현물', color:'#888780'},
+  const DEFS=[
+    {key:'미래ISA',      label:'미래ISA',    color:'#1D9E75'},
+    {key:'미래연금저축', label:'미래연금',   color:'#378ADD'},
+    {key:'삼성연금저축', label:'삼성연금',   color:'#E24B4A'},
+    {key:'우리IRP',      label:'우리IRP',    color:'#BA7517'},
+    {key:'미래금현물',   label:'미래금현물', color:'#888780'},
   ];
 
   function rates(key){
     const a=am[key]||{in:0,out:0,div:0};
-    const runIn=a.in||0, cap=(a.in||0)-(a.out||0);
-    const ev=_eval[key]||0, real=_real[key]||0, div=a.div||0, cost=_cost[key]||0;
-    const unreal = ev>0&&cost>0 ? ev-cost : 0;
-    const v1 = cost>0 ? unreal/cost*100 : null;
-    const v2 = runIn>0 ? (ev+real+div-runIn)/runIn*100 : null;
-    const v3 = cap>0 ? (ev+real+div-cap)/cap*100 : null;
-    const sellEff = cost>0 ? real/cost*100 : 0;
-    const divYield = runIn>0 ? div/runIn*100 : 0;
-    return {runIn,cap,cost,ev,real,div,unreal,v1,v2,v3,sellEff,divYield};
+    const runIn=a.in||0,cap=(a.in||0)-(a.out||0);
+    const ev=_eval[key]||0,real=_real[key]||0,div=a.div||0,cost=_cost[key]||0;
+    const unreal=ev>0&&cost>0?ev-cost:0;
+    return {
+      runIn,cap,cost,ev,real,div,unreal,
+      v1:cost>0?unreal/cost*100:null,
+      v2:runIn>0?(ev+real+div-runIn)/runIn*100:null,
+      v3:cap>0?(ev+real+div-cap)/cap*100:null,
+      sellEff:cost>0?real/cost*100:0,
+      divYield:runIn>0?div/runIn*100:0
+    };
   }
 
-  // ── HTML 생성 ──
-  let h = `
-  <style>
-  .d16{font-family:var(--font,inherit)}
+  function diagInfo(key){
+    const r=rates(key);
+    let stl,sbg,scl,notes=[];
+    if(r.sellEff>10){stl='수확형';sbg='#FAEEDA';scl='#854F0B';notes.push('수익실현효율 '+r.sellEff.toFixed(1)+'% — 매도 타이밍 잘 활용 중');}
+    else if(r.divYield>4){stl='배당형';sbg='#EAF3DE';scl='#3B6D11';notes.push('배당수익률 '+r.divYield.toFixed(1)+'% — 안정적 현금흐름 계좌');}
+    else{stl='존버형';sbg='#E6F1FB';scl='#185FA5';notes.push('장기 보유 중 — 복리 성장 진행 중');}
+    if(r.v1!==null&&r.v1>50)notes.push('종목수익률 '+r.v1.toFixed(1)+'% 압도적 — 핵심 알파 계좌');
+    else if(r.v1!==null&&r.v1>20)notes.push('종목수익률 '+r.v1.toFixed(1)+'% 양호');
+    if(r.v3!==null&&r.v2!==null&&r.v3>r.v2+10)notes.push('관점3('+r.v3.toFixed(1)+'%) > 관점2('+r.v2.toFixed(1)+'%) — 현금화 진행 중');
+    if(r.real===0&&r.cost>0)notes.push('매도 0회 — 꾸준히 묵히는 전략');
+    if(r.div>0)notes.push('배당 '+W(r.div)+' 수령 ('+r.divYield.toFixed(1)+'%)');
+    return {stl,sbg,scl,notes,r};
+  }
+
+  // 전체 합산
+  let totalEval=0,totalCap=0,totalDiv=0,totalReal=0;
+  DEFS.forEach(({key})=>{totalEval+=_eval[key]||0;totalCap+=(am[key]?(am[key].in-am[key].out):0);totalDiv+=am[key]?am[key].div:0;totalReal+=_real[key]||0;});
+  const divMonths=Object.keys(monthDivMap).sort().slice(-12);
+  const div12m=divMonths.reduce((s,m)=>s+monthDivMap[m],0);
+  const monthlyDiv=Math.round(div12m/Math.max(divMonths.length,1));
+  const annualDiv=Math.round(div12m/Math.max(divMonths.length,1)*12);
+  const isaProfit=(_real['미래ISA']||0)+(am['미래ISA']?am['미래ISA'].div:0);
+  const taxFreeLimit=5000000,taxFreeRemain=Math.max(0,taxFreeLimit-isaProfit);
+  const taxPct=Math.min(100,isaProfit/taxFreeLimit*100);
+
+  // ── HTML ──
+  let h=`<style>
   .d16-sec{margin-bottom:1.8rem}
   .d16-title{font-size:11px;font-weight:500;color:var(--txt3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:.5px solid var(--bd)}
   .d16-kpi{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -2810,30 +2793,34 @@ function renderDashboard16() {
   .d16-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .d16-box{background:var(--bg1);border:.5px solid var(--bd);border-radius:12px;padding:14px 16px}
   .d16-bt{font-size:12px;font-weight:500;margin-bottom:2px}
-  .d16-bs{font-size:10px;color:var(--txt3);margin-bottom:10px}
-  .d16-leg{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .d16-bs{font-size:10px;color:var(--txt3);margin-bottom:8px}
+  .d16-leg{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
   .d16-li{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--txt3)}
   .d16-lsq{width:8px;height:8px;border-radius:2px;flex-shrink:0}
   .d16-ldot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
   .d16-ins{margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:8px;font-size:10px;color:var(--txt3);line-height:1.7}
   .d16-ins b{color:var(--txt1);font-weight:500}
-  .d16-dc{padding:10px 12px;border-radius:10px;background:var(--bg2);border:.5px solid var(--bd);margin-bottom:7px}
-  .d16-dn{font-size:12px;font-weight:500}
-  .d16-drates{display:flex;gap:10px;flex-wrap:wrap;margin:5px 0}
-  .d16-dr{font-size:10px}
-  .d16-dnotes{font-size:10px;color:var(--txt3);line-height:1.7}
   .d16-badge{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:500}
-  .d16-ai-btn{width:100%;padding:11px;background:rgba(55,138,221,.1);color:var(--blue,#185FA5);border:.5px solid rgba(55,138,221,.3);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px}
+  .d16-ai-btn{width:100%;padding:11px;background:rgba(55,138,221,.1);color:var(--blue,#185FA5);border:.5px solid rgba(55,138,221,.3);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px}
   .d16-ai-btn:hover{opacity:.85}
   .d16-isa-row{display:flex;justify-content:space-between;align-items:center;padding:7px 10px;background:var(--bg2);border-radius:8px;font-size:11px;margin-bottom:6px}
   .d16-prog{height:7px;background:var(--bg3,rgba(0,0,0,.08));border-radius:99px;overflow:hidden;margin:3px 0}
   .d16-progf{height:100%;border-radius:99px}
-  .d16-gbar{height:8px;background:var(--bg3,rgba(0,0,0,.08));border-radius:99px;overflow:hidden;margin:2px 0}
+  .d16-gbar{height:7px;background:var(--bg3,rgba(0,0,0,.08));border-radius:99px;overflow:hidden;margin:2px 0}
   .d16-gbarf{height:100%;border-radius:99px}
-  </style>
+  /* 진단+차트 합친 레이아웃 */
+  .d16-diag-row{display:grid;grid-template-columns:1fr 140px;gap:10px;align-items:start;padding:10px 12px;border-radius:10px;background:var(--bg2);border:.5px solid var(--bd);margin-bottom:7px}
+  .d16-diag-left{}
+  .d16-diag-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+  .d16-diag-name{font-size:12px;font-weight:500}
+  .d16-diag-rates{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .d16-dr{font-size:10px}
+  .d16-diag-notes{font-size:10px;color:var(--txt3);line-height:1.6}
+  .d16-diag-chart{height:80px;position:relative}
+  </style>`;
 
-  <!-- KPI -->
-  <div class="d16-sec">
+  // KPI
+  h+=`<div class="d16-sec">
     <div class="d16-title">전체 자산 현황</div>
     <div class="d16-kpi">
       <div class="d16-kc"><div class="d16-kl">총 현재평가액</div><div class="d16-kv">${Wm(totalEval)}</div><div class="d16-ks">전체 계좌 합산</div></div>
@@ -2841,13 +2828,12 @@ function renderDashboard16() {
       <div class="d16-kc"><div class="d16-kl">연환산 배당</div><div class="d16-kv" style="color:var(--green)">${W(annualDiv)}</div><div class="d16-ks">월 ${W(monthlyDiv)}</div></div>
       <div class="d16-kc"><div class="d16-kl">총 현금화 수익</div><div class="d16-kv" style="color:var(--green)">+${Wm(totalReal+totalDiv)}</div><div class="d16-ks">실현+배당 누계</div></div>
     </div>
-  </div>
+  </div>`;
 
-  <!-- 전체 수치표 -->
-  <div class="d16-sec">
+  // 전체 수치표
+  h+=`<div class="d16-sec">
     <div class="d16-title">3관점 수익률 전체 표</div>
-    <div style="overflow-x:auto">
-    <table style="width:100%;border-collapse:collapse;font-size:11px">
+    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr style="border-bottom:.5px solid var(--bd)">
         <th style="padding:6px 8px;text-align:left;color:var(--txt3);font-weight:500;white-space:nowrap">계좌</th>
         <th style="padding:6px 8px;text-align:right;color:var(--txt3);font-weight:500;white-space:nowrap">①운용원금</th>
@@ -2860,13 +2846,10 @@ function renderDashboard16() {
         <th style="padding:6px 8px;text-align:right;color:var(--txt3);font-weight:500;white-space:nowrap">관점1</th>
         <th style="padding:6px 8px;text-align:right;color:var(--txt3);font-weight:500;white-space:nowrap">관점2</th>
         <th style="padding:6px 8px;text-align:right;color:var(--txt3);font-weight:500;white-space:nowrap">관점3</th>
-      </tr></thead>
-      <tbody>`;
-
-  DEFS.forEach(({key,label,color}) => {
-    const r = rates(key);
-    if(!r.runIn && !r.ev && !r.real && !r.div) return;
-    h += `<tr style="border-bottom:.5px solid var(--bd)">
+      </tr></thead><tbody>`;
+  DEFS.forEach(({key,label,color})=>{
+    const r=rates(key); if(!r.runIn&&!r.ev&&!r.real&&!r.div)return;
+    h+=`<tr style="border-bottom:.5px solid var(--bd)">
       <td style="padding:6px 8px;font-weight:500;color:${color};white-space:nowrap">${label}</td>
       <td style="padding:6px 8px;text-align:right">${W(r.runIn)}</td>
       <td style="padding:6px 8px;text-align:right">${W(r.cap)}</td>
@@ -2880,62 +2863,58 @@ function renderDashboard16() {
       <td style="padding:6px 8px;text-align:right;color:${r.v3!==null?col(r.v3):'var(--txt3)'}">${r.v3!==null?pc(r.v3):'—'}</td>
     </tr>`;
   });
-  h += `</tbody></table></div></div>`;
+  h+=`</tbody></table></div></div>`;
 
-  // 수익률 차트 두 개
-  h += `<div class="d16-sec">
-    <div class="d16-title">수익률 분석</div>
-    <div class="d16-two">
+  // 수익률 분석 + 계좌 진단 통합
+  h+=`<div class="d16-sec">
+    <div class="d16-title">수익률 분석 + 계좌 진단</div>
+    <div class="d16-two" style="margin-bottom:12px">
       <div class="d16-box">
         <div class="d16-bt">포트폴리오 밸런스</div>
-        <div class="d16-bs">X: 관점2 운용수익률 / Y: 관점3 자본금수익률 / 크기: 현재평가</div>
+        <div class="d16-bs">X:관점2 / Y:관점3 / 크기:현재평가</div>
         <div class="d16-leg">
           <div class="d16-li"><div class="d16-ldot" style="background:#1D9E75"></div>수확형</div>
           <div class="d16-li"><div class="d16-ldot" style="background:#378ADD"></div>존버형</div>
         </div>
-        <div style="position:relative;height:190px"><canvas id="d16-bubble" role="img" aria-label="버블차트">계좌별 수익률 비교</canvas></div>
-        <div class="d16-ins"><b>우상단</b> = 핵심 알파 계좌 — 비중 유지·확대 근거<br><b>관점2·3 모두 높으면</b> 운용+자본 효율 모두 좋음</div>
+        <div style="position:relative;height:160px"><canvas id="d16-bubble" role="img" aria-label="버블차트">포트폴리오 밸런스</canvas></div>
       </div>
       <div class="d16-box">
-        <div class="d16-bt">현금화 효율</div>
-        <div class="d16-bs">수익실현효율(실현/매수) vs 배당수익률(배당/운용원금)</div>
-        <div class="d16-leg">
-          <div class="d16-li"><div class="d16-lsq" style="background:#0F6E56"></div>수익실현효율</div>
-          <div class="d16-li"><div class="d16-lsq" style="background:#9FE1CB"></div>배당수익률</div>
-        </div>
-        <div style="position:relative;height:190px"><canvas id="d16-eff" role="img" aria-label="현금화효율">현금화 효율</canvas></div>
-        <div class="d16-ins"><b>미래ISA</b> = 수익 적극 실현 · 매도 전략 탁월<br><b>삼성·우리IRP</b> = 배당 중심 · 안정적 현금흐름<br>ISA로 성장, 연금으로 현금흐름 — 역할 분담 명확</div>
+        <div class="d16-bt">현금화 효율 · 관점1 vs 관점3</div>
+        <div class="d16-bs">위: 실현효율/배당률 · 아래: 종목수익률 vs 자본효율</div>
+        <div style="position:relative;height:72px;margin-bottom:6px"><canvas id="d16-eff" role="img" aria-label="현금화효율">현금화 효율</canvas></div>
+        <div style="position:relative;height:72px"><canvas id="d16-cmp" role="img" aria-label="관점비교">관점 비교</canvas></div>
       </div>
-    </div>
-    <div class="d16-two" style="margin-top:12px">
-      <div class="d16-box">
-        <div class="d16-bt">관점1 vs 관점3 비교</div>
-        <div class="d16-bs">종목 잠재력(관점1) vs 자본금 실질 효율(관점3)</div>
-        <div class="d16-leg">
-          <div class="d16-li"><div class="d16-lsq" style="background:#1D9E75"></div>관점1 종목수익률</div>
-          <div class="d16-li"><div class="d16-lsq" style="background:#85B7EB"></div>관점3 자본금수익률</div>
-        </div>
-        <div style="position:relative;height:190px"><canvas id="d16-cmp" role="img" aria-label="관점비교">관점1 vs 관점3</canvas></div>
-        <div class="d16-ins"><b>관점1·3 모두 높으면</b> 종목선택+자금타이밍 성공<br><b>관점1만 높고 3이 낮으면</b> 종목 좋지만 자금 투입 타이밍 점검</div>
-      </div>
-      <div class="d16-box">
-        <div class="d16-bt">계좌별 핵심 진단</div>
-        <div class="d16-bs">수치 기반 자동 평가</div>
-        <div id="d16-diag-mini" style="display:flex;flex-direction:column;gap:6px"></div>
-      </div>
-    </div>
-  </div>`;
+    </div>`;
 
-  // 자동 진단 카드
-  h += `<div class="d16-sec">
-    <div class="d16-title">계좌별 자동 진단 <span style="font-size:10px;font-weight:400">(수치 기반 자동 분석)</span></div>
-    <div id="d16-diag-full"></div>
-    <button class="d16-ai-btn" id="d16-ai-btn">✦ AI 심층 분석 (현재 수치 기반 자동 생성)</button>
+  // 계좌별 진단 (차트 작게 오른쪽)
+  DEFS.forEach(({key,label,color})=>{
+    const d=diagInfo(key); const r=d.r;
+    if(!r.runIn&&!r.ev) return;
+    h+=`<div class="d16-diag-row">
+      <div class="d16-diag-left">
+        <div class="d16-diag-top">
+          <span class="d16-diag-name" style="color:${color}">${label}</span>
+          <span class="d16-badge" style="background:${d.sbg};color:${d.scl}">${d.stl}</span>
+        </div>
+        <div class="d16-diag-rates">
+          ${r.v1!==null?`<span class="d16-dr">관점1 <b style="color:${col(r.v1)}">${pc(r.v1)}</b></span>`:''}
+          ${r.v2!==null?`<span class="d16-dr">관점2 <b style="color:${col(r.v2)}">${pc(r.v2)}</b></span>`:''}
+          ${r.v3!==null?`<span class="d16-dr">관점3 <b style="color:${col(r.v3)}">${pc(r.v3)}</b></span>`:''}
+          <span class="d16-dr">실현 <b>${r.sellEff.toFixed(1)}%</b></span>
+          <span class="d16-dr">배당률 <b>${r.divYield.toFixed(1)}%</b></span>
+        </div>
+        <div class="d16-diag-notes">${d.notes.map(n=>'• '+n).join('<br>')}</div>
+      </div>
+      <div class="d16-diag-chart"><canvas id="d16-mini-${key}" role="img" aria-label="${label} 수익률 차트">${label} 수익률</canvas></div>
+    </div>`;
+  });
+
+  h+=`<button class="d16-ai-btn" id="d16-ai-btn">✦ AI 심층 분석 (현재 수치 기반 자동 생성)</button>
     <div id="d16-ai-result"></div>
   </div>`;
 
   // 월별 납입 + 배당
-  h += `<div class="d16-sec">
+  h+=`<div class="d16-sec">
     <div class="d16-title">월별 납입 현황</div>
     <div class="d16-two">
       <div class="d16-box">
@@ -2947,36 +2926,36 @@ function renderDashboard16() {
           <div class="d16-li"><div class="d16-lsq" style="background:#E24B4A"></div>삼성연금</div>
           <div class="d16-li"><div class="d16-lsq" style="background:#BA7517"></div>우리IRP</div>
         </div>
-        <div style="position:relative;height:190px"><canvas id="d16-monthin" role="img" aria-label="월별납입">월별 납입</canvas></div>
+        <div style="position:relative;height:180px"><canvas id="d16-monthin" role="img" aria-label="월별납입">월별 납입</canvas></div>
       </div>
       <div class="d16-box">
         <div class="d16-bt">월별 배당 추이</div>
         <div class="d16-bs">배당이 빠르게 성장 중</div>
-        <div style="position:relative;height:190px"><canvas id="d16-divtrend" role="img" aria-label="배당추이">배당 추이</canvas></div>
+        <div style="position:relative;height:180px"><canvas id="d16-divtrend" role="img" aria-label="배당추이">배당 추이</canvas></div>
         <div class="d16-ins"><b>2024</b> 59,844원 → <b>2025</b> 210,944원 → <b>2026 환산</b> ${W(annualDiv)}<br>재투자 복리 효과로 빠르게 성장 중</div>
       </div>
     </div>
   </div>`;
 
-  // ISA 절세 시뮬레이터
-  h += `<div class="d16-sec">
+  // ISA
+  h+=`<div class="d16-sec">
     <div class="d16-title">ISA 절세 한도 시뮬레이터</div>
     <div class="d16-two">
       <div class="d16-box">
         <div class="d16-bt">현재 한도 현황</div>
         <div class="d16-bs">일반형 비과세 한도 500만원</div>
         <div class="d16-isa-row"><span style="color:var(--txt3)">총 납입액</span><span>${W(am['미래ISA']?am['미래ISA'].in:0)}</span></div>
-        <div class="d16-isa-row"><span style="color:var(--txt3)">순이익 (실현+배당)</span><span style="color:var(--green)">+${W(isaProfit)}</span></div>
+        <div class="d16-isa-row"><span style="color:var(--txt3)">순이익(실현+배당)</span><span style="color:var(--green)">+${W(isaProfit)}</span></div>
         <div class="d16-isa-row"><span style="color:var(--txt3)">비과세 잔여</span><span style="color:var(--green)">+${W(taxFreeRemain)}</span></div>
         <div style="margin:4px 0">
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin-bottom:3px"><span>사용률</span><span>${taxPct.toFixed(1)}%</span></div>
           <div class="d16-prog"><div class="d16-progf" style="width:${taxPct}%;background:${taxPct<80?'#1D9E75':taxPct<100?'#BA7517':'#D85A30'}"></div></div>
         </div>
-        <div class="d16-ins">비과세 한도 <b>${(100-taxPct).toFixed(0)}% 남음</b> — 지금 매도해도 세금 걱정 없음<br>한도 초과 시 9.9% 분리과세 (일반 15.4%보다 유리)</div>
+        <div class="d16-ins">비과세 한도 <b>${(100-taxPct).toFixed(0)}% 남음</b> — 지금 매도해도 세금 없음<br>초과분은 9.9% 분리과세 (일반 15.4%보다 유리)</div>
       </div>
       <div class="d16-box">
         <div class="d16-bt">매도 시 절세 시뮬레이션</div>
-        <div class="d16-bs">추가 매도 시나리오 — 슬라이더로 조정</div>
+        <div class="d16-bs">추가 매도 시나리오</div>
         <div style="display:flex;align-items:center;gap:8px;margin:8px 0">
           <label style="font-size:11px;color:var(--txt3);white-space:nowrap;min-width:70px">매도금액</label>
           <input type="range" id="d16-sell-sl" min="0" max="50000000" step="500000" value="0" style="flex:1">
@@ -2988,8 +2967,8 @@ function renderDashboard16() {
           <span style="font-size:11px;font-weight:500;min-width:55px;text-align:right" id="d16-prof-v">30%</span>
         </div>
         <div class="d16-isa-row"><span style="color:var(--txt3)">추가 차익</span><span id="d16-sim-profit">0원</span></div>
-        <div class="d16-isa-row"><span style="color:var(--txt3)">절세효과 (15.4%)</span><span id="d16-sim-save" style="color:var(--green)">0원</span></div>
-        <div class="d16-isa-row"><span style="color:var(--txt3)">한도초과 과세 (9.9%)</span><span id="d16-sim-over">0원</span></div>
+        <div class="d16-isa-row"><span style="color:var(--txt3)">절세효과(15.4%)</span><span id="d16-sim-save" style="color:var(--green)">0원</span></div>
+        <div class="d16-isa-row"><span style="color:var(--txt3)">한도초과 과세(9.9%)</span><span id="d16-sim-over">0원</span></div>
         <div>
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--txt3);margin:4px 0 3px"><span>비과세 사용률</span><span id="d16-sim-pct">${taxPct.toFixed(1)}%</span></div>
           <div class="d16-prog"><div class="d16-progf" id="d16-sim-bar" style="width:${taxPct}%;background:#1D9E75"></div></div>
@@ -2999,33 +2978,23 @@ function renderDashboard16() {
   </div>`;
 
   // 배당 목표
-  const divGoalPct = Math.min(100, monthlyDiv/1000000*100);
-  h += `<div class="d16-sec">
+  h+=`<div class="d16-sec">
     <div class="d16-title">월 100만원 배당 목표</div>
     <div class="d16-two">
       <div class="d16-box">
-        <div class="d16-bt">달성률 + 단계별 목표</div>
+        <div class="d16-bt">단계별 달성률</div>
         <div class="d16-bs">월 10만 → 50만 → 100만 순차 달성</div>
         <div style="text-align:center;padding:8px 0">
-          <canvas id="d16-gauge" width="160" height="85" role="img" aria-label="배당달성률"></canvas>
-          <div style="font-size:20px;font-weight:500;color:var(--green);margin-top:2px">${divGoalPct.toFixed(1)}%</div>
-          <div style="font-size:10px;color:var(--txt3)">월 ${W(monthlyDiv)} / 목표 월 1,000,000원</div>
+          <canvas id="d16-gauge" width="160" height="85" role="img" aria-label="달성률 게이지"></canvas>
+          <div style="font-size:20px;font-weight:500;color:var(--green);margin-top:2px">${Math.min(100,monthlyDiv/1000000*100).toFixed(1)}%</div>
+          <div style="font-size:10px;color:var(--txt3)">월 ${W(monthlyDiv)} / 목표 1,000,000원</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:5px;margin-top:8px">
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--txt3)">1단계 월 10만</span><span>${Math.min(100,monthlyDiv/100000*100).toFixed(0)}%</span></div>
-            <div class="d16-gbar"><div class="d16-gbarf" style="width:${Math.min(100,monthlyDiv/100000*100)}%;background:#1D9E75"></div></div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--txt3)">2단계 월 50만</span><span>${Math.min(100,monthlyDiv/500000*100).toFixed(0)}%</span></div>
-            <div class="d16-gbar"><div class="d16-gbarf" style="width:${Math.min(100,monthlyDiv/500000*100)}%;background:#378ADD"></div></div>
-          </div>
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--txt3)">최종 월 100만</span><span>${Math.min(100,monthlyDiv/1000000*100).toFixed(0)}%</span></div>
-            <div class="d16-gbar"><div class="d16-gbarf" style="width:${Math.min(100,monthlyDiv/1000000*100)}%;background:#888780"></div></div>
-          </div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px">
+          <div><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--txt3)">1단계 월 10만</span><span>${Math.min(100,monthlyDiv/100000*100).toFixed(0)}%</span></div><div class="d16-gbar"><div class="d16-gbarf" style="width:${Math.min(100,monthlyDiv/100000*100)}%;background:#1D9E75"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--txt3)">2단계 월 50만</span><span>${Math.min(100,monthlyDiv/500000*100).toFixed(0)}%</span></div><div class="d16-gbar"><div class="d16-gbarf" style="width:${Math.min(100,monthlyDiv/500000*100)}%;background:#378ADD"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="color:var(--txt3)">최종 월 100만</span><span>${Math.min(100,monthlyDiv/1000000*100).toFixed(0)}%</span></div><div class="d16-gbar"><div class="d16-gbarf" style="width:${Math.min(100,monthlyDiv/1000000*100)}%;background:#888780"></div></div></div>
         </div>
-        <div class="d16-ins">월 100만 배당 = <b>자산 4억 필요</b> (배당률 3%)<br>현재 ${Wm(totalEval)} → <b>${(400000000/Math.max(totalEval,1)).toFixed(1)}배 성장</b> 필요<br>월 납입 90만 유지 + 배당 재투자가 핵심</div>
+        <div class="d16-ins">월 100만 배당 = <b>자산 4억 필요</b> (배당률 3%)<br>월 납입 90만 유지 + 배당 재투자가 핵심</div>
       </div>
       <div class="d16-box">
         <div class="d16-bt">달성 시나리오</div>
@@ -3036,100 +3005,59 @@ function renderDashboard16() {
           <div class="d16-li"><div class="d16-lsq" style="background:#888780"></div>보수(7%)</div>
           <div class="d16-li"><div class="d16-lsq" style="background:#D85A30"></div>목표</div>
         </div>
-        <div style="position:relative;height:200px"><canvas id="d16-scenario" role="img" aria-label="시나리오">달성 시나리오</canvas></div>
-        <div class="d16-ins"><b>낙관(20%)</b>: 약 12년 후 달성 가능<br><b>월 납입 150만으로 늘리면</b> 3~4년 단축<br>배당률 높은 종목 비중 확대가 핵심</div>
+        <div style="position:relative;height:200px"><canvas id="d16-scenario" role="img" aria-label="달성 시나리오">달성 시나리오</canvas></div>
+        <div class="d16-ins"><b>낙관(20%)</b>: 약 12년 후 달성 가능<br><b>월 납입 150만으로 늘리면</b> 3~4년 단축</div>
       </div>
     </div>
   </div>`;
 
   wrap.innerHTML = h;
 
-  // ── 차트 + 진단 렌더링 ──
-  function _render() {
-    if(!window.Chart){ setTimeout(_render,300); return; }
-    const isDark = matchMedia('(prefers-color-scheme: dark)').matches;
-    const gc = isDark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)';
-    const tc = isDark?'#999':'#888';
+  // ── 차트 렌더링 ──
+  function _render(){
+    if(!window.Chart){setTimeout(_render,300);return;}
+    const isDark=matchMedia('(prefers-color-scheme:dark)').matches;
+    const gc=isDark?'rgba(255,255,255,0.07)':'rgba(0,0,0,0.07)';
+    const tc=isDark?'#999':'#888';
+    const mkC=(id,cfg)=>{const c=document.getElementById(id);if(!c)return;try{if(c._c)c._c.destroy();}catch(e){}c._c=new Chart(c,cfg);};
 
     // 버블
-    const bData = DEFS.map(({key,color,label})=>{
-      const r=rates(key); if(!r.v2||!r.v3) return null;
-      const sz = Math.max(5, Math.round(Math.sqrt((r.ev||0)/5000000)*10));
-      const isHarvest = r.sellEff>10;
-      return {label, data:[{x:r.v2,y:r.v3,r:sz}], backgroundColor:color+'BB', borderColor:color, borderWidth:1.5};
+    const bDs=DEFS.map(({key,color,label})=>{
+      const r=rates(key);if(!r.v2||!r.v3)return null;
+      return {label,data:[{x:r.v2,y:r.v3,r:Math.max(5,Math.round(Math.sqrt((r.ev||1)/3000000)*8))}],backgroundColor:color+'BB',borderColor:color,borderWidth:1.5};
     }).filter(Boolean);
-    const cB=document.getElementById('d16-bubble');
-    if(cB){try{if(cB._c)cB._c.destroy();}catch(e){}
-      cB._c=new Chart(cB,{type:'bubble',data:{datasets:bData},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: 관점2 ${c.parsed.x.toFixed(1)}% / 관점3 ${c.parsed.y.toFixed(1)}%`}}},scales:{x:{title:{display:true,text:'관점2 운용수익률(%)',color:tc,font:{size:10}},grid:{color:gc},ticks:{color:tc,font:{size:10}},min:-60,max:70},y:{title:{display:true,text:'관점3(%)',color:tc,font:{size:10}},grid:{color:gc},ticks:{color:tc,font:{size:10}},min:-90,max:80}}}});}
+    mkC('d16-bubble',{type:'bubble',data:{datasets:bDs},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: 관점2 ${c.parsed.x.toFixed(1)}% / 관점3 ${c.parsed.y.toFixed(1)}%`}}},scales:{x:{title:{display:true,text:'관점2(%)',color:tc,font:{size:9}},grid:{color:gc},ticks:{color:tc,font:{size:9}},min:-60,max:70},y:{title:{display:true,text:'관점3(%)',color:tc,font:{size:9}},grid:{color:gc},ticks:{color:tc,font:{size:9}},min:-90,max:80}}}});
 
-    // 현금화 효율
-    const effLabels=[], effReal=[], effDiv=[];
-    DEFS.forEach(({key,label})=>{ const r=rates(key); if(!r.runIn) return; effLabels.push(label); effReal.push(+r.sellEff.toFixed(2)); effDiv.push(+r.divYield.toFixed(2)); });
-    const cE=document.getElementById('d16-eff');
-    if(cE){try{if(cE._c)cE._c.destroy();}catch(e){}
-      cE._c=new Chart(cE,{type:'bar',data:{labels:effLabels,datasets:[{label:'실현효율',data:effReal,backgroundColor:'#0F6E56',borderRadius:3},{label:'배당수익률',data:effDiv,backgroundColor:'#9FE1CB',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},max:20}}}});}
+    // 현금화 효율 (작게)
+    const eL=[],eR=[],eD=[];
+    DEFS.forEach(({key,label})=>{const r=rates(key);if(!r.runIn)return;eL.push(label);eR.push(+r.sellEff.toFixed(1));eD.push(+r.divYield.toFixed(1));});
+    mkC('d16-eff',{type:'bar',data:{labels:eL,datasets:[{label:'실현효율',data:eR,backgroundColor:'#0F6E56',borderRadius:2},{label:'배당수익률',data:eD,backgroundColor:'#9FE1CB',borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:9}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:9},callback:v=>v+'%'},max:20}}}});
 
-    // 관점1 vs 관점3
-    const cmpLabels=[], cmp1=[], cmp3=[];
-    DEFS.forEach(({key,label})=>{ const r=rates(key); if(r.v1===null) return; cmpLabels.push(label); cmp1.push(+r.v1.toFixed(1)); cmp3.push(r.v3!==null?+r.v3.toFixed(1):0); });
-    const cC=document.getElementById('d16-cmp');
-    if(cC){try{if(cC._c)cC._c.destroy();}catch(e){}
-      cC._c=new Chart(cC,{type:'bar',data:{labels:cmpLabels,datasets:[{label:'관점1',data:cmp1,backgroundColor:'#1D9E75',borderRadius:3},{label:'관점3',data:cmp3,backgroundColor:'#85B7EB',borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v+'%'},max:130}}}});}
+    // 관점1 vs 관점3 (작게)
+    const cL=[],c1=[],c3=[];
+    DEFS.forEach(({key,label})=>{const r=rates(key);if(r.v1===null)return;cL.push(label);c1.push(+r.v1.toFixed(1));c3.push(r.v3!==null?+r.v3.toFixed(1):0);});
+    mkC('d16-cmp',{type:'bar',data:{labels:cL,datasets:[{label:'관점1',data:c1,backgroundColor:'#1D9E75',borderRadius:2},{label:'관점3',data:c3,backgroundColor:'#85B7EB',borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:9}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:9},callback:v=>v+'%'},max:130}}}});
 
-    // 진단 카드 (미니 + 풀)
-    const miniEl=document.getElementById('d16-diag-mini');
-    const fullEl=document.getElementById('d16-diag-full');
-    let miniH='', fullH='';
-    DEFS.forEach(({key,label,color})=>{
+    // 계좌별 미니 차트 (관점1,2,3 막대)
+    DEFS.forEach(({key,color})=>{
       const r=rates(key); if(!r.runIn&&!r.ev) return;
-      let stl,sbg,scl,notes=[];
-      if(r.sellEff>10){stl='수확형';sbg='#FAEEDA';scl='#854F0B';notes.push('수익실현효율 '+r.sellEff.toFixed(1)+'% — 매도 타이밍 잘 활용 중');}
-      else if(r.divYield>4){stl='배당형';sbg='#EAF3DE';scl='#3B6D11';notes.push('배당수익률 '+r.divYield.toFixed(1)+'% — 안정적 현금흐름 계좌');}
-      else{stl='존버형';sbg='#E6F1FB';scl='#185FA5';notes.push('장기 보유 중 — 복리 성장 진행 중');}
-      if(r.v1!==null&&r.v1>50) notes.push('종목수익률 '+r.v1.toFixed(1)+'% 압도적 — 핵심 알파 계좌');
-      else if(r.v1!==null&&r.v1>20) notes.push('종목수익률 '+r.v1.toFixed(1)+'% 양호');
-      if(r.v3!==null&&r.v2!==null&&r.v3>r.v2+10) notes.push('관점3('+r.v3.toFixed(1)+'%) > 관점2('+r.v2.toFixed(1)+'%) — 현금화로 주머니 이동 중');
-      if(r.real===0&&r.cost>0) notes.push('매도 0회 — 꾸준히 묵히는 전략');
-      if(r.div>0) notes.push('배당 '+W(r.div)+' 수령 ('+r.divYield.toFixed(1)+'%)');
-
-      miniH+=`<div style="padding:7px 10px;background:var(--bg2);border-radius:8px;font-size:11px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-weight:500;color:${color}">${label}</span>
-        <span style="font-size:10px;padding:2px 6px;border-radius:99px;background:${sbg};color:${scl}">${stl}</span>
-      </div>`;
-      fullH+=`<div class="d16-dc">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-          <span class="d16-dn" style="color:${color}">${label}</span>
-          <span class="d16-badge" style="background:${sbg};color:${scl}">${stl}</span>
-        </div>
-        <div class="d16-drates">
-          ${r.v1!==null?`<span class="d16-dr">관점1 <b style="color:${col(r.v1)}">${pc(r.v1)}</b></span>`:''}
-          ${r.v2!==null?`<span class="d16-dr">관점2 <b style="color:${col(r.v2)}">${pc(r.v2)}</b></span>`:''}
-          ${r.v3!==null?`<span class="d16-dr">관점3 <b style="color:${col(r.v3)}">${pc(r.v3)}</b></span>`:''}
-          <span class="d16-dr">실현효율 <b>${r.sellEff.toFixed(1)}%</b></span>
-          <span class="d16-dr">배당률 <b>${r.divYield.toFixed(1)}%</b></span>
-        </div>
-        <div class="d16-dnotes">${notes.map(n=>'• '+n).join('<br>')}</div>
-      </div>`;
+      const vals=[r.v1,r.v2,r.v3].map(v=>v!==null?+v.toFixed(1):0);
+      const colors=vals.map(v=>v>=0?color+'CC':'#D85A30CC');
+      mkC('d16-mini-'+key,{type:'bar',data:{labels:['관점1','관점2','관점3'],datasets:[{data:vals,backgroundColor:colors,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:9}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:9},callback:v=>v+'%'}}}}});
     });
-    if(miniEl) miniEl.innerHTML=miniH;
-    if(fullEl) fullEl.innerHTML=fullH;
 
     // 월별 납입
-    const inMonths=Object.keys(monthInMap).sort().slice(-8);
-    const cI=document.getElementById('d16-monthin');
-    if(cI){try{if(cI._c)cI._c.destroy();}catch(e){}
-      cI._c=new Chart(cI,{type:'bar',data:{labels:inMonths,datasets:[
-        {label:'미래ISA',data:inMonths.map(m=>(monthInMap[m]||{})['미래ISA']||0),backgroundColor:'#1D9E75',borderRadius:2},
-        {label:'미래연금',data:inMonths.map(m=>(monthInMap[m]||{})['미래연금저축']||0),backgroundColor:'#378ADD',borderRadius:2},
-        {label:'삼성연금',data:inMonths.map(m=>(monthInMap[m]||{})['삼성연금저축']||0),backgroundColor:'#E24B4A',borderRadius:2},
-        {label:'우리IRP',data:inMonths.map(m=>(monthInMap[m]||{})['우리IRP']||0),backgroundColor:'#BA7517',borderRadius:2},
-      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw>0?c.dataset.label+': '+Math.round(c.raw).toLocaleString()+'원':null,filter:i=>i.raw>0}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:tc,font:{size:10}}},y:{stacked:true,grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v>=1000000?(v/10000).toFixed(0)+'만':v}}}}});}
+    const inM=Object.keys(monthInMap).sort().slice(-8);
+    mkC('d16-monthin',{type:'bar',data:{labels:inM,datasets:[
+      {label:'미래ISA',data:inM.map(m=>(monthInMap[m]||{})['미래ISA']||0),backgroundColor:'#1D9E75',borderRadius:2},
+      {label:'미래연금',data:inM.map(m=>(monthInMap[m]||{})['미래연금저축']||0),backgroundColor:'#378ADD',borderRadius:2},
+      {label:'삼성연금',data:inM.map(m=>(monthInMap[m]||{})['삼성연금저축']||0),backgroundColor:'#E24B4A',borderRadius:2},
+      {label:'우리IRP',data:inM.map(m=>(monthInMap[m]||{})['우리IRP']||0),backgroundColor:'#BA7517',borderRadius:2},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw>0?c.dataset.label+': '+Math.round(c.raw).toLocaleString()+'원':null,filter:i=>i.raw>0}}},scales:{x:{stacked:true,grid:{display:false},ticks:{color:tc,font:{size:10}}},y:{stacked:true,grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v>=1000000?(v/10000).toFixed(0)+'만':v}}}}});
 
     // 배당 추이
-    const divM=Object.keys(monthDivMap).sort().slice(-12);
-    const cD=document.getElementById('d16-divtrend');
-    if(cD){try{if(cD._c)cD._c.destroy();}catch(e){}
-      cD._c=new Chart(cD,{type:'line',data:{labels:divM,datasets:[{data:divM.map(m=>Math.round(monthDivMap[m])),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.1)',tension:.4,pointRadius:3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v>=10000?(v/10000).toFixed(1)+'만':v+'원'}}}}});}
+    const dM=Object.keys(monthDivMap).sort().slice(-12);
+    mkC('d16-divtrend',{type:'line',data:{labels:dM,datasets:[{data:dM.map(m=>Math.round(monthDivMap[m])),borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,0.1)',tension:.4,pointRadius:3,fill:true}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:10}}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v>=10000?(v/10000).toFixed(1)+'만':v+'원'}}}}});
 
     // 게이지
     const gEl=document.getElementById('d16-gauge');
@@ -3143,22 +3071,19 @@ function renderDashboard16() {
     // 시나리오
     const yrs=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15];
     function simD(dg,ag,mo){let a=totalEval,d=annualDiv||388435;return yrs.map(y=>{if(!y)return Math.round(d/12);a=a*(1+ag)+mo*12;d=d*(1+dg);return Math.round(d/12);});}
-    const cSc=document.getElementById('d16-scenario');
-    if(cSc){try{if(cSc._c)cSc._c.destroy();}catch(e){}
-      cSc._c=new Chart(cSc,{type:'line',data:{labels:yrs.map(y=>`${2026+y}`),datasets:[
-        {label:'낙관',data:simD(0.55,0.20,900000),borderColor:'#1D9E75',tension:.4,pointRadius:2},
-        {label:'기본',data:simD(0.38,0.12,900000),borderColor:'#378ADD',tension:.4,pointRadius:2,borderDash:[4,3]},
-        {label:'보수',data:simD(0.22,0.07,900000),borderColor:'#888780',tension:.4,pointRadius:2,borderDash:[2,3]},
-        {label:'목표',data:yrs.map(()=>1000000),borderColor:'#D85A30',borderDash:[6,4],pointRadius:0,borderWidth:1.5},
-      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${Math.round(c.raw).toLocaleString()}원`}}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:10},maxTicksLimit:8}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v>=10000?(v/10000).toFixed(0)+'만':v}}}}});}
+    mkC('d16-scenario',{type:'line',data:{labels:yrs.map(y=>`${2026+y}`),datasets:[
+      {label:'낙관',data:simD(0.55,0.20,900000),borderColor:'#1D9E75',tension:.4,pointRadius:2},
+      {label:'기본',data:simD(0.38,0.12,900000),borderColor:'#378ADD',tension:.4,pointRadius:2,borderDash:[4,3]},
+      {label:'보수',data:simD(0.22,0.07,900000),borderColor:'#888780',tension:.4,pointRadius:2,borderDash:[2,3]},
+      {label:'목표',data:yrs.map(()=>1000000),borderColor:'#D85A30',borderDash:[6,4],pointRadius:0,borderWidth:1.5},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${Math.round(c.raw).toLocaleString()}원`}}},scales:{x:{grid:{display:false},ticks:{color:tc,font:{size:10},maxTicksLimit:8}},y:{grid:{color:gc},ticks:{color:tc,font:{size:10},callback:v=>v>=10000?(v/10000).toFixed(0)+'만':v}}}}});
 
     // ISA 슬라이더
     const taxUsed=isaProfit;
     function updateISA(){
       const sell=+(document.getElementById('d16-sell-sl')||{}).value||0;
       const prof=+(document.getElementById('d16-prof-sl')||{}).value/100||0;
-      const addP=Math.round(sell*prof);
-      const total=taxUsed+addP;
+      const addP=Math.round(sell*prof),total=taxUsed+addP;
       const remain=Math.max(0,taxFreeLimit-total);
       const save=Math.round(Math.min(addP,Math.max(0,taxFreeLimit-taxUsed))*0.154);
       const over=Math.max(0,total-taxFreeLimit);
@@ -3170,9 +3095,9 @@ function renderDashboard16() {
       if(sv('d16-sim-save'))sv('d16-sim-save').textContent=save.toLocaleString()+'원';
       if(sv('d16-sim-over'))sv('d16-sim-over').textContent=Math.round(over*0.099).toLocaleString()+'원';
       if(sv('d16-sim-pct'))sv('d16-sim-pct').textContent=pct.toFixed(1)+'%';
-      const b=sv('d16-sim-bar'); if(b){b.style.width=pct+'%';b.style.background=pct<80?'#1D9E75':pct<100?'#BA7517':'#D85A30';}
+      const b=sv('d16-sim-bar');if(b){b.style.width=pct+'%';b.style.background=pct<80?'#1D9E75':pct<100?'#BA7517':'#D85A30';}
     }
-    const sl1=document.getElementById('d16-sell-sl'), sl2=document.getElementById('d16-prof-sl');
+    const sl1=document.getElementById('d16-sell-sl'),sl2=document.getElementById('d16-prof-sl');
     if(sl1)sl1.addEventListener('input',updateISA);
     if(sl2)sl2.addEventListener('input',updateISA);
 
@@ -3180,20 +3105,16 @@ function renderDashboard16() {
     const aiBtn=document.getElementById('d16-ai-btn');
     if(aiBtn) aiBtn.onclick=async function(){
       const res=document.getElementById('d16-ai-result');
-      aiBtn.textContent='분석 중...'; aiBtn.disabled=true;
-      const lines=DEFS.map(({key,label})=>{
-        const r=rates(key);
-        return `[${label}] 관점1:${r.v1!==null?r.v1.toFixed(1)+'%':'—'} 관점2:${r.v2!==null?r.v2.toFixed(1)+'%':'—'} 관점3:${r.v3!==null?r.v3.toFixed(1)+'%':'—'} 실현효율:${r.sellEff.toFixed(1)}% 배당률:${r.divYield.toFixed(1)}% 실현:${r.real.toLocaleString()}원 배당:${r.div.toLocaleString()}원`;
-      }).join('\n');
-      const prompt=`투자 포트폴리오 분석 전문가로서 아래 한국 투자자의 연금/ISA 계좌를 분석해주세요.\n\n${lines}\n\n총현재평가: 약 ${Wm(totalEval)}, 연환산배당: ${W(annualDiv)}(월 ${W(monthlyDiv)}), 목표: 월 100만원 배당, 월납입: 90만원(ISA 40만+연금저축 50만)\n\n다음 3가지를 각 2-3문장으로 분석해주세요:\n1. 현재 전략의 강점\n2. 보완이 필요한 부분\n3. 월 100만원 배당 달성을 위한 현실적 조언\n한국어로 간결하게 답변하세요.`;
+      aiBtn.textContent='분석 중...';aiBtn.disabled=true;
+      const lines=DEFS.map(({key,label})=>{const r=rates(key);return `[${label}] 관점1:${r.v1!==null?r.v1.toFixed(1)+'%':'—'} 관점2:${r.v2!==null?r.v2.toFixed(1)+'%':'—'} 관점3:${r.v3!==null?r.v3.toFixed(1)+'%':'—'} 실현효율:${r.sellEff.toFixed(1)}% 배당률:${r.divYield.toFixed(1)}% 실현:${r.real.toLocaleString()}원 배당:${r.div.toLocaleString()}원`;}).join('\n');
+      const prompt=`투자 포트폴리오 분석 전문가로서 아래 한국 투자자의 연금/ISA 계좌를 분석해주세요.\n\n${lines}\n\n총현재평가: ${Wm(totalEval)}, 연환산배당: ${W(annualDiv)}(월 ${W(monthlyDiv)}), 목표: 월 100만원 배당, 월납입: 90만원(ISA 40만+연금저축 50만)\n\n다음 3가지를 각 2-3문장으로 분석해주세요:\n1. 현재 전략의 강점\n2. 보완이 필요한 부분\n3. 월 100만원 배당 달성을 위한 현실적 조언\n한국어로 간결하게 답변하세요.`;
       try{
         const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:prompt}]})});
         const data=await resp.json();
         const txt=(data.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('');
         res.innerHTML='<div style="margin-top:10px;padding:12px 14px;background:var(--bg2);border-radius:10px;font-size:12px;line-height:1.8;color:var(--txt2)">'+txt.replace(/\n/g,'<br>')+'</div>';
       }catch(e){res.innerHTML='<div style="color:var(--red);margin-top:8px;font-size:12px">오류: '+e.message+'</div>';}
-      aiBtn.textContent='✦ AI 심층 분석 (현재 수치 기반 자동 생성)';
-      aiBtn.disabled=false;
+      aiBtn.textContent='✦ AI 심층 분석 (현재 수치 기반 자동 생성)';aiBtn.disabled=false;
     };
   }
   _render();
