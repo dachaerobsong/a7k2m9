@@ -1704,7 +1704,7 @@ function memoInputHtml(major, sub){
 // 세부 내역(소분류) 줄 안에 끼워 넣는 아주 작은 메모 입력 — 새 행을 만들지 않고 텍스트와 금액 사이에 배치
 function memoInputInlineHtml(major, sub){
   const mv = gbGetMemo(major, sub).replace(/"/g,'&quot;');
-  return `<input value="${mv}" placeholder="메모" onclick="event.stopPropagation()" onchange="budSaveMemo(this)" data-major="${(major||'').replace(/"/g,'&quot;')}" data-sub="${sub.replace(/"/g,'&quot;')}" style="flex:1;min-width:0;border:none;background:#FFF;font-size:11px;font-family:inherit;color:var(--txt3);outline:none;padding:2px 4px;border-radius:6px">`;
+  return `<input value="${mv}" placeholder="" onclick="event.stopPropagation()" onchange="budSaveMemo(this)" data-major="${(major||'').replace(/"/g,'&quot;')}" data-sub="${sub.replace(/"/g,'&quot;')}" style="flex:1;min-width:0;border:none;background:#FFF;font-size:11px;font-family:inherit;color:var(--txt3);outline:none;padding:2px 4px;border-radius:6px">`;
 }
 
 // ── 예산/지출 집계 헬퍼 ──
@@ -1727,15 +1727,23 @@ function budgetOf(major){
 }
 function subBudgetOf(major, sub){
   const sb = STATE.subBudget || {};
+  const subT = String(sub||'').trim();
+  function findIn(bucket){
+    if(!bucket) return null;
+    if(bucket[sub]!=null) return Number(bucket[sub])||0;
+    for(const bk in bucket){ if(String(bk).trim()===subT) return Number(bucket[bk])||0; }
+    return null;
+  }
   const lbl = CAT_OUT_LABELS[major];
-  if(lbl && sb[lbl] && sb[lbl][sub]!=null) return Number(sb[lbl][sub])||0;
-  if(sb[major] && sb[major][sub]!=null) return Number(sb[major][sub])||0;
+  let v;
+  if(lbl){ v = findIn(sb[lbl]); if(v!=null) return v; }
+  v = findIn(sb[major]); if(v!=null) return v;
   // 이모지 형태 차이 대비: 정규화 매칭
   const nm = normMajor(major);
-  for(const k in sb){ if(normMajor(k)===nm && sb[k] && sb[k][sub]!=null) return Number(sb[k][sub])||0; }
+  for(const k in sb){ if(normMajor(k)===nm){ v = findIn(sb[k]); if(v!=null) return v; } }
   // 시트에 "☀️ 엄마(고정)"처럼 괄호 주석이 붙은 경우까지 매칭
   const nmb = normBudgetKey(major);
-  for(const k in sb){ if(normBudgetKey(k)===nmb && sb[k] && sb[k][sub]!=null) return Number(sb[k][sub])||0; }
+  for(const k in sb){ if(normBudgetKey(k)===nmb){ v = findIn(sb[k]); if(v!=null) return v; } }
   if(sb[sub]!=null && typeof sb[sub]!=='object') return Number(sb[sub])||0;
   return 0;
 }
@@ -2216,6 +2224,7 @@ function renderTplList(){
 function closeTplModal(ev){ if(ev && ev.target!==document.getElementById('tpl-modal')) return; document.getElementById('tpl-modal').style.display='none'; }
 function applyTplByIdx(i){
   const t = templates[i]; if(!t) return;
+  console.log('[템플릿 원본 데이터 확인용]', t); // 계좌/메모가 안 불러와지면 개발자도구 콘솔에서 이 로그의 키 이름을 확인하세요
   document.getElementById('tx-type').value = t.type || '지출';
   updateCategoryOptions();
   // 대분류: 정확 매칭 실패 시 이모지 정규화로 매칭 (라벨/plain 혼용 대비)
