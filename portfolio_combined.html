@@ -574,7 +574,9 @@ const CAT_OUT_SUBS = {'주거비':['전세대출이자','관리비','전기세',
 const CAT_IN_SUBS = {'근로소득':['월급','보너스'],'금융소득':['이자소득'],'기타소득':['1/n, 카드환불','기타1','부수입']};
 const CAT_MV_SUBS = {'카드납부':['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-'],'예적금':['주택청약저축','자유적금','전세대출원금'],'연금':['개인연금'],'주식':['ISA'],'목적':['집계약용','케이-집계약용'],'비상금':['비상금','케이-비상금'],'덕질':['덕질','케이-덕질']};
 
-// ── 불러오기 제외: 계좌이체(이동) 및 농카 카드납부(이동) — 앱에서 삭제된 항목이 시트 동기화로 되살아나지 않도록 ──
+// ── 화면 숨김 필터: 계좌이체(이동) 및 농카 카드납부(이동) ──
+// 앱에서 삭제한 항목이지만 계좌 잔고에는 영향을 주므로 데이터는 유지하고
+// 가계부·내역·분석·시트 내보내기 화면에서만 제외한다.
 const REMOVED_CARD_KEYS = ['농카','농카!','농카!실미','농카-'];
 function isRemovedTx(t){
   if(!t || t.type !== '이동') return false;
@@ -1126,7 +1128,9 @@ function fetchFromSheet(silent) {
             outAcct,
             memo: e.memo||''
           };
-        }).filter(e => e.date.match(/^20\d\d-\d\d-\d\d/) && ['지출','수입','이동'].indexOf(e.type)>=0 && !isRemovedTx(e));
+        }).filter(e => e.date.match(/^20\d\d-\d\d-\d\d/) && ['지출','수입','이동'].indexOf(e.type)>=0);
+        // 주의: 계좌이체·농카 이동도 계좌 잔고에 영향을 주므로 데이터에서는 유지하고,
+        // 가계부/내역 화면에서만 isRemovedTx로 숨긴다 (제거하면 잔고가 시트와 어긋남)
         STATE.transactions.sort((a,b) => b.date.localeCompare(a.date));
       }
 
@@ -1177,7 +1181,7 @@ function renderHome() {
   const lbl = document.getElementById('home-month-label');
   if(lbl) lbl.textContent = ym.split('-')[0] + '년 ' + Number(ym.split('-')[1]) + '월';
 
-  const data = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === ym);
+  const data = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === ym && !isRemovedTx(t));
   const income = data.filter(t=>t.type==='수입').reduce((s,t)=>s+(Number(t.amount)||0),0);
   const spend = data.filter(t=>t.type==='지출').reduce((s,t)=>s+(Number(t.amount)||0),0);
   const save = data.filter(t=>t.type==='저축'||t.type==='이동').reduce((s,t)=>s+(Number(t.amount)||0),0);
@@ -1345,7 +1349,7 @@ function renderHistoryList() {
   const ym = monthInput ? monthInput.value : currentMonthStr();
   const container = document.getElementById('history-container');
   const q = (document.getElementById('hist-search')?.value || '').trim().toLowerCase();
-  let data = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === ym);
+  let data = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === ym && !isRemovedTx(t));
   if(q) {
     data = data.filter(t =>
       String(t.memo||'').toLowerCase().includes(q) ||
@@ -1550,7 +1554,7 @@ function renderAnalysis() {
     const lbl = document.getElementById('ana-year-label');
     if(lbl) lbl.textContent = yr + '년';
     const all = (STATE.transactions.length ? STATE.transactions : DEMO);
-    data = all.filter(t => String(t.date).slice(0,4) === yr);
+    data = all.filter(t => String(t.date).slice(0,4) === yr && !isRemovedTx(t));
     // 해당 연도에 실제 데이터가 있는 개월 수
     const monthsSet = new Set(data.map(t => String(t.date).slice(0,7)));
     nMonths = Math.max(1, monthsSet.size);
@@ -1559,7 +1563,7 @@ function renderAnalysis() {
     const monthInput = document.getElementById('analysis-month');
     if(monthInput && !monthInput.value) monthInput.value = currentMonthStr();
     const ym = monthInput ? monthInput.value : currentMonthStr();
-    data = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === ym);
+    data = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === ym && !isRemovedTx(t));
     nMonths = 1;
     periodLabel = ym;
   }
@@ -1932,7 +1936,7 @@ function memoInputInlineHtml(major, sub){
 }
 
 // ── 예산/지출 집계 헬퍼 ──
-function budTx(){ return (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === BUD_MONTH); }
+function budTx(){ return (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7) === BUD_MONTH && !isRemovedTx(t)); }
 function budgetOf(major){
   const b = STATE.budget || {};
   if(b[major]!=null) return Number(b[major])||0;
@@ -2367,7 +2371,7 @@ function exportBudgetSheet(){
   let yr = prompt('내보낼 연도를 입력하세요 (예: '+curY+')', curY);
   if(!yr) return; yr = yr.trim();
   if(!/^\d{4}$/.test(yr)){ alert('연도 형식이 올바르지 않습니다.'); return; }
-  const yrTx = (STATE.transactions.length?STATE.transactions:DEMO).filter(e => String(e.date).slice(0,4)===yr);
+  const yrTx = (STATE.transactions.length?STATE.transactions:DEMO).filter(e => String(e.date).slice(0,4)===yr && !isRemovedTx(e));
   const months = []; for(let mm=1;mm<=12;mm++) months.push(yr+'-'+String(mm).padStart(2,'0'));
 
   function mSpend(mon, type, major, sub){
@@ -2506,7 +2510,7 @@ function toggleBulkSel(id){
 function selectAllBulk(){
   const ym = document.getElementById('hist-month')?.value || currentMonthStr();
   const q = (document.getElementById('hist-search')?.value||'').trim().toLowerCase();
-  let data = (STATE.transactions.length?STATE.transactions:DEMO).filter(t=>String(t.date).slice(0,7)===ym);
+  let data = (STATE.transactions.length?STATE.transactions:DEMO).filter(t=>String(t.date).slice(0,7)===ym && !isRemovedTx(t));
   if(q) data = data.filter(t => [t.memo,t.category,t.major,t.account].some(v=>String(v||'').toLowerCase().includes(q)));
   const editable = data.filter(t => t.id && !isNaN(Number(t.id)) && Number(t.id)>1000000000000);
   const allSel = editable.length>0 && editable.every(t=>BULK_SEL.has(String(t.id)));
@@ -2531,7 +2535,7 @@ function deleteBulk(){
 }
 function exportHistoryCSV(){
   const ym = document.getElementById('hist-month')?.value || currentMonthStr();
-  const data = (STATE.transactions.length?STATE.transactions:DEMO).filter(t=>String(t.date).slice(0,7)===ym);
+  const data = (STATE.transactions.length?STATE.transactions:DEMO).filter(t=>String(t.date).slice(0,7)===ym && !isRemovedTx(t));
   if(!data.length){ showToast('내역이 없어요'); return; }
   const header = ['날짜','구분','대분류','소분류','내용','금액','계좌'];
   const esc = v => '"' + String(v==null?'':v).replace(/"/g,'""') + '"';
