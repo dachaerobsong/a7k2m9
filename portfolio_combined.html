@@ -572,7 +572,18 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
 // 기존 앱의 카테고리 구조 (대분류 → 소분류)
 const CAT_OUT_SUBS = {'주거비':['전세대출이자','관리비','전기세','도시가스','상수도비','기타세금','구독비','TV수신료'],'보험':['우체국보험','메리츠화재','메리츠화재2','삼성화재'],'통신비':['LGU+','삼케','LG알뜰(우릉교)'],'곗돈':['가족곗돈','대딩곗돈','친척곗돈'],'엄마':['엄마대출원금','엄마대출이자','엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)','엄마건강'],'식비':['식자재','배달식비','외식','카페류','가족식비'],'생활용품':['생활소모품','가전/가구','침구/인테리어'],'꾸밈비':['의류/잡화','미용/헤어','세탁/수선'],'자기계발':['스터디/수강','운동','도서'],'건강':['병원/약국','건강보조','예방/검진','목욕'],'교통비':['대중교통','택시비','기차'],'경조사':['가족/친척','지인/동료'],'문화생활':['공연/전시','OTT','기타 입장료','덕질'],'기타':['회비','기타2','집 관련 지출']};
 const CAT_IN_SUBS = {'근로소득':['월급','보너스'],'금융소득':['이자소득'],'기타소득':['1/n, 카드환불','기타1','부수입']};
-const CAT_MV_SUBS = {'카드납부':['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'],'계좌이체':['급여이체','생활비이체','대출이자이체','카드비이체','기타이체'],'예적금':['주택청약저축','자유적금','전세대출원금'],'연금':['개인연금'],'주식':['ISA'],'목적':['집계약용','케이-집계약용'],'비상금':['비상금','케이-비상금'],'덕질':['덕질','케이-덕질']};
+const CAT_MV_SUBS = {'카드납부':['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-'],'예적금':['주택청약저축','자유적금','전세대출원금'],'연금':['개인연금'],'주식':['ISA'],'목적':['집계약용','케이-집계약용'],'비상금':['비상금','케이-비상금'],'덕질':['덕질','케이-덕질']};
+
+// ── 불러오기 제외: 계좌이체(이동) 및 농카 카드납부(이동) — 앱에서 삭제된 항목이 시트 동기화로 되살아나지 않도록 ──
+const REMOVED_CARD_KEYS = ['농카','농카!','농카!실미','농카-'];
+function isRemovedTx(t){
+  if(!t || t.type !== '이동') return false;
+  if(String(t.major||'').indexOf('계좌이체') >= 0) return true;
+  const cat = String(t.category||t.sub||'').trim();
+  const inA = String(t.inAcct||'').trim();
+  if(String(t.major||'').indexOf('카드납부') >= 0 && (REMOVED_CARD_KEYS.indexOf(cat)>=0 || REMOVED_CARD_KEYS.indexOf(inA)>=0)) return true;
+  return false;
+}
 
 // 결제수단/계좌 목록 (기존 앱 ACCTS 기반)
 const ACCOUNT_LIST = ['케이뱅크','케이-비상금','케이-덕질','케이-임시','KB뱅크','NH뱅크','하나은행','케이-집계약용','신한은행','롯카','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','농카','농카!','토스증권','미래에셋','삼성증권','우리IRP'];
@@ -1115,7 +1126,7 @@ function fetchFromSheet(silent) {
             outAcct,
             memo: e.memo||''
           };
-        }).filter(e => e.date.match(/^20\d\d-\d\d-\d\d/) && ['지출','수입','이동'].indexOf(e.type)>=0);
+        }).filter(e => e.date.match(/^20\d\d-\d\d-\d\d/) && ['지출','수입','이동'].indexOf(e.type)>=0 && !isRemovedTx(e));
         STATE.transactions.sort((a,b) => b.date.localeCompare(a.date));
       }
 
@@ -2005,10 +2016,19 @@ function budRowHtml(secType, major, subList){
   let detail = '';
   // 고정비는 달마다 세부 항목 구성(펼치기 상태·높이)이 흔들리지 않도록 지출/예산이 0이어도 항상 표시
   const alwaysShowSub = isExpense && isFixedMajor(major);
+  const isMove = (secType==='이동');
+  // 이동: '케이-○○' 통장 항목은 원본 항목에 합산 표시 (별도 행 X)
+  function mvSubSpend(sub){
+    const cats = [sub];
+    if(isMove && sub.indexOf('케이-')!==0 && (subList||[]).indexOf('케이-'+sub)>=0) cats.push('케이-'+sub);
+    return budTx().filter(t => t.type===secType && (cats.indexOf(t.category)>=0 || (isMove && cats.indexOf(t.inAcct)>=0))).reduce((s,t)=>s+(Number(t.amount)||0),0);
+  }
   (subList||[]).forEach(sub => {
-    const ss = subSpendBud(secType, major, sub);
+    if(isMove && sub.indexOf('케이-')===0 && (subList||[]).indexOf(sub.replace('케이-',''))>=0) return; // 케이- 항목은 원본에 합산
+    const ss = isMove ? mvSubSpend(sub) : subSpendBud(secType, major, sub);
     const sbud = isExpense ? subBudgetOf(major, sub) : 0;
-    if(!alwaysShowSub && ss<=0 && sbud<=0) return;
+    const alwaysMv = isMove && major==='목적' && sub==='집계약용'; // 목적 밑 집계약용은 0원이어도 항상 표시(메모용)
+    if(!alwaysShowSub && !alwaysMv && ss<=0 && sbud<=0) return;
     const sover = sbud>0 && ss>sbud;
     const spct = sbud>0 ? Math.round(ss/sbud*100) : null;
     detail += `<div style="display:flex;align-items:center;gap:5px;padding:5px 0 5px 14px;border-top:1px solid #F2F4F6">
@@ -2038,7 +2058,7 @@ function budRowHtml(secType, major, subList){
         ${bud>0?`<span style="font-size:10px;padding:1px 6px;border-radius:5px;background:${badgeBg};color:${badgeC};font-weight:600">${pct}%</span>`:''}
       </div>
     </div>
-    ${isExpense ? memoInputHtml(major,'') : ''}
+    ${(isExpense || secType==='이동') ? memoInputHtml(major,'') : ''}
     ${hasDetail?`<div id="${rid}" style="display:${open?'block':'none'};margin-top:3px">${detail}</div>`:''}
   </div>`;
 }
@@ -2359,34 +2379,88 @@ function exportBudgetSheet(){
       return e.major===major || subs.indexOf(e.category)>=0;
     }).reduce((s,e)=>s+Math.abs(Number(e.amount)||0),0);
   }
+  // 시트 내보내기 제외 소분류
+  const EXPORT_EXCLUDE = ['LG알뜰(우릉교)','엄마대출원금','엄마대출이자','TV수신료'];
+  const exSubs = a => (a||[]).filter(s => EXPORT_EXCLUDE.indexOf(s)<0);
+
+  // 이동(저축) 집계: 대분류 또는 카테고리/입금계좌 매칭 ('케이-' 통장 포함)
+  function mvSpendX(mon, major, cats){
+    return yrTx.filter(e => {
+      if(e.type!=='이동' || String(e.date).slice(0,7)!==mon) return false;
+      if(major && normMajor(e.major)===major) return true;
+      return cats.indexOf(e.category)>=0 || cats.indexOf(e.inAcct)>=0;
+    }).reduce((s,e)=>s+Math.abs(Number(e.amount)||0),0);
+  }
+  function mvAliasX(sub){ const a=[sub]; if(sub.indexOf('케이-')!==0) a.push('케이-'+sub); return a; }
+  // 카드결제현황 집계: 해당 카드로 결제한 지출 (앱 카드결제현황과 동일 기준)
+  function cardSpendX(mon, cards){
+    return yrTx.filter(e => e.type==='지출' && String(e.date).slice(0,7)===mon && cards.indexOf(e.account)>=0)
+      .reduce((s,e)=>s+Math.abs(Number(e.amount)||0),0);
+  }
+  // 카드 목록: 카드예산 설정 + 실제 사용 카드 (농카 제외), 발급사별 그룹
+  const cardBudget = STATE.cardBudget || {};
+  const usedCards = new Set();
+  yrTx.filter(e=>e.type==='지출'&&e.account).forEach(e=>{ if(GRP_DEBT.some(c=>e.account.indexOf(c)>=0)) usedCards.add(e.account); });
+  const allCards = Array.from(new Set([...Object.keys(cardBudget), ...usedCards]))
+    .filter(c => REMOVED_CARD_KEYS.indexOf(c)<0 && cardIssuer(c)!=='농협');
+  const issuerGroups = {};
+  allCards.forEach(c => { const g=cardIssuer(c); (issuerGroups[g]=issuerGroups[g]||[]).push(c); });
+  const CARD_SECTIONS = [];
+  if(allCards.length){
+    CARD_SECTIONS.push({label:'카드결제현황', isHeader:true});
+    CARD_ISSUER_ORDER.forEach(iss => {
+      if(!issuerGroups[iss]) return;
+      const cards = issuerGroups[iss].sort((a,b)=>a.localeCompare(b,'ko'));
+      CARD_SECTIONS.push({label:iss, key:iss, type:'이동', isCard:true, cards:cards, subs:cards.length>1?cards:[]});
+    });
+  }
+
   const SECTIONS = [
     {label:'고정비', isHeader:true},
-    ...['주거비','보험','통신비','곗돈','엄마'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:CAT_OUT_SUBS[k]||[]})),
+    ...['주거비','보험','통신비','곗돈','엄마'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:exSubs(CAT_OUT_SUBS[k])})),
     {label:'변동비', isHeader:true},
-    ...['식비','생활용품','꾸밈비','자기계발','건강','교통비'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:CAT_OUT_SUBS[k]||[]})),
+    ...['식비','생활용품','꾸밈비','자기계발','건강','교통비'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:exSubs(CAT_OUT_SUBS[k])})),
     {label:'변동비2', isHeader:true},
-    ...['경조사','문화생활','기타'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:CAT_OUT_SUBS[k]||[]})),
+    ...['경조사','문화생활','기타'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:exSubs(CAT_OUT_SUBS[k])})),
     {label:'수입', isHeader:true},
     ...Object.keys(CAT_IN_SUBS).map(k=>({label:k,key:k,major:k,type:'수입',subs:CAT_IN_SUBS[k]||[]})),
+    // 저축/이동: 카드납부·계좌이체 제외, 비상금·덕질은 메모 가능한 직접 행 (케이- 통장 합산)
     {label:'저축/이동', isHeader:true},
-    ...Object.keys(CAT_MV_SUBS).map(k=>({label:k,key:k,major:k,type:'이동',subs:CAT_MV_SUBS[k]||[]})),
+    {label:'예적금', key:'예적금', major:'예적금', type:'이동', mv:true, cats:['주택청약저축','자유적금','전세대출원금'], subs:['주택청약저축','자유적금','전세대출원금']},
+    {label:'연금',   key:'연금',   major:'연금',   type:'이동', mv:true, cats:['개인연금'], subs:['개인연금']},
+    {label:'주식',   key:'주식',   major:'주식',   type:'이동', mv:true, cats:['ISA'], subs:['ISA']},
+    {label:'목적',   key:'목적',   major:'목적',   type:'이동', mv:true, cats:['집계약용','케이-집계약용'], subs:['집계약용']},
+    {label:'비상금', key:'비상금', major:'비상금', type:'이동', mv:true, cats:['비상금','케이-비상금'], subs:[]},
+    {label:'덕질',   key:'덕질',   major:'덕질',   type:'이동', mv:true, cats:['덕질','케이-덕질'], subs:[]},
+    // 카드결제현황 — 맨 아래
+    ...CARD_SECTIONS,
   ];
   const rows = [];
   SECTIONS.forEach(sec => {
     if(sec.isHeader){ rows.push({isHeader:true, label:sec.label}); return; }
-    const bud = sec.type==='지출' ? budgetOf(sec.major) : 0;
+    let bud = 0;
+    if(sec.type==='지출') bud = budgetOf(sec.major);
+    else if(sec.isCard) bud = sec.cards.reduce((s,c)=>s+(Number(cardBudget[c])||0),0);
     const row = {label:sec.label, key:sec.key, type:sec.type, bud:bud, isMajor:true, months:{}};
     months.forEach(mon => {
-      const amt = mSpend(mon, sec.type, sec.major, null);
-      row.months[mon] = {amount:amt, pct: bud>0?Math.round(amt/bud*100):null, memo: GB_MEMO[mon+'|'+sec.major]||''};
+      let amt;
+      if(sec.isCard)     amt = cardSpendX(mon, sec.cards);
+      else if(sec.mv)    amt = mvSpendX(mon, sec.major, sec.cats);
+      else               amt = mSpend(mon, sec.type, sec.major, null);
+      row.months[mon] = {amount:amt, pct: bud>0?Math.round(amt/bud*100):null, memo: GB_MEMO[mon+'|'+(sec.major||sec.key)]||''};
     });
     rows.push(row);
     (sec.subs||[]).forEach(sub => {
-      const sbud = sec.type==='지출' ? subBudgetOf(sec.major, sub) : 0;
+      let sbud = 0;
+      if(sec.type==='지출') sbud = subBudgetOf(sec.major, sub);
+      else if(sec.isCard) sbud = Number(cardBudget[sub])||0;
       const srow = {label:sub, key:sec.key, sub:sub, type:sec.type, bud:sbud, isMajor:false, months:{}};
       months.forEach(mon => {
-        const amt = mSpend(mon, sec.type, sec.major, sub);
-        srow.months[mon] = {amount:amt, pct: sbud>0?Math.round(amt/sbud*100):null, memo: GB_MEMO[mon+'|'+sec.major+'|'+sub]||''};
+        let amt;
+        if(sec.isCard)     amt = cardSpendX(mon, [sub]);
+        else if(sec.mv)    amt = mvSpendX(mon, null, mvAliasX(sub));
+        else               amt = mSpend(mon, sec.type, sec.major, sub);
+        srow.months[mon] = {amount:amt, pct: sbud>0?Math.round(amt/sbud*100):null, memo: GB_MEMO[mon+'|'+(sec.major||sec.key)+'|'+sub]||''};
       });
       rows.push(srow);
     });
