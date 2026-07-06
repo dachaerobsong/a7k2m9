@@ -435,7 +435,7 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
 
     <!-- 소비 분석 (고정비/변동비 비율 + 카테고리별 지출·예산 대비·신호등, 누르면 세부 항목 펼침) -->
     <section class="card" id="bud-analysis-card">
-      <div class="card-title">💸 소비 분석</div>
+      <div class="card-title" onclick="budToggleSection('bud-cat-spend','sec-analysis')" style="cursor:pointer"><span>💸 소비 분석 <span id="sec-analysis" style="color:var(--blue);font-size:13px">▾</span></span></div>
       <div id="bud-analysis-body"></div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px;padding-top:14px;border-top:1px solid #F2F4F6">
         <span style="font-size:12px;font-weight:600;color:var(--txt2)">카테고리별 지출 <span style="font-weight:400;color:var(--txt3)">· 누르면 세부 항목 · 메모 펼침</span></span>
@@ -603,7 +603,7 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
 <script>
 // ── 상태 ──
 // 기존 앱의 카테고리 구조 (대분류 → 소분류)
-const CAT_OUT_SUBS = {'주거비':['전세대출이자','관리비','전기세','도시가스','상수도비','기타세금','구독비','TV수신료'],'보험':['우체국보험','메리츠화재','메리츠화재2','삼성화재'],'통신비':['LGU+','삼케','LG알뜰(우릉교)'],'곗돈':['가족곗돈','대딩곗돈','친척곗돈'],'엄마':['엄마대출원금','엄마대출이자','엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)','엄마건강'],'식비':['식자재','배달식비','외식','카페류','가족식비'],'생활용품':['생활소모품','가전/가구','침구/인테리어'],'꾸밈비':['의류/잡화','미용/헤어','세탁/수선'],'자기계발':['스터디/수강','운동','도서'],'건강':['병원/약국','건강보조','예방/검진','목욕'],'교통비':['대중교통','택시비','기차'],'경조사':['가족/친척','지인/동료'],'문화생활':['공연/전시','OTT','기타 입장료','덕질'],'기타':['회비','기타2','집 관련 지출']};
+const CAT_OUT_SUBS = {'주거비':['전세대출이자','관리비','전기세','도시가스','상수도비','기타세금','구독비','TV수신료'],'보험':['우체국보험','메리츠화재','메리츠화재2','삼성화재'],'통신비':['LGU+','삼케','LG알뜰(우릉교)'],'곗돈':['가족곗돈','대딩곗돈','친척곗돈'],'엄마':['엄마대출원금','엄마대출이자','엄마생활비','엄마보험(삼성생명)','엄마보험(DB 손해)','엄마보험(보람상조)','엄마보험(라이나)','엄마핸드폰(LGU+)','엄마핸드폰(삼케)'],'식비':['식자재','배달식비','외식','카페류','가족식비'],'생활용품':['생활소모품','가전/가구','침구/인테리어'],'꾸밈비':['의류/잡화','미용/헤어','세탁/수선'],'자기계발':['스터디/수강','운동','도서'],'건강':['병원/약국','건강보조','예방/검진','목욕'],'엄마건강':['엄마건강'],'교통비':['대중교통','택시비','기차'],'경조사':['가족/친척','지인/동료'],'문화생활':['공연/전시','OTT','기타 입장료','덕질'],'기타':['회비','기타2','집 관련 지출']};
 const CAT_IN_SUBS = {'근로소득':['월급','보너스'],'금융소득':['이자소득'],'기타소득':['1/n, 카드환불','기타1','부수입']};
 const CAT_MV_SUBS = {'카드납부':['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-'],'예적금':['주택청약저축','자유적금','전세대출원금'],'연금':['개인연금'],'주식':['ISA'],'목적':['집계약용','케이-집계약용'],'비상금':['비상금','케이-비상금'],'덕질':['덕질','케이-덕질'],'계좌이체':['계좌이체']};
 
@@ -1483,7 +1483,14 @@ function renderHistoryList() {
   function fmtDay(dstr){
     const d = new Date(dstr);
     const wd = ['일','월','화','수','목','금','토'][d.getDay()];
-    return (d.getMonth()+1) + '월 ' + d.getDate() + '일 (' + wd + ')';
+    const base = (d.getMonth()+1) + '월 ' + d.getDate() + '일 (' + wd + ')';
+    return HIST_ALL ? d.getFullYear() + '년 ' + base : base; // 전체 기간이면 연도까지
+  }
+  // 카테고리순 행에 붙는 날짜 표기: 전체 기간이면 'YY.M.D', 월 모드면 'D일'
+  function catDate(t){
+    const s = String(t.date||'');
+    if(HIST_ALL) return s.slice(2,4)+'.'+parseInt(s.slice(5,7))+'.'+parseInt(s.slice(8,10));
+    return parseInt(s.slice(8,10)) + '일';
   }
   function isEditable(t){ return t.id && !isNaN(Number(t.id)) && Number(t.id) > 1000000000000; }
   function rowHtml(t){
@@ -1503,7 +1510,7 @@ function renderHistoryList() {
           ${box}
           <div class="item-left">
             <span class="item-name">${t.memo || t.category}</span>
-            <span class="item-desc">${t.account} (${t.major})</span>
+            <span class="item-desc">${HIST_SORT==='cat' ? catDate(t)+' · '+(t.account||t.outAcct||t.inAcct||'') : t.account+' ('+t.major+')'}</span>
           </div>
         </div>
         <span style="color:${color};font-weight:700;font-size:15px">${sign}₩${Math.abs(Number(t.amount)).toLocaleString()}</span>
@@ -1516,7 +1523,7 @@ function renderHistoryList() {
       <div class="item-row">
         <div class="item-left">
           <span class="item-name">${t.memo || t.category}</span>
-          <span class="item-desc">${t.account} (${t.major})</span>
+          <span class="item-desc">${HIST_SORT==='cat' ? catDate(t)+' · '+(t.account||t.outAcct||t.inAcct||'') : t.account+' ('+t.major+')'}</span>
         </div>
         <div style="display:flex;align-items:center;gap:4px">
           <span style="color:${color};font-weight:700;font-size:15px">${sign}₩${Math.abs(Number(t.amount)).toLocaleString()}</span>
@@ -1541,16 +1548,35 @@ function renderHistoryList() {
       if(!cmeta[r]) cmeta[r] = { label: t.major || '(미분류)', type: t.type };
     });
     container.innerHTML = Object.keys(cgroups).map(Number).sort((a,b)=>a-b).map(r=>{
-      const list = cgroups[r].slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+      const list = cgroups[r];
       const sum = list.reduce((s,t)=>s+Math.abs(Number(t.amount)||0),0);
       const c = cmeta[r].type==='수입' ? 'var(--blue)' : cmeta[r].type==='지출' ? 'var(--txt)' : 'var(--txt3)';
+      // 대분류 그룹 안은 소분류별로 다시 묶고 소계 표시 (소분류 선언 순서, 미선언은 뒤)
+      const declared = (STATE.catMap[cmeta[r].type]?.[normBudgetKey(cmeta[r].label)]) || [];
+      const subGroups = {};
+      list.forEach(t => { const s = String(t.category||'(소분류 없음)'); (subGroups[s]=subGroups[s]||[]).push(t); });
+      const subKeys = Object.keys(subGroups).sort((a,b)=>{
+        const ia = declared.indexOf(a), ib = declared.indexOf(b);
+        return ((ia<0?999:ia) - (ib<0?999:ib)) || a.localeCompare(b,'ko');
+      });
+      const subHtml = subKeys.map(sk=>{
+        const sl = subGroups[sk].slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+        const ssum = sl.reduce((s,t)=>s+Math.abs(Number(t.amount)||0),0);
+        return `<div style="margin:2px 0 4px">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0 3px 8px;border-bottom:1px solid #F7F8FA">
+            <span style="font-size:12px;font-weight:600;color:var(--txt2)">${sk} <span style="font-weight:400;color:var(--txt3)">· ${sl.length}건</span></span>
+            <span style="font-size:12px;font-weight:600;color:var(--txt3)">₩${ssum.toLocaleString('ko-KR')}</span>
+          </div>
+          ${sl.map(rowHtml).join('')}
+        </div>`;
+      }).join('');
       return `
-      <div style="margin-bottom:8px">
+      <div style="margin-bottom:10px">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:2px solid #F2F4F6;margin-bottom:4px">
           <span style="font-size:13px;font-weight:700;color:var(--txt2)">${cmeta[r].label} <span style="font-weight:400;color:var(--txt3)">· ${list.length}건</span></span>
           <span style="font-size:13px;font-weight:700;color:${c}">₩${sum.toLocaleString('ko-KR')}</span>
         </div>
-        ${list.map(rowHtml).join('')}
+        ${subHtml}
       </div>`;
     }).join('');
     return;
@@ -1634,6 +1660,17 @@ function renderBalanceList() {
 const FIXED_MAJORS = ['주거비','보험','통신비','곗돈','엄마','고정비'];
 // 이모지 라벨('🏠 주거비')도 고정비로 인식하도록 정규화 매칭
 function isFixedMajor(major){ return FIXED_MAJORS.indexOf(normBudgetKey(major)) >= 0; }
+// 거래 단위 고정/변동 판정: 엄마건강은 시트에 major='엄마'로 기록돼 있어도 변동으로 취급
+function isFixedTx(t){
+  if(normBudgetKey(t.major)==='엄마' && String(t.category||t.sub||'').trim()==='엄마건강') return false;
+  return isFixedMajor(t.major);
+}
+// 집계용 카테고리 키: 엄마 밑 엄마건강 거래는 '엄마건강' 카테고리로 재배정
+function txCatKey(t){
+  const k = normBudgetKey(t.major);
+  if(k==='엄마' && String(t.category||t.sub||'').trim()==='엄마건강') return '엄마건강';
+  return k;
+}
 let ANA_MODE = 'month';
 let ANA_YEAR = new Date().getFullYear();
 
@@ -1714,7 +1751,7 @@ function renderAnalysis() {
   const totalSpend = spend.reduce((s,t)=>s+(Number(t.amount)||0),0);
   const totalSave = data.filter(t=>t.type==='저축'||t.type==='이동').reduce((s,t)=>s+(Number(t.amount)||0),0);
   const totalIncome = data.filter(t=>t.type==='수입').reduce((s,t)=>s+(Number(t.amount)||0),0);
-  const fixed = spend.filter(t=>isFixedMajor(t.major)).reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const fixed = spend.filter(t=>isFixedTx(t)).reduce((s,t)=>s+(Number(t.amount)||0),0);
   const variable = Math.max(0, totalSpend - fixed);
   const saveRate = totalIncome>0 ? Math.round(totalSave/totalIncome*100) : 0;
   const netFlow = totalIncome - totalSpend - totalSave;
@@ -1764,7 +1801,7 @@ function renderAnalysis() {
   // ── 카테고리별 지출 (예산 비교 + 차액) ──
   // 이모지 접두 유무와 무관하게 집계·매칭되도록 normBudgetKey 정규화 + budgetOf 통일
   const byMajor = {};
-  spend.forEach(t => { const k = normBudgetKey(t.major); byMajor[k] = (byMajor[k]||0) + (Number(t.amount)||0); });
+  spend.forEach(t => { const k = txCatKey(t); byMajor[k] = (byMajor[k]||0) + (Number(t.amount)||0); });
   const cats = Object.entries(byMajor).map(([major,sp]) => {
     const budBase = budgetOf(major);
     const bud = budBase * nMonths; // 연간이면 예산도 개월수만큼
@@ -2026,7 +2063,7 @@ function saveEdit() {
 // ════════════════════════════════════════════════════════════
 
 // ── 카테고리 이모지 라벨 (예산 키 매칭 폴백용) ──
-const CAT_OUT_LABELS = {'주거비':'🏠 주거비','보험':'🗃️ 보험','통신비':'📞 통신비','곗돈':'🍀 곗돈','엄마':'☀️ 엄마','식비':'🍽️ 식비','생활용품':'🛒 생활용품','꾸밈비':'👗 꾸밈비','자기계발':'👩‍🎓 자기계발','건강':'😷 건강','교통비':'🚌 교통비','경조사':'🎁 경조사','문화생활':'📺 문화생활','기타':'✔️ 기타'};
+const CAT_OUT_LABELS = {'주거비':'🏠 주거비','보험':'🗃️ 보험','통신비':'📞 통신비','곗돈':'🍀 곗돈','엄마':'☀️ 엄마','식비':'🍽️ 식비','생활용품':'🛒 생활용품','꾸밈비':'👗 꾸밈비','자기계발':'👩‍🎓 자기계발','건강':'😷 건강','엄마건강':'🌡️ 엄마건강','교통비':'🚌 교통비','경조사':'🎁 경조사','문화생활':'📺 문화생활','기타':'✔️ 기타'};
 const CAT_IN_LABELS = {'근로소득':'👷 근로소득','금융소득':'💵 금융소득','기타소득':'💰 기타소득'};
 const CAT_MV_LABELS = {'카드납부':'💳 카드납부','계좌이체':'🔄 계좌이체','예적금':'예적금','연금':'연금','주식':'주식','목적':'목적','목적2':'목적2','비상금':'비상금','덕질':'덕질'};
 // 대분류를 시트가 기대하는 라벨(이모지) 형식으로 변환. 이미 라벨이면 그대로 정규화 매칭.
@@ -2213,6 +2250,13 @@ function budRowHtml(secType, major, subList){
   });
   const rid = 'budr_' + secType + '_' + String(major).replace(/\s+/g,'_');
   const open = !!BUD_EXPAND[rid];
+  // 카드납부는 달마다 사용 카드 수가 달라 펼친 높이가 흔들림 → 고정 높이 + 내부 스크롤
+  const isCardPay = isMoveType && normBudgetKey(major)==='카드납부';
+  if(isCardPay){
+    detail = `<div style="height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+      ${detail || '<div style="font-size:12px;color:var(--txt3);padding:10px 0 4px 14px">이번 달 내역 없음</div>'}
+    </div>`;
+  }
 
   // 메모(대분류 단위)는 항상 펼치면 보이는 영역 안에 배치 — 세부 항목이 없어도 메모를 남길 수 있도록 항상 펼치기 가능
   return `<div id="${rid}_wrap" style="border-top:1px solid #F2F4F6;border-radius:8px">
@@ -2276,10 +2320,11 @@ function budCatRowHtml(c){
         <span style="flex:1;min-width:0;font-size:13px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.memo||t.category}<span style="font-size:10px;color:var(--txt3)"> · ${t.category}</span></span>
         <span style="font-size:13px;font-weight:400;color:var(--txt);white-space:nowrap">${won(Number(t.amount)||0)}</span>
       </div>`).join('');
-    detail = txs.length
-      ? `<div style="max-height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch">${rows}</div>
-         ${txs.length>7?`<div style="font-size:10px;color:var(--txt3);text-align:center;padding:3px 0">총 ${txs.length}건 · 스크롤해서 더 보기</div>`:''}`
-      : `<div style="font-size:12px;color:var(--txt3);padding:6px 0 4px 14px;border-top:1px solid #F2F4F6">이번 달 내역 없음</div>`;
+    // 건수와 무관하게 항상 같은 높이(216px) — 내역이 적거나 없어도 고정해서 월 이동 시 레이아웃 불변
+    detail = `<div style="height:216px;overflow-y:auto;-webkit-overflow-scrolling:touch">
+        ${txs.length ? rows : '<div style="font-size:12px;color:var(--txt3);padding:10px 0 4px 14px">이번 달 내역 없음</div>'}
+      </div>
+      <div style="font-size:10px;color:var(--txt3);text-align:center;padding:3px 0;height:14px">${txs.length>7?`총 ${txs.length}건 · 스크롤해서 더 보기`:''}</div>`;
   }
 
   const rid = 'budcatr_' + key.replace(/\s+/g,'_');
@@ -2310,7 +2355,7 @@ function renderBudgetAnalysis(ym, tx) {
 
   const spend = tx.filter(t => t.type==='지출');
   const totalSpend = spend.reduce((s,t)=>s+(Number(t.amount)||0),0);
-  const fixed = spend.filter(t=>isFixedMajor(t.major)).reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const fixed = spend.filter(t=>isFixedTx(t)).reduce((s,t)=>s+(Number(t.amount)||0),0);
   const variable = Math.max(0, totalSpend - fixed);
   const fpct = totalSpend>0 ? Math.round(fixed/totalSpend*100) : 0;
 
@@ -2338,7 +2383,7 @@ function renderBudgetAnalysis(ym, tx) {
     const budget = STATE.budget || {};
     // 이모지 접두("🏠 주거비") 유무와 무관하게 집계되도록 normBudgetKey로 정규화해 합산 (₩0 버그 방지)
     const byMajor = {};
-    spend.forEach(t => { const k = normBudgetKey(t.major); byMajor[k] = (byMajor[k]||0) + (Number(t.amount)||0); });
+    spend.forEach(t => { const k = txCatKey(t); byMajor[k] = (byMajor[k]||0) + (Number(t.amount)||0); });
     const ALL_OUT_MAJORS = Object.keys(CAT_OUT_LABELS);
     const cats = ALL_OUT_MAJORS.map((major, idx) => {
       const sp = byMajor[normBudgetKey(major)] || 0;
@@ -2522,7 +2567,7 @@ function budToggleAll(){
 }
 // ── 섹션 전체 펼치기/접기 (열면 하위 세부 다 열림, 접으면 카테고리 헤더만) ──
 let BUD_SEC_OPEN = (()=>{ try{ return JSON.parse(localStorage.getItem('budSecOpenV2'))||{}; }catch(e){ return {}; } })();
-const BUD_SECTIONS = [['bud-income','sec-in'],['bud-save','sec-save']];
+const BUD_SECTIONS = [['bud-income','sec-in'],['bud-save','sec-save'],['bud-cat-spend','sec-analysis']];
 function applyBudSection(bodyId, carId){
   const body=document.getElementById(bodyId); if(body) body.style.display='block'; // 섹션 몸통은 항상 표시(카테고리 헤더 유지)
   const car=document.getElementById(carId); if(car) car.textContent = BUD_SEC_OPEN[bodyId] ? '▾' : '▸';
@@ -2533,7 +2578,7 @@ function budToggleSection(bodyId, carId){
   BUD_SEC_OPEN[bodyId] = open;
   // 섹션 안 모든 카테고리 세부(하위내역)를 열거나 닫음 (카테고리 헤더는 유지)
   const body=document.getElementById(bodyId);
-  if(body) body.querySelectorAll('[id^="budr_"]').forEach(r=>{ BUD_EXPAND[r.id.replace(/_wrap$/,'')] = open; });
+  if(body) body.querySelectorAll('[id^="budr_"],[id^="budcatr_"]').forEach(r=>{ BUD_EXPAND[r.id.replace(/_wrap$/,'')] = open; });
   saveBudExpand();
   try{ localStorage.setItem('budSecOpenV2', JSON.stringify(BUD_SEC_OPEN)); }catch(e){}
   renderBudgetHome();
@@ -2639,7 +2684,7 @@ function exportBudgetSheet(){
     {label:'고정비', isHeader:true},
     ...['주거비','보험','통신비','곗돈','엄마'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:exSubs(CAT_OUT_SUBS[k])})),
     {label:'변동비', isHeader:true},
-    ...['식비','생활용품','꾸밈비','자기계발','건강','교통비'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:exSubs(CAT_OUT_SUBS[k])})),
+    ...['식비','생활용품','꾸밈비','자기계발','건강','엄마건강','교통비'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:exSubs(CAT_OUT_SUBS[k])})),
     {label:'변동비2', isHeader:true},
     ...['경조사','문화생활','기타'].map(k=>({label:k,key:CAT_OUT_LABELS[k]||k,major:k,type:'지출',subs:exSubs(CAT_OUT_SUBS[k])})),
     {label:'수입', isHeader:true},
@@ -3309,8 +3354,8 @@ function rptJudgeMonth(ym){
   // 변동지출 전월 대비
   const prevYm = ym.slice(0,4)+'-'+String(parseInt(ym.slice(5,7))-1).padStart(2,'0');
   const prevTx = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t => String(t.date).slice(0,7)===prevYm && !isRemovedTx(t));
-  const prevOut = prevTx.filter(t=>t.type==='지출'&&!isFixedMajor(t.major)).reduce((s,t)=>s+(Number(t.amount)||0),0);
-  const curVarOut = tx.filter(t=>t.type==='지출'&&!isFixedMajor(t.major)).reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const prevOut = prevTx.filter(t=>t.type==='지출'&&!isFixedTx(t)).reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const curVarOut = tx.filter(t=>t.type==='지출'&&!isFixedTx(t)).reduce((s,t)=>s+(Number(t.amount)||0),0);
   const varChg = prevOut>0 ? Math.round((curVarOut-prevOut)/prevOut*100) : null;
   // 수입: 최근 3개월 평균
   const prev3 = [1,2,3].map(i=>{
