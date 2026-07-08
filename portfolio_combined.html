@@ -352,7 +352,18 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
       <div class="card-title">💵 현금/예금</div>
       <div id="bal-cash"></div>
     </div>
-    <!-- 카드 결제 현황 (월별 조회 — 지난달 카드 사용액도 확인 가능) -->
+    <div class="card" id="bal-contract-card" style="display:none;">
+      <div class="card-title">🏡 집계약용 통장</div>
+      <div id="bal-contract"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🏦 장기부채 (전세대출 등)</div>
+      <div class="item-row" style="border:none;padding:0;">
+        <div class="item-left"><span class="item-name">전세대출 등</span></div>
+        <div class="item-right" id="bal-longdebt" style="color:var(--red)">0원</div>
+      </div>
+    </div>
+    <!-- 카드 결제 현황 (월별 조회 — 지난달 카드 사용액도 확인 가능) — 잔고 화면 맨 아래 -->
     <section class="card">
       <div class="card-title" style="margin-bottom:10px">
         <span>💳 카드 결제 현황</span>
@@ -365,17 +376,6 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
       </div>
       <div id="bud-card-unified"></div>
     </section>
-    <div class="card" id="bal-contract-card" style="display:none;">
-      <div class="card-title">🏡 집계약용 통장</div>
-      <div id="bal-contract"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">🏦 장기부채 (전세대출 등)</div>
-      <div class="item-row" style="border:none;padding:0;">
-        <div class="item-left"><span class="item-name">전세대출 등</span></div>
-        <div class="item-right" id="bal-longdebt" style="color:var(--red)">0원</div>
-      </div>
-    </div>
   </div>
 
   <!-- 가계부 4) 분석 패널 — 제거됨 (예산/분석에 통합) -->
@@ -626,8 +626,8 @@ const GRP_INVEST   = ['토스증권','미래에셋','삼성증권','우리IRP'];
 const GRP_LONGDEBT = ['전세자금대출 원금(국민)','전세자금대출 원금(농협)','엄마신용대출 원금'];
 const GRP_DEBT     = ['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'];
 
-// ── 카드 발급사 분류 (정산 묶음용) ──
-const CARD_ISSUER_ORDER = ['국민','롯데','삼성','신한','농협','기타'];
+// ── 카드 발급사 분류 (정산 묶음용) ── 요청 순서: 국카1·국카k → 신카 → 롯카 → 삼카
+const CARD_ISSUER_ORDER = ['국민','신한','롯데','삼성','농협','기타'];
 function cardIssuer(name){
   const a = String(name||'');
   if(a.indexOf('국카')>=0 || a.indexOf('국민')>=0) return '국민';
@@ -693,11 +693,16 @@ function cardToggleAll(prefix){
   const btn=document.getElementById(prefix+'-toggleall'); if(btn) btn.textContent=open?'모두 접기':'모두 펼치기';
   saveCardOpen();
 }
+// 특히 자주 보는 카드 3개는 "남음" 표시를 더 눈에 띄게
+const CARD_EMPHASIZE = ['국카1','국카k!','신카!'];
 function cardDetailRows(g, useObj, budObj){
   return g.cards.map(c=>{
     const used=useObj[c]||0, bud=budObj[c]||0, over=bud>0&&used>bud;
+    const emph = CARD_EMPHASIZE.indexOf(c)>=0;
     const diffTag = bud>0
-      ? ` <span style="font-size:9.5px;font-weight:600;color:${over?'var(--red)':'var(--green)'}">${over?'+'+won(used-bud)+' 초과':won(bud-used)+' 남음'}</span>`
+      ? (emph
+        ? ` <span style="font-size:11px;font-weight:800;color:#fff;background:${over?'var(--red)':'var(--green)'};padding:2px 8px;border-radius:99px;margin-left:2px">${over?'+'+won(used-bud)+' 초과':won(bud-used)+' 남음'}</span>`
+        : ` <span style="font-size:9.5px;font-weight:600;color:${over?'var(--red)':'var(--green)'}">${over?'+'+won(used-bud)+' 초과':won(bud-used)+' 남음'}</span>`)
       : '';
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:14px;border-top:1px solid #F2F4F6">
       <span style="color:var(--txt2)">${c}${over?' <span style="color:var(--red)">⚠️</span>':''}</span>
@@ -803,10 +808,12 @@ const DEMO_ACCTSDEF = [{key:'케이뱅크',label:'케이뱅크',group:'cash'}];
 function getUrl(){ return localStorage.getItem('scriptUrl') || ''; }
 
 // ── 잠금 ──
+// 한 번 열면(같은 탭에서) 새로고침해도 다시 잠기지 않도록 세션 동안만 기억 (앱을 완전히 껐다 켜면 다시 물어봄)
 function checkPw() {
   const input = document.getElementById('lock-input').value;
   if(input === '1234' || input === '') {
     document.getElementById('lock').style.display = 'none';
+    try{ sessionStorage.setItem('gb_unlocked','1'); }catch(e){}
   } else {
     document.getElementById('lock-err').style.opacity = 1;
   }
@@ -1049,11 +1056,18 @@ function updateSubOptions() {
 function resetLedgerFormKeepDate(){
   const d  = document.getElementById('tx-date')?.value;
   const ty = document.getElementById('tx-type')?.value;
+  const mj = document.getElementById('tx-major')?.value;
+  const ct = document.getElementById('tx-category')?.value;
   document.getElementById('ledger-form').reset();
   const de = document.getElementById('tx-date');
   if(de){ if(d) de.value = d; else de.valueAsDate = new Date(); }
   const te = document.getElementById('tx-type');
   if(te && ty){ te.value = ty; updateCategoryOptions(); }
+  // 대분류/소분류도 직전 입력값 유지 (연속 입력 편의 — 새로고침/탭 이동 시엔 초기화됨)
+  const me = document.getElementById('tx-major');
+  if(me && mj && [...me.options].some(o=>o.value===mj)){ me.value = mj; updateSubOptions(); }
+  const ce = document.getElementById('tx-category');
+  if(ce && ct && [...ce.options].some(o=>o.value===ct)){ ce.value = ct; }
   const oa = document.getElementById('tx-out-acct'); if(oa) oa.value='';
   const ia = document.getElementById('tx-in-acct');  if(ia) ia.value='';
 }
@@ -1458,9 +1472,12 @@ function renderHistoryList() {
   function isEditable(t){ return t.id && !isNaN(Number(t.id)) && Number(t.id) > 1000000000000; }
   function rowHtml(t){
     let color = 'var(--txt)', sign = '';
+    const raw = Number(t.amount)||0;
+    const isNegOut = t.type==='지출' && raw < 0; // 지출인데 마이너스로 기록된 건(환불 등) — 괄호로 구분 표시
     if (t.type === '수입') { color = 'var(--blue)'; sign = '+'; }
-    else if (t.type === '지출') { color = 'var(--txt)'; sign = '-'; }
+    else if (t.type === '지출') { color = isNegOut ? 'var(--green)' : 'var(--txt)'; sign = isNegOut ? '' : '-'; }
     else { color = 'var(--txt3)'; sign = ''; }
+    const amtStr = isNegOut ? `(₩${Math.abs(raw).toLocaleString()})` : `${sign}₩${Math.abs(raw).toLocaleString()}`;
     const editable = isEditable(t);
     // B안: 한 줄 — [카테고리(살짝 진하게)] · 계좌 · 메모 (연한 검정, 작게)
     // 카테고리순 모드에선 카테고리가 서브그룹 헤더에 있으니 날짜가 앞에 옴
@@ -1480,7 +1497,7 @@ function renderHistoryList() {
           ${box}
           ${line}
         </div>
-        <span style="color:${color};font-weight:700;font-size:14px;flex:none;margin-left:8px">${sign}₩${Math.abs(Number(t.amount)).toLocaleString()}</span>
+        <span style="color:${color};font-weight:700;font-size:14px;flex:none;margin-left:8px">${amtStr}</span>
       </div>`;
     }
     const btns = editable ? `
@@ -1490,7 +1507,7 @@ function renderHistoryList() {
       <div class="item-row">
         ${line}
         <div style="display:flex;align-items:center;gap:4px;flex:none;margin-left:8px">
-          <span style="color:${color};font-weight:700;font-size:14px">${sign}₩${Math.abs(Number(t.amount)).toLocaleString()}</span>
+          <span style="color:${color};font-weight:700;font-size:14px">${amtStr}</span>
           ${btns}
         </div>
       </div>`;
@@ -3360,10 +3377,18 @@ function rptJudgeMonth(ym){
   const dotC = { green:'var(--green)', yellow:'var(--warning)', red:'var(--red)', gray:'var(--txt3)' };
 
   const checks = [
-    { label:'예산 준수',   val:budPct!==null?budPct+'%':'−',  d: dot(budPct, v=>v<90,   v=>v<=105) },
-    { label:'저축률',      val:saveRate+'%',                   d: dot(saveRate, v=>v>=30, v=>v>=20) },
-    { label:'변동지출',    val:varChg!==null?(varChg>0?'+':'')+varChg+'%':'−', d: dot(varChg, v=>v<=0, v=>v<=10) },
-    { label:'수입 추이',   val:inChgPct!==null?(inChgPct>0?'+':'')+inChgPct+'%':'−', d: dot(inChgPct, v=>v>=0, v=>v>=-5) },
+    { label:'예산 준수',   val:budPct!==null?budPct+'%':'−',  d: dot(budPct, v=>v<90,   v=>v<=105),
+      basis: totalBudget>0 ? `지출 ${won(mOut)} / 예산 ${won(totalBudget)}` : '예산이 설정되지 않았어요',
+      crit: '🟢 90% 미만 · 🟡 105% 이하 · 🔴 그 이상' },
+    { label:'저축률',      val:saveRate+'%',                   d: dot(saveRate, v=>v>=30, v=>v>=20),
+      basis: `저축 ${won(mSave)} / 수입 ${won(mIn)}`,
+      crit: '🟢 30% 이상 · 🟡 20% 이상 · 🔴 그 미만' },
+    { label:'변동지출',    val:varChg!==null?(varChg>0?'+':'')+varChg+'%':'−', d: dot(varChg, v=>v<=0, v=>v<=10),
+      basis: prevOut>0 ? `이번 달 ${won(curVarOut)} · 전월 ${won(prevOut)} 대비` : '전월 변동지출 데이터가 없어 비교 불가',
+      crit: '🟢 전월과 같거나 감소 · 🟡 10% 이내 증가 · 🔴 그 이상 증가' },
+    { label:'수입 추이',   val:inChgPct!==null?(inChgPct>0?'+':'')+inChgPct+'%':'−', d: dot(inChgPct, v=>v>=0, v=>v>=-5),
+      basis: avg3>0 ? `이번 달 ${won(mIn)} · 최근 3개월 평균 ${won(Math.round(avg3))} 대비` : '비교할 최근 3개월 수입 데이터가 부족해요',
+      crit: '🟢 평균 이상 · 🟡 5% 이내 감소 · 🔴 그 이상 감소' },
   ];
 
   // 월 종합: 빨강 1개라도→빨강, 노랑 2개 이상→노랑, 나머지 녹
@@ -3476,12 +3501,16 @@ function rptRenderDetail(ym){
     return `<div style="font-size:13px;color:${col};line-height:1.8">${icon} ${c.label} ${c.val}</div>`;
   }).join('');
 
-  // 재무 건강검진 테이블
+  // 재무 건강검진 테이블 — 값 아래에 판정 근거(무엇을 비교했는지)와 기준을 함께 보여줌
   const lightRows=j.checks.map(c=>`
     <tr style="border-top:0.5px solid #F2F4F6">
-      <td style="padding:8px 8px 8px 0;font-size:13px">${c.label}</td>
-      <td style="text-align:right;font-size:13px;font-weight:600">${c.val}</td>
-      <td style="text-align:right;padding-left:8px"><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${dotC[c.d]}"></span></td>
+      <td style="padding:9px 8px 9px 0;vertical-align:top">
+        <div style="font-size:13px;font-weight:600">${c.label}</div>
+        <div style="font-size:11px;color:var(--txt3);margin-top:2px;line-height:1.5">${c.basis||''}</div>
+        <div style="font-size:10.5px;color:var(--txt3);margin-top:1px;line-height:1.5">${c.crit||''}</div>
+      </td>
+      <td style="text-align:right;font-size:13px;font-weight:600;vertical-align:top;padding-top:9px;white-space:nowrap">${c.val}</td>
+      <td style="text-align:right;padding-left:8px;vertical-align:top;padding-top:11px"><span style="display:inline-block;width:11px;height:11px;border-radius:50%;background:${dotC[c.d]}"></span></td>
     </tr>`).join('');
 
   body.innerHTML=`
@@ -3507,6 +3536,7 @@ function rptRenderDetail(ym){
 // ── 초기화 ──
 window.onload = () => {
   document.getElementById('tx-date').valueAsDate = new Date();
+  try{ if(sessionStorage.getItem('gb_unlocked')==='1'){ const lk=document.getElementById('lock'); if(lk) lk.style.display='none'; } }catch(e){}
   const savedUrl = getUrl();
   if(savedUrl) {
     const inp = document.getElementById('sheet-url-input');
