@@ -210,8 +210,9 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
 
   <!-- 총자산 Hero Card -->
   <section class="card" style="background: linear-gradient(135deg, var(--blue), #5566B8); color: #FFF;">
-    <div class="card-title" style="color: rgba(255,255,255,0.85);">현재 총자산 <span style="font-size:11px;font-weight:400;opacity:0.75">(장기부채 제외)</span></div>
-    <div class="hero-val" id="h-total-asset" style="color:#FFF">—</div>
+    <div class="card-title" style="color: rgba(255,255,255,0.85);">현재 순자산 <span style="font-size:11px;font-weight:400;opacity:0.75">(장기부채 포함)</span></div>
+    <div class="hero-val" id="h-net-worth" style="color:#FFF">—</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:-2px" id="h-total-asset-sub"></div>
     <div class="hero-sub" id="h-monthly-change" style="color: #D6F5E3;"></div>
   </section>
 
@@ -1321,7 +1322,8 @@ function assetGrpToggle(g){
   renderAssetOverview();
 }
 function renderAssetOverview(){
-  const heroEl = document.getElementById('h-total-asset');
+  const heroEl = document.getElementById('h-net-worth');
+  const heroSubEl = document.getElementById('h-total-asset-sub');
   const chgEl  = document.getElementById('h-monthly-change');
   const compEl = document.getElementById('h-asset-comp');
   const trendEl= document.getElementById('h-asset-trend');
@@ -1333,6 +1335,7 @@ function renderAssetOverview(){
   const def = STATE.acctsDef||[];
   if(!def.length || !STATE.initBal){
     heroEl.textContent = '—';
+    if(heroSubEl) heroSubEl.textContent = '';
     if(chgEl) chgEl.textContent = '설정에서 시트를 연동해 주세요';
     return;
   }
@@ -1345,7 +1348,8 @@ function renderAssetOverview(){
   const total = groups.reduce((s,x)=>s+x.val,0);   // 장기부채 제외 총자산 (카드미결제는 음수로 반영)
   const netWorth = total + longdebt;                 // 장기부채 포함 순자산
 
-  heroEl.textContent = total.toLocaleString('ko-KR') + '원';
+  heroEl.textContent = (netWorth<0?'-':'') + Math.abs(netWorth).toLocaleString('ko-KR') + '원';
+  if(heroSubEl) heroSubEl.textContent = `총자산(장기부채 제외) ${total<0?'-':''}${Math.abs(total).toLocaleString('ko-KR')}원`;
   // 이번달 변화 = 실제 이번 달(오늘 기준)의 수입 − 지출 (거래내역 기반, 이동은 자산 내부 이동이라 제외)
   const curYm = currentMonthStr();
   const mtx = (STATE.transactions||[]).filter(t=>String(t.date).slice(0,7)===curYm);
@@ -3558,7 +3562,10 @@ function rptUnifiedTable(year){
     const drillLabel = (opts.drillLabel || label).replace(/'/g,'').replace(/"/g,'');
     const noJudge = cadence==='event' || !!opts.noJudge;
     const avg = avgOfVals(vals);
-    const cellBase = (isCur)=>`text-align:center;padding:6px 3px;font-size:10.5px;cursor:pointer;font-weight:${isCur?'800':'500'};${isCur?'background:var(--blue-bg);border-radius:6px':''}`;
+    const stickyBottom = !!opts.stickyBottom;
+    const botSticky = stickyBottom ? 'position:sticky;bottom:0;' : '';
+    const botShadow = stickyBottom ? 'box-shadow:0 -2px 4px -2px rgba(0,0,0,0.1);' : '';
+    const cellBase = (isCur)=>`text-align:center;padding:6px 3px;font-size:10.5px;cursor:pointer;font-weight:${isCur?'800':'500'};${botSticky}${stickyBottom?'z-index:2;'+botShadow:''}${isCur?'background:var(--blue-bg);border-radius:6px':(stickyBottom?'background:var(--card);':'')}`;
     const cells = vals.map((v,i)=>{
       const ym = months[i]; const isCur = ym===nowYm;
       const disp = v>0 ? manW(v) : '–';
@@ -3584,9 +3591,9 @@ function rptUnifiedTable(year){
     const avgTxt = avg>0 ? manW(avg) : '–';
     const overBad = bud>0 && (dir==='low' ? avg>bud : avg<bud);
     return `<tr>
-      <td style="padding:6px 8px;font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;width:${COL1}px;min-width:${COL1}px;max-width:${COL1}px;background:var(--card);z-index:2">${label}</td>
-      <td style="text-align:center;padding:6px 4px;font-size:11px;color:var(--txt3);position:sticky;left:${COL1}px;width:${COL2}px;min-width:${COL2}px;background:var(--card);z-index:2">${budTxt}</td>
-      <td style="text-align:center;padding:6px 4px;font-size:11px;font-weight:700;color:${overBad?'var(--red)':'var(--txt2)'};position:sticky;left:${COL1+COL2}px;width:${COL3}px;min-width:${COL3}px;background:var(--card);z-index:2;box-shadow:2px 0 4px -2px rgba(0,0,0,0.12)">${avgTxt}</td>
+      <td style="padding:6px 8px;font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;${stickyBottom?'bottom:0;':''}width:${COL1}px;min-width:${COL1}px;max-width:${COL1}px;background:var(--card);z-index:${stickyBottom?3:2};${botShadow}">${label}</td>
+      <td style="text-align:center;padding:6px 4px;font-size:11px;color:var(--txt3);position:sticky;left:${COL1}px;${stickyBottom?'bottom:0;':''}width:${COL2}px;min-width:${COL2}px;background:var(--card);z-index:${stickyBottom?3:2};${botShadow}">${budTxt}</td>
+      <td style="text-align:center;padding:6px 4px;font-size:11px;font-weight:700;color:${overBad?'var(--red)':'var(--txt2)'};position:sticky;left:${COL1+COL2}px;${stickyBottom?'bottom:0;':''}width:${COL3}px;min-width:${COL3}px;background:var(--card);z-index:${stickyBottom?3:2};box-shadow:2px 0 4px -2px rgba(0,0,0,0.12)${stickyBottom?',0 -2px 4px -2px rgba(0,0,0,0.1)':''}">${avgTxt}</td>
       ${cells}
     </tr>`;
   }
@@ -3609,10 +3616,10 @@ function rptUnifiedTable(year){
 
   const monthLabels = months.map(ym=>parseInt(ym.slice(5,7))+'월');
   const head = `<tr>
-    <th style="padding:6px 8px;font-size:10px;color:var(--txt3);text-align:left;position:sticky;left:0;width:${COL1}px;min-width:${COL1}px;background:var(--card);z-index:3">카테고리</th>
-    <th style="padding:6px 4px;font-size:10px;color:var(--txt3);position:sticky;left:${COL1}px;width:${COL2}px;min-width:${COL2}px;background:var(--card);z-index:3">예산</th>
-    <th style="padding:6px 4px;font-size:10px;color:var(--txt3);position:sticky;left:${COL1+COL2}px;width:${COL3}px;min-width:${COL3}px;background:var(--card);z-index:3;box-shadow:2px 0 4px -2px rgba(0,0,0,0.12)">월평균</th>
-    ${monthLabels.map(l=>`<th style="padding:6px 6px;font-size:10px;color:var(--txt3)">${l}</th>`).join('')}
+    <th style="padding:6px 8px;font-size:10px;color:var(--txt3);text-align:left;position:sticky;top:0;left:0;width:${COL1}px;min-width:${COL1}px;background:var(--card);z-index:4">카테고리</th>
+    <th style="padding:6px 4px;font-size:10px;color:var(--txt3);position:sticky;top:0;left:${COL1}px;width:${COL2}px;min-width:${COL2}px;background:var(--card);z-index:4">예산</th>
+    <th style="padding:6px 4px;font-size:10px;color:var(--txt3);position:sticky;top:0;left:${COL1+COL2}px;width:${COL3}px;min-width:${COL3}px;background:var(--card);z-index:4;box-shadow:2px 0 4px -2px rgba(0,0,0,0.12)">월평균</th>
+    ${monthLabels.map(l=>`<th style="padding:6px 6px;font-size:10px;color:var(--txt3);position:sticky;top:0;background:var(--card);z-index:3;box-shadow:0 2px 4px -2px rgba(0,0,0,0.1)">${l}</th>`).join('')}
   </tr>`;
 
   let body = '';
@@ -3647,14 +3654,15 @@ function rptUnifiedTable(year){
   }
 
   body += sectionHeader('🏦 저축', 'var(--blue-bg)');
-  body += buildRow('저축·이동', saveVals, saveBud, 'high', {kind:'save', catKey:'', drillLabel:'저축·이동'});
+  body += buildRow('저축·이동', saveVals, saveBud, 'high', {kind:'save', catKey:'', drillLabel:'저축·이동', stickyBottom:true});
 
-  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+  return `<div id="rpt-cat-scroll-wrap" style="overflow:auto;-webkit-overflow-scrolling:touch;max-height:min(58vh,440px);border:1px solid #EEECE3;border-radius:12px">
     <table style="border-collapse:collapse;width:100%;min-width:${420+months.length*46}px">
       <thead>${head}</thead>
       <tbody>${body}</tbody>
     </table>
   </div>
+  <div style="font-size:10px;color:var(--txt3);text-align:center;margin-top:6px">▲ 첫 줄(헤더)·맨 아래 저축 줄은 고정, 가운데만 위아래로 스크롤 — 표 안 아무 곳이나 좌우로 드래그하면 가로로도 넘길 수 있어요</div>
   <div style="font-size:10.5px;color:var(--txt3);margin-top:12px;padding-top:10px;border-top:1px solid #F2F4F6;line-height:1.6">
     <b style="color:var(--txt2)">기준 (한 번만 표기)</b><br>
     🟢 예산·평균 대비 여유 &nbsp; 🟡 근접 &nbsp; 🔴 초과/부족 &nbsp; ⚪ 데이터·예산 부족<br>
