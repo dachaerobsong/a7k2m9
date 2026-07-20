@@ -163,6 +163,14 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
   </div>
 </div>
 
+<!-- ── 리포트 월별 드릴다운 팝오버 ── -->
+<div id="rpt-drill-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:5000;align-items:flex-end;justify-content:center" onclick="closeRptDrillModal(event)">
+  <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:460px;padding:24px 20px 32px;box-shadow:0 -4px 20px rgba(0,0,0,0.1);max-height:75vh;display:flex;flex-direction:column">
+    <div style="font-size:18px;font-weight:800;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center"><span id="rpt-drill-title">내역</span><button onclick="closeRptDrillModal()" style="background:none;border:none;font-size:20px;color:var(--txt3);cursor:pointer">✕</button></div>
+    <div id="rpt-drill-body" style="overflow-y:auto;flex:1"></div>
+  </div>
+</div>
+
 <!-- ── 템플릿 저장 모달 ── -->
 <div id="save-tpl-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:5000;align-items:flex-end;justify-content:center" onclick="closeSaveTplModal(event)">
   <div style="background:var(--card);border-radius:24px 24px 0 0;width:100%;max-width:460px;padding:24px 20px 32px;box-shadow:0 -4px 20px rgba(0,0,0,0.1)">
@@ -211,6 +219,18 @@ body { background: var(--bg); color: var(--txt); min-height: 100vh; max-width: 4
   <section class="card">
     <h2 class="card-title">자산 구성</h2>
     <div id="h-asset-comp"><div style="text-align:center;color:var(--txt3);padding:16px;font-size:13px">설정에서 시트를 연동하면<br>실제 계좌 잔고 기반으로 표시됩니다</div></div>
+  </section>
+
+  <!-- 자산배분 도넛 -->
+  <section class="card" id="h-asset-donut-card" style="display:none">
+    <h2 class="card-title">자산배분</h2>
+    <div id="h-asset-donut"></div>
+  </section>
+
+  <!-- 목표 진행률 요약 (목표 탭 카드 일부 발췌) -->
+  <section class="card" id="h-goal-summary-card" style="display:none">
+    <h2 class="card-title">🎯 목표 진행률</h2>
+    <div id="h-goal-summary"></div>
   </section>
 
   <!-- 월별 차트/월평균은 가계부 › 리포트 탭으로 이동함 -->
@@ -786,7 +806,8 @@ function fmtWon(n){ return '₩' + Math.round(Math.abs(n)).toLocaleString('ko-KR
 let STATE = {
   transactions: [],
   accounts: [],
-  eventCats: ['문화생활'],   // 이벤트성(정산 이월) 카테고리 — 월평균·신호등에서 제외, 누적으로만
+  eventCats: ['문화생활','경조사','기타'],   // 이벤트성(정산 이월) 카테고리 — 월평균·신호등에서 제외, 누적으로만
+  budgetCadence: { '전기세':'quarterly', '도시가스':'quarterly', '상수도비':'quarterly' }, // 계절성 항목: 분기 끝 달에만 신호등 판정
   // 유형별 대분류 → 소분류
   catMap: {
     '지출': CAT_OUT_SUBS,
@@ -1304,6 +1325,10 @@ function renderAssetOverview(){
   const chgEl  = document.getElementById('h-monthly-change');
   const compEl = document.getElementById('h-asset-comp');
   const trendEl= document.getElementById('h-asset-trend');
+  const donutCardEl = document.getElementById('h-asset-donut-card');
+  const donutEl = document.getElementById('h-asset-donut');
+  const goalCardEl = document.getElementById('h-goal-summary-card');
+  const goalSumEl = document.getElementById('h-goal-summary');
   if(!heroEl) return;
   const def = STATE.acctsDef||[];
   if(!def.length || !STATE.initBal){
@@ -1353,6 +1378,64 @@ function renderAssetOverview(){
           <div class="item-right" style="font-weight:700;color:${netWorth>=0?'var(--blue)':'var(--red)'}">${netWorth<0?'-':''}${Math.abs(netWorth).toLocaleString('ko-KR')}원</div>
         </div>
         <div style="font-size:11px;color:var(--txt3);margin-top:8px;line-height:1.5">* 시트 계좌 잔고(초기잔고+거래내역) 기준 · 지금 이 순간의 잔고 · 투자 계좌는 <b>입금 원금 기준</b>으로 잡혀있어 실제 평가손익은 반영되지 않아요 (증권사 평가금액 스냅샷 기능은 추후 추가 예정) · 그룹명을 누르면 계좌별 세부 잔고가 펼쳐져요</div>`;
+  }
+
+  // 자산배분 도넛 (부채 그룹 제외, 양수 자산 그룹 기준 비중)
+  if(donutEl && donutCardEl){
+    const posGroups = groups.filter(x=>x.val>0 && x.g!=='debt');
+    if(!posGroups.length){
+      donutCardEl.style.display='none';
+    } else {
+      donutCardEl.style.display='';
+      const colors = ['#4A7DFF','#34C77B','#FFB020','#FF6B6B','#8A6DFF','#00B8D9'];
+      const posSum = posGroups.reduce((s,x)=>s+x.val,0);
+      let accPct = 0;
+      const gradStops = posGroups.map((x,i)=>{
+        const pct = posSum>0 ? x.val/posSum*100 : 0;
+        const start = accPct, end = accPct+pct; accPct = end;
+        return `${colors[i%colors.length]} ${start}% ${end}%`;
+      }).join(', ');
+      donutEl.innerHTML = `<div style="display:flex;align-items:center;gap:18px">
+        <div style="width:96px;height:96px;border-radius:50%;flex:none;background:conic-gradient(${gradStops});position:relative">
+          <div style="position:absolute;inset:14px;border-radius:50%;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:10.5px;color:var(--txt3);text-align:center;line-height:1.3">자산<br>배분</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:7px">
+          ${posGroups.map((x,i)=>{
+            const pct = posSum>0 ? Math.round(x.val/posSum*100) : 0;
+            return `<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+              <span style="display:flex;align-items:center;gap:6px;color:var(--txt2)"><span style="width:8px;height:8px;border-radius:50%;background:${colors[i%colors.length]};flex:none"></span>${x.label}</span>
+              <span style="color:var(--txt3)">${pct}%</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+      <div style="font-size:10.5px;color:var(--txt3);margin-top:10px">* 카드 미결제(부채)는 배분 비중 계산에서 제외</div>`;
+    }
+  }
+
+  // 목표 진행률 요약 (목표 탭 카드 중 달성률이 낮은 순 최대 2개 발췌)
+  if(goalSumEl && goalCardEl){
+    const goalAccts = def.filter(a=>Number(a.goal)>0).map(a=>({name:a.label||a.key, cur:cb(a.key), goal:Number(a.goal)}));
+    const sg = STATE.saveGoals;
+    if(Array.isArray(sg)){
+      sg.forEach(g=>{ if(g&&g.name&&Number(g.goal||g.target)>0) goalAccts.push({name:g.name, cur:Number(g.current||g.cur)||cb(g.account||g.name)||0, goal:Number(g.goal||g.target)}); });
+    } else if(sg && typeof sg==='object'){
+      Object.entries(sg).forEach(([name,goal])=>{ if(Number(goal)>0) goalAccts.push({name, cur:cb(name)||0, goal:Number(goal)}); });
+    }
+    if(!goalAccts.length){
+      goalCardEl.style.display='none';
+    } else {
+      goalCardEl.style.display='';
+      const top = goalAccts.slice().sort((a,b)=> (a.cur/a.goal) - (b.cur/b.goal)).slice(0,2);
+      goalSumEl.innerHTML = top.map(g=>{
+        const pct = Math.min(999, Math.round(g.cur/g.goal*100));
+        const c = pct>=100 ? 'var(--green)' : pct>=50 ? 'var(--blue)' : 'var(--warning)';
+        return `<div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="font-weight:600;color:var(--txt)">${g.name}</span><span style="color:var(--txt3)">${pct}%</span></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${Math.min(100,pct)}%;background:${c}"></div></div>
+        </div>`;
+      }).join('') + `<div style="font-size:11px;color:var(--txt3);text-align:right;margin-top:2px">전체 목표는 목표 탭에서 확인하세요 →</div>`;
+    }
   }
 
   // 전체 수입/지출/저축 총액 + 월평균 (거래내역이 있는 전체 기간 기준 — 특정 달에 종속되지 않음)
@@ -1663,6 +1746,25 @@ function renderBalanceList() {
 const FIXED_MAJORS = ['주거비','보험','통신비','곗돈','엄마','고정비'];
 // 이모지 라벨('🏠 주거비')도 고정비로 인식하도록 정규화 매칭
 function isFixedMajor(major){ return FIXED_MAJORS.indexOf(normBudgetKey(major)) >= 0; }
+// 카테고리별 예산 주기: 'monthly'(기본, 매달 판정) | 'quarterly'(분기 끝 달에만 누적 판정) | 'event'(신호등 없이 누적만)
+function catCadence(major){
+  const key = normBudgetKey(major);
+  if((STATE.eventCats||[]).map(normBudgetKey).indexOf(key) >= 0) return 'event';
+  const cad = (STATE.budgetCadence||{})[key];
+  return cad === 'quarterly' ? 'quarterly' : 'monthly';
+}
+// 주어진 월(ym)이 속한 분기의 시작~해당 월까지의 월 목록 (예: '2026-02' → ['2026-01','2026-02'])
+function quarterMonthsUpTo(ym){
+  const [y,m] = ym.split('-').map(Number);
+  const qStartM = Math.floor((m-1)/3)*3 + 1;
+  const out = [];
+  for(let mm=qStartM; mm<=m; mm++) out.push(y+'-'+String(mm).padStart(2,'0'));
+  return out;
+}
+function isQuarterEndMonth(ym){
+  const m = Number(ym.split('-')[1]);
+  return m%3===0;
+}
 // 거래 단위 고정/변동 판정: 엄마건강은 시트에 major='엄마'로 기록돼 있어도 변동으로 취급
 function isFixedTx(t){
   if(normBudgetKey(t.major)==='엄마' && String(t.category||t.sub||'').trim()==='엄마건강') return false;
@@ -2291,12 +2393,36 @@ function budRowHtml(secType, major, subList){
 function budCatRowHtml(c){
   const label = CAT_OUT_LABELS[c.major]||c.major;
   const key = normBudgetKey(c.major);
-  const pct = c.bud>0 ? Math.round(c.spend/c.bud*100) : null;
-  const dotC = budDotColor(pct);
-  const pctTxt = pct!==null ? pct+'%' : '';
-  const amtRight = c.bud>0
-    ? `<b>${won(c.spend)}</b><span style="font-size:11px;color:var(--txt3);font-weight:400"> / ${won(c.bud)}</span>`
-    : `<b>${won(c.spend)}</b>`;
+  const cadence = c.cadence || 'monthly';
+  let pct, dotC, pctTxt, amtRight;
+  if(cadence==='event'){
+    // 누적형(문화생활·경조사·기타): 신호등 판정 없이 이번 달 금액만 참고 표시
+    pct = null; dotC = 'var(--txt3)'; pctTxt = '누적';
+    amtRight = `<b>${won(c.spend)}</b>`;
+  } else if(cadence==='quarterly'){
+    if(!c.isQuarterEnd){
+      // 분기 중간 달: 판정 보류, 금액만 표시
+      pct = null; dotC = 'var(--txt3)'; pctTxt = '분기중';
+      amtRight = c.bud>0
+        ? `<b>${won(c.spend)}</b><span style="font-size:11px;color:var(--txt3);font-weight:400"> / ${won(c.bud)}</span>`
+        : `<b>${won(c.spend)}</b>`;
+    } else {
+      // 분기 끝 달: 3개월 누적 vs 분기예산으로 판정
+      pct = c.qBud>0 ? Math.round(c.qSpend/c.qBud*100) : null;
+      dotC = budDotColor(pct);
+      pctTxt = (pct!==null ? pct+'%' : '') + ' (분기)';
+      amtRight = c.qBud>0
+        ? `<b>${won(c.qSpend)}</b><span style="font-size:11px;color:var(--txt3);font-weight:400"> / ${won(c.qBud)} (3개월)</span>`
+        : `<b>${won(c.qSpend)}</b><span style="font-size:11px;color:var(--txt3);font-weight:400"> (3개월 누적)</span>`;
+    }
+  } else {
+    pct = c.bud>0 ? Math.round(c.spend/c.bud*100) : null;
+    dotC = budDotColor(pct);
+    pctTxt = pct!==null ? pct+'%' : '';
+    amtRight = c.bud>0
+      ? `<b>${won(c.spend)}</b><span style="font-size:11px;color:var(--txt3);font-weight:400"> / ${won(c.bud)}</span>`
+      : `<b>${won(c.spend)}</b>`;
+  }
 
   const subList = CAT_OUT_SUBS[c.major] || (STATE.catMap['지출']?.[c.major]) || [];
   let detail = '';
@@ -2393,11 +2519,20 @@ function renderBudgetAnalysis(ym, tx) {
     const byMajor = {};
     spend.forEach(t => { const k = txCatKey(t); byMajor[k] = (byMajor[k]||0) + (Number(t.amount)||0); });
     const ALL_OUT_MAJORS = Object.keys(CAT_OUT_LABELS);
+    const qMonthsNow = quarterMonthsUpTo(BUD_MONTH);
+    const allTxAll = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t=>!isRemovedTx(t));
     const cats = ALL_OUT_MAJORS.map((major, idx) => {
       const sp = byMajor[normBudgetKey(major)] || 0;
       // 예산 매칭은 budgetOf(이모지·괄호 정규화 매칭)로 통일 — indexOf 부분일치의 오매칭 방지
       const budBase = budgetOf(major);
-      return { major, idx, spend:sp, bud:budBase, diff: sp-budBase, fixed:isFixedMajor(major) };
+      const cadence = catCadence(major);
+      let qSpend=0, qBud=0;
+      if(cadence==='quarterly'){
+        const mk = normBudgetKey(major);
+        qSpend = allTxAll.filter(t=>t.type==='지출' && qMonthsNow.indexOf(String(t.date).slice(0,7))>=0 && txCatKey(t)===mk).reduce((s,t)=>s+(Number(t.amount)||0),0);
+        qBud = budBase * qMonthsNow.length;
+      }
+      return { major, idx, spend:sp, bud:budBase, diff: sp-budBase, fixed:isFixedMajor(major), cadence, qSpend, qBud, isQuarterEnd:isQuarterEndMonth(BUD_MONTH) };
     }).sort((a,b)=>{
       // 고정 먼저, 그 안에서는 선언 순서 고정 — 월을 이동해도 항목 위치가 절대 바뀌지 않도록 (지출액순 정렬 제거)
       if(a.fixed!==b.fixed) return a.fixed ? -1 : 1;
@@ -3390,6 +3525,9 @@ function rptUnifiedTable(year){
   function monthlyValsFixedOrVar(catKey){
     return months.map(ym=> txByMonth[ym].filter(t=>t.type==='지출' && !isEventTx(t) && txCatKey(t)===catKey).reduce((s,t)=>s+(Number(t.amount)||0),0));
   }
+  function monthlyValsForCat(catKey){
+    return months.map(ym=> txByMonth[ym].filter(t=>t.type==='지출' && txCatKey(t)===catKey).reduce((s,t)=>s+(Number(t.amount)||0),0));
+  }
   function avgOfVals(vals){
     const isCurLast = months[months.length-1]===nowYm;
     const completed = isCurLast ? vals.slice(0,-1) : vals.slice();
@@ -3411,29 +3549,49 @@ function rptUnifiedTable(year){
     }
   }
 
-  function buildRow(label, vals, bud, dir, noJudge){
+  const COL1=112, COL2=58, COL3=58; // 카테고리/예산/월평균 sticky 3열 너비
+  function buildRow(label, vals, bud, dir, opts){
+    opts = opts || {};
+    const cadence = opts.cadence || 'monthly';
+    const kind = opts.kind || 'expense';
+    const catKey = opts.catKey || '';
+    const drillLabel = (opts.drillLabel || label).replace(/'/g,'').replace(/"/g,'');
+    const noJudge = cadence==='event' || !!opts.noJudge;
     const avg = avgOfVals(vals);
+    const cellBase = (isCur)=>`text-align:center;padding:6px 3px;font-size:10.5px;cursor:pointer;font-weight:${isCur?'800':'500'};${isCur?'background:var(--blue-bg);border-radius:6px':''}`;
     const cells = vals.map((v,i)=>{
       const ym = months[i]; const isCur = ym===nowYm;
       const disp = v>0 ? manW(v) : '–';
+      const click = `rptShowDrill('${kind}','${catKey}','${ym}','${drillLabel}')`;
       if(noJudge){
-        return `<td style="text-align:center;padding:6px 4px;font-size:11px;color:var(--txt2);font-weight:${isCur?'800':'500'};${isCur?'background:var(--blue-bg);border-radius:6px':''}">${disp}</td>`;
+        return `<td onclick="${click}" style="${cellBase(isCur)};color:var(--txt2)">${disp}</td>`;
+      }
+      if(cadence==='quarterly'){
+        if(!isQuarterEndMonth(ym)){
+          return `<td onclick="${click}" style="${cellBase(isCur)};color:var(--txt2)">${disp}</td>`;
+        }
+        const qMonths = quarterMonthsUpTo(ym);
+        const qSum = qMonths.reduce((s,qy)=>{ const idx=months.indexOf(qy); return s+(idx>=0?vals[idx]:0); },0);
+        const qBud = bud>0 ? bud*qMonths.length : 0;
+        const qAvg = avg>0 ? avg*qMonths.length : 0;
+        const {c,dot} = dotFor(dir, qSum, qBud, qAvg);
+        return `<td onclick="${click}" style="${cellBase(isCur)};color:${c}"><div>${dot}</div><div>${manW(qSum)}</div><div style="font-size:8px;color:var(--txt3)">분기누적</div></td>`;
       }
       const {c,dot} = dotFor(dir, v, bud, avg);
-      return `<td style="text-align:center;padding:6px 3px;font-size:10.5px;color:${c};font-weight:${isCur?'800':'500'};${isCur?'background:var(--blue-bg);border-radius:6px':''}"><div>${dot}</div><div>${disp}</div></td>`;
+      return `<td onclick="${click}" style="${cellBase(isCur)};color:${c}"><div>${dot}</div><div>${disp}</div></td>`;
     }).join('');
     const budTxt = bud>0 ? manW(bud) : '–';
     const avgTxt = avg>0 ? manW(avg) : '–';
     const overBad = bud>0 && (dir==='low' ? avg>bud : avg<bud);
     return `<tr>
-      <td style="padding:6px 8px;font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap;position:sticky;left:0;background:var(--card)">${label}</td>
-      <td style="text-align:center;padding:6px 6px;font-size:11px;color:var(--txt3)">${budTxt}</td>
-      <td style="text-align:center;padding:6px 6px;font-size:11px;font-weight:700;color:${overBad?'var(--red)':'var(--txt2)'}">${avgTxt}</td>
+      <td style="padding:6px 8px;font-size:12px;font-weight:700;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:sticky;left:0;width:${COL1}px;min-width:${COL1}px;max-width:${COL1}px;background:var(--card);z-index:2">${label}</td>
+      <td style="text-align:center;padding:6px 4px;font-size:11px;color:var(--txt3);position:sticky;left:${COL1}px;width:${COL2}px;min-width:${COL2}px;background:var(--card);z-index:2">${budTxt}</td>
+      <td style="text-align:center;padding:6px 4px;font-size:11px;font-weight:700;color:${overBad?'var(--red)':'var(--txt2)'};position:sticky;left:${COL1+COL2}px;width:${COL3}px;min-width:${COL3}px;background:var(--card);z-index:2;box-shadow:2px 0 4px -2px rgba(0,0,0,0.12)">${avgTxt}</td>
       ${cells}
     </tr>`;
   }
   function sectionHeader(label, bg){
-    return `<tr><td colspan="${3+months.length}" style="padding:10px 8px 4px;font-size:11.5px;font-weight:800;color:var(--txt2);background:${bg};position:sticky;left:0">${label}</td></tr>`;
+    return `<tr><td colspan="${3+months.length}" style="padding:10px 8px 4px;font-size:11.5px;font-weight:800;color:var(--txt2);background:${bg};position:sticky;left:0;z-index:1">${label}</td></tr>`;
   }
 
   // 1) 수입 (월급만)
@@ -3442,41 +3600,54 @@ function rptUnifiedTable(year){
 
   // 2) 고정비
   const fixedKeys = Object.keys(CAT_OUT_LABELS).filter(k=>isFixedMajor(k));
-  // 3) 변동비 (문화생활은 이벤트로 별도 집계하므로 제외)
-  const varKeys = Object.keys(CAT_OUT_LABELS).filter(k=>!isFixedMajor(k) && k!=='문화생활');
-  // 4) 이벤트(변동비2) — 신호등 판단 제외, 금액만 참고
-  const eventVals = months.map(ym=> txByMonth[ym].filter(t=>t.type==='지출' && isEventTx(t)).reduce((s,t)=>s+(Number(t.amount)||0),0));
+  // 3) 변동비 (이벤트/누적형 카테고리는 아래서 별도 행으로 분리)
+  const evtKeySet = (STATE.eventCats||[]).map(normBudgetKey);
+  const varKeys = Object.keys(CAT_OUT_LABELS).filter(k=>!isFixedMajor(k) && evtKeySet.indexOf(normBudgetKey(k))<0);
   // 5) 저축
   const saveVals = months.map(ym=> txByMonth[ym].filter(isSaveTx).reduce((s,t)=>s+(Number(t.amount)||0),0));
   const saveBud = budgetByKey['저축'] || 0;
 
   const monthLabels = months.map(ym=>parseInt(ym.slice(5,7))+'월');
   const head = `<tr>
-    <th style="padding:6px 8px;font-size:10px;color:var(--txt3);text-align:left;position:sticky;left:0;background:var(--card)">카테고리</th>
-    <th style="padding:6px 6px;font-size:10px;color:var(--txt3)">예산</th>
-    <th style="padding:6px 6px;font-size:10px;color:var(--txt3)">월평균</th>
+    <th style="padding:6px 8px;font-size:10px;color:var(--txt3);text-align:left;position:sticky;left:0;width:${COL1}px;min-width:${COL1}px;background:var(--card);z-index:3">카테고리</th>
+    <th style="padding:6px 4px;font-size:10px;color:var(--txt3);position:sticky;left:${COL1}px;width:${COL2}px;min-width:${COL2}px;background:var(--card);z-index:3">예산</th>
+    <th style="padding:6px 4px;font-size:10px;color:var(--txt3);position:sticky;left:${COL1+COL2}px;width:${COL3}px;min-width:${COL3}px;background:var(--card);z-index:3;box-shadow:2px 0 4px -2px rgba(0,0,0,0.12)">월평균</th>
     ${monthLabels.map(l=>`<th style="padding:6px 6px;font-size:10px;color:var(--txt3)">${l}</th>`).join('')}
   </tr>`;
 
   let body = '';
   body += sectionHeader('💰 수입', 'var(--green-bg)');
-  body += buildRow('월급', incomeVals, incomeBud, 'high');
+  body += buildRow('월급', incomeVals, incomeBud, 'high', {kind:'income', catKey:'', drillLabel:'월급'});
 
   body += sectionHeader('🏠 고정비', 'var(--card2)');
   fixedKeys.forEach(k=>{
     const vals = monthlyValsFixedOrVar(k);
-    if(vals.some(v=>v>0) || (budgetByKey[k]||0)>0) body += buildRow(CAT_OUT_LABELS[k], vals, budgetByKey[k]||0, 'low');
+    if(vals.some(v=>v>0) || (budgetByKey[k]||0)>0) body += buildRow(CAT_OUT_LABELS[k], vals, budgetByKey[k]||0, 'low', {kind:'expense', catKey:k, cadence:catCadence(k), drillLabel:CAT_OUT_LABELS[k]});
   });
 
   body += sectionHeader('🛍️ 변동비', 'var(--card2)');
   varKeys.forEach(k=>{
     const vals = monthlyValsFixedOrVar(k);
-    if(vals.some(v=>v>0) || (budgetByKey[k]||0)>0) body += buildRow(CAT_OUT_LABELS[k], vals, budgetByKey[k]||0, 'low');
+    if(vals.some(v=>v>0) || (budgetByKey[k]||0)>0) body += buildRow(CAT_OUT_LABELS[k], vals, budgetByKey[k]||0, 'low', {kind:'expense', catKey:k, cadence:catCadence(k), drillLabel:CAT_OUT_LABELS[k]});
   });
-  if(eventVals.some(v=>v>0)) body += buildRow('📺 문화생활·이벤트 (참고용, 신호등 제외)', eventVals, 0, 'low', true);
+
+  // 4) 이벤트/누적형(변동비2) — 신호등 판단 없이 카테고리별로 각각 누적만 참고 표시
+  const evtRows = (STATE.eventCats||[]).map(ecat=>{
+    const k = normBudgetKey(ecat);
+    const vals = monthlyValsForCat(k);
+    const cum = vals.reduce((a,b)=>a+b,0);
+    return {k, vals, cum};
+  }).filter(r=>r.vals.some(v=>v>0));
+  if(evtRows.length){
+    body += sectionHeader('🎪 기타/누적형 (참고용, 신호등 제외)', 'var(--card2)');
+    evtRows.forEach(r=>{
+      const label = (CAT_OUT_LABELS[r.k]||r.k) + ` · 누적 ${manW(r.cum)}`;
+      body += buildRow(label, r.vals, 0, 'low', {kind:'expense', catKey:r.k, cadence:'event', drillLabel:CAT_OUT_LABELS[r.k]||r.k});
+    });
+  }
 
   body += sectionHeader('🏦 저축', 'var(--blue-bg)');
-  body += buildRow('저축·이동', saveVals, saveBud, 'high');
+  body += buildRow('저축·이동', saveVals, saveBud, 'high', {kind:'save', catKey:'', drillLabel:'저축·이동'});
 
   return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
     <table style="border-collapse:collapse;width:100%;min-width:${420+months.length*46}px">
@@ -3487,9 +3658,42 @@ function rptUnifiedTable(year){
   <div style="font-size:10.5px;color:var(--txt3);margin-top:12px;padding-top:10px;border-top:1px solid #F2F4F6;line-height:1.6">
     <b style="color:var(--txt2)">기준 (한 번만 표기)</b><br>
     🟢 예산·평균 대비 여유 &nbsp; 🟡 근접 &nbsp; 🔴 초과/부족 &nbsp; ⚪ 데이터·예산 부족<br>
-    지출(고정비·변동비)은 <b>적게 쓸수록</b> 🟢, 수입·저축은 <b>많을수록</b> 🟢 · 예산이 없으면 월평균 대비로 판단 · 이번 달은 파란 배경 · 문화생활·이벤트는 정산 이월 때문에 신호등 판단에서 제외(금액만 참고)
+    지출(고정비·변동비)은 <b>적게 쓸수록</b> 🟢, 수입·저축은 <b>많을수록</b> 🟢 · 예산이 없으면 월평균 대비로 판단 · 이번 달은 파란 배경<br>
+    전기세·도시가스·상수도비는 계절 편차가 커서 <b>분기 끝 달에만</b> 3개월 누적으로 판정(중간 달은 금액만 표시) · 문화생활·경조사·기타는 정산 이월 때문에 신호등 판단 없이 누적만 참고 · 각 칸을 누르면 그 달 실제 내역을 볼 수 있어요
   </div>`;
 }
+function rptDrillTx(kind, key, ym){
+  const allTx = (STATE.transactions.length ? STATE.transactions : DEMO).filter(t=>!isRemovedTx(t) && String(t.date).slice(0,7)===ym);
+  if(kind==='income') return allTx.filter(t=>t.type==='수입' && String(t.category||t.sub||'').indexOf('월급')>=0);
+  if(kind==='save') return allTx.filter(isSaveTx);
+  return allTx.filter(t=>t.type==='지출' && txCatKey(t)===key);
+}
+function rptShowDrill(kind, key, ym, label){
+  const tx = rptDrillTx(kind, key, ym).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const total = tx.reduce((s,t)=>s+(Number(t.amount)||0),0);
+  const budget = STATE.budget||{};
+  const budgetByKey = {};
+  Object.keys(budget).forEach(k=>{ const nk=normBudgetKey(k); budgetByKey[nk]=(budgetByKey[nk]||0)+(Number(budget[k])||0); });
+  const bud = kind==='income' ? (budgetByKey['수입']||budgetByKey['월급']||0) : kind==='save' ? (budgetByKey['저축']||0) : (budgetByKey[key]||0);
+  const m = parseInt(ym.split('-')[1]);
+  const titleEl = document.getElementById('rpt-drill-title');
+  if(titleEl) titleEl.textContent = `${label} · ${m}월`;
+  const rows = tx.length ? tx.map(t=>`<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid #F2F4F6">
+      <span style="flex:none;font-size:10px;color:var(--txt3);width:26px">${parseInt(String(t.date).slice(8,10))}일</span>
+      <span style="flex:1;min-width:0;font-size:12px;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.memo||t.category||''}${t.category?` <span style="font-size:10px;color:var(--txt3)">· ${t.category}</span>`:''}</span>
+      <span style="font-size:12px;font-weight:600;color:var(--txt);white-space:nowrap">${won(Number(t.amount)||0)}</span>
+    </div>`).join('') : '<div style="font-size:12px;color:var(--txt3);padding:10px 0">이 달엔 내역이 없어요</div>';
+  const bodyEl = document.getElementById('rpt-drill-body');
+  if(bodyEl) bodyEl.innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:2px 0 14px;border-bottom:1px solid #F2F4F6;margin-bottom:6px">
+      <div><div style="font-size:11px;color:var(--txt3)">실제</div><div style="font-size:16px;font-weight:800">${won(total)}</div></div>
+      <div style="text-align:right"><div style="font-size:11px;color:var(--txt3)">예산</div><div style="font-size:16px;font-weight:700;color:var(--txt2)">${bud>0?won(bud):'–'}</div></div>
+    </div>
+    ${rows}`;
+  const modal = document.getElementById('rpt-drill-modal');
+  if(modal) modal.style.display='flex';
+}
+function closeRptDrillModal(ev){ if(ev && ev.target!==document.getElementById('rpt-drill-modal')) return; document.getElementById('rpt-drill-modal').style.display='none'; }
 function rptRenderCategoryTable(){
   const el = document.getElementById('rpt-cat-table');
   if(!el) return;
