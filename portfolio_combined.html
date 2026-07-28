@@ -286,6 +286,7 @@ body { padding-bottom:88px; }
     <div class="sub-tab on" data-sub="input" onclick="setLedgerSub('input',this)">거래 입력</div>
     <div class="sub-tab" data-sub="history" onclick="setLedgerSub('history',this)">거래 내역</div>
     <div class="sub-tab" data-sub="balance" onclick="setLedgerSub('balance',this)">계좌 · 카드</div>
+    <div class="sub-tab" data-sub="cashflow" onclick="setLedgerSub('cashflow',this)">현금흐름</div>
   </nav>
 
   <!-- 가계부 1) 입력 화면 -->
@@ -420,6 +421,9 @@ body { padding-bottom:88px; }
       <div style="font-size:10.5px;color:var(--txt3);margin-top:8px;line-height:1.5">* 메모에 <code>할인:5000</code> <code>환불:3000</code> <code>해외수수료:1500</code> 형식으로 적으면 자동 반영돼요 (할인은 더하고, 환불·해외수수료는 빼요) · 국카1·국카k-·실미 카드는 실적 그룹에서 제외</div>
     </section>
   </div>
+
+  <!-- 가계부 4) 현금흐름 화면 (급여일 전 필요 현금 · 지출 일정 · 고정지출 설정) -->
+  <div id="sub-ledger-cashflow" class="ledger-sub-panel" style="display:none;"></div>
 
 </main>
 
@@ -1069,17 +1073,15 @@ function applyRedesignIA(){
     budget.after(insights);
   }
 
-  // Cash required before payday is account/card operations, not financial analysis.
-  const ledgerBalance = document.getElementById('sub-ledger-balance');
-  if(ledgerBalance && !document.getElementById('ledger-cashflow')){
-    const cashflow = document.createElement('div');
-    cashflow.id = 'ledger-cashflow';
-    cashflow.innerHTML = '<div style="font-size:15px;font-weight:800;color:var(--txt);margin:24px 4px 10px">현금흐름</div>';
+  // Cash required before payday is its own question ("월급날까지 버틸 수 있나") —
+  // separate from 계좌·카드 (현재 잔고 상태) and 재무분석 (예산/소비패턴).
+  const ledgerCashflow = document.getElementById('sub-ledger-cashflow');
+  if(ledgerCashflow && !ledgerCashflow.dataset.built){
     const cashVerdict = document.getElementById('cash-verdict')?.closest('section');
     const cashTimeline = document.getElementById('cash-timeline')?.closest('section');
     const cashSettings = document.getElementById('cash-edit-body')?.closest('section');
-    [cashVerdict, cashTimeline, cashSettings].filter(Boolean).forEach(section => cashflow.appendChild(section));
-    ledgerBalance.appendChild(cashflow);
+    [cashVerdict, cashTimeline, cashSettings].filter(Boolean).forEach(section => ledgerCashflow.appendChild(section));
+    ledgerCashflow.dataset.built = '1';
   }
 
   const investHistoryTab = document.querySelector('#p-invest .sub-tab[onclick*="history"]');
