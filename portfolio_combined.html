@@ -539,6 +539,13 @@ body { padding-bottom:88px; }
       <div id="mo-overspend-rank"></div>
     </section>
 
+    <!-- ⑤-2 예산 카테고리 기반 이번달 항목별 브리핑 (모든 지출 카테고리를 예산 대비로 순회) -->
+    <section class="card">
+      <h2 class="card-title">📋 이번 달 카테고리별 브리핑</h2>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:10px">예산이 설정된 지출 카테고리 전체를 예산 대비로 정리</div>
+      <div id="mo-budget-brief"></div>
+    </section>
+
     <!-- 소비 분석 (고정비/변동비 비율 + 카테고리별 지출·예산 대비·신호등, 누르면 세부 항목 펼침) -->
     <section class="card" id="bud-analysis-card">
       <div class="card-title" onclick="budToggleSection('bud-cat-spend','sec-analysis')" style="cursor:pointer"><span>💸 예산 상세 <span id="sec-analysis" style="color:var(--blue);font-size:13px">▾</span></span></div>
@@ -801,6 +808,8 @@ const GRP_CONTRACT = ['케이-집계약용','신한은행','집계약용','주�
 const GRP_INVEST   = ['토스증권','미래에셋','삼성증권','우리IRP'];
 const GRP_LONGDEBT = ['전세자금대출 원금(국민)','전세자금대출 원금(농협)','엄마신용대출 원금'];
 const GRP_DEBT     = ['롯카','롯카-','롯카!','삼카','삼카!','신카','신카!','국카1','국카k','국카k!','국카k!실미','국카k-','농카','농카!'];
+// 계좌명이 카드류인지 판별 (카드결제현황·이번달현황 등에서 쓰던 판별식을 공용화)
+function isCardAccount(a){ a = a||''; return GRP_DEBT.some(c=>a.indexOf(c)>=0) || a.indexOf('카드')>=0 || a.indexOf('카')>=0; }
 
 // ── 카드 발급사 분류 (정산 묶음용) ── 요청 순서: 국카1·국카k → 신카 → 롯카 → 삼카
 const CARD_ISSUER_ORDER = ['국민','신한','롯데','삼성','농협','기타'];
@@ -890,7 +899,16 @@ function cardToggleAll(prefix){
 }
 // 특히 자주 보는 카드 3개는 "남음" 표시를 더 눈에 띄게
 const CARD_EMPHASIZE = ['국카1','국카k!','신카!'];
-function cardDetailRows(g, useObj, budObj){
+// 카드 밑에 보여줄 카테고리별 지출 한 줄 요약 (많이 쓴 순 · 최대 4개, 나머지는 "외 N")
+function cardCatLine(card, catByCard){
+  const catMap = (catByCard && catByCard[card]) || {};
+  const entries = Object.entries(catMap).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length) return '';
+  const shown = entries.slice(0,4).map(([k,v])=>`${CAT_OUT_LABELS[k]||k} ${won(v)}`).join(' · ');
+  const moreTxt = entries.length>4 ? ` 외 ${entries.length-4}개` : '';
+  return `<div style="font-size:10.5px;color:var(--txt3);padding:0 0 7px;line-height:1.6">${shown}${moreTxt}</div>`;
+}
+function cardDetailRows(g, useObj, budObj, catByCard){
   return g.cards.map(c=>{
     const used=useObj[c]||0, bud=budObj[c]||0, over=bud>0&&used>bud;
     const emph = CARD_EMPHASIZE.indexOf(c)>=0;
@@ -899,14 +917,17 @@ function cardDetailRows(g, useObj, budObj){
         ? ` <span style="font-size:11px;font-weight:800;color:#fff;background:var(--green);padding:2px 8px;border-radius:99px;margin-left:2px">${won(bud-used)+' 남음'}</span>`
         : ` <span style="font-size:9.5px;font-weight:600;color:${over?'var(--red)':'var(--green)'}">${over?'+'+won(used-bud)+' 초과':won(bud-used)+' 남음'}</span>`)
       : '';
-    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:14px;border-top:1px solid #F2F4F6">
-      <span style="color:var(--txt2)">${c}${over?' <span style="color:var(--red)">⚠️</span>':''}</span>
-      <span style="text-align:right"><span style="font-weight:600;color:${over?'var(--red)':used>0?'var(--txt)':'var(--txt3)'}">${won(used)}</span>${bud>0?`<span style="font-size:10px;color:var(--txt3);font-weight:400"> / ${won(bud)}</span>`:''}${diffTag}</span>
+    return `<div style="padding:7px 0;border-top:1px solid #F2F4F6">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:14px">
+        <span style="color:var(--txt2)">${c}${over?' <span style="color:var(--red)">⚠️</span>':''}</span>
+        <span style="text-align:right"><span style="font-weight:600;color:${over?'var(--red)':used>0?'var(--txt)':'var(--txt3)'}">${won(used)}</span>${bud>0?`<span style="font-size:10px;color:var(--txt3);font-weight:400"> / ${won(bud)}</span>`:''}${diffTag}</span>
+      </div>
+      ${cardCatLine(c, catByCard)}
     </div>`;
   }).join('') || '<div style="font-size:13px;color:var(--txt3);padding:7px 0">이번 달 사용 없음</div>';
 }
 // 타일형 (2열 그리드 + 탭하면 아래로 세부)
-function renderCardTiles(container, useObj, budObj, prefix){
+function renderCardTiles(container, useObj, budObj, prefix, catByCard){
   const groups=cardIssuerGroups(useObj, budObj);
   const openAll=!!CARD_GRP_OPEN[prefix];
   const isOpen=(detId)=> (detId in CARD_OPEN) ? CARD_OPEN[detId] : openAll;
@@ -927,12 +948,12 @@ function renderCardTiles(container, useObj, budObj, prefix){
   const details = groups.map((g,gi)=>{
     const detId=prefix+'-det-'+gi;
     return `<div id="${detId}" style="display:${isOpen(detId)?'block':'none'};margin-top:10px;background:var(--card2);border-radius:14px;padding:2px 14px 8px">
-      <div style="font-size:12px;color:var(--blue);font-weight:700;padding:9px 0 2px">${g.issuer} 세부</div>${cardDetailRows(g,useObj,budObj)}</div>`;
+      <div style="font-size:12px;color:var(--blue);font-weight:700;padding:9px 0 2px">${g.issuer} 세부</div>${cardDetailRows(g,useObj,budObj,catByCard)}</div>`;
   }).join('');
   container.innerHTML = grid + details;
 }
 // 리스트형 (발급사 박스 세로 나열 + 탭하면 안으로 세부)
-function renderCardList(container, useObj, budObj, prefix){
+function renderCardList(container, useObj, budObj, prefix, catByCard){
   const groups=cardIssuerGroups(useObj, budObj);
   const openAll=!!CARD_GRP_OPEN[prefix];
   const isOpen=(detId)=> (detId in CARD_OPEN) ? CARD_OPEN[detId] : openAll;
@@ -950,7 +971,7 @@ function renderCardList(container, useObj, budObj, prefix){
           ${subLine}
         </span>
       </div>
-      <div id="${detId}" style="display:${isOpen(detId)?'block':'none'};padding:2px 14px 8px">${cardDetailRows(g,useObj,budObj)}</div>
+      <div id="${detId}" style="display:${isOpen(detId)?'block':'none'};padding:2px 14px 8px">${cardDetailRows(g,useObj,budObj,catByCard)}</div>
     </div>`;
   }).join('');
 }
@@ -2632,6 +2653,55 @@ function renderAnalysis() {
     ${rows || '<div style="text-align:center;color:var(--txt3);padding:12px">지출 내역 없음</div>'}
   </div>`;
 
+  // ── 카드·현금 카테고리표: 카테고리별로 카드에서 나간 금액 vs 현금·계좌에서 나간 금액을 갈라서,
+  //    고정비/변동비 소계와 함께 한 표로 보여줌 (카드는 카드예산 카드에서 카드별 총액만 보여줘서
+  //    "카드 통합으로 어느 카테고리에 얼마 나갔는지"는 안 보였던 부분을 보완)
+  {
+    const ccMap = {}; // key -> {card, cash, fixedN, varN}
+    spend.forEach(t => {
+      const k = txCatKey(t);
+      const amt = Number(t.amount)||0;
+      const card = isCardAccount(t.account);
+      const fixed = isFixedTx(t);
+      if(!ccMap[k]) ccMap[k] = { card:0, cash:0, fixedN:0, varN:0 };
+      ccMap[k][card?'card':'cash'] += amt;
+      ccMap[k][fixed?'fixedN':'varN'] += 1;
+    });
+    const ccRows = Object.entries(ccMap).map(([k,v]) => ({
+      major: CAT_OUT_LABELS[k]||k, card:v.card, cash:v.cash, total:v.card+v.cash,
+      fixed: v.fixedN >= v.varN // 한 카테고리 안에 고정/변동이 섞여 있으면(예: 고정비 예외 처리) 다수결로 소속 판정
+    }));
+    const ccRenderGroup = (label, color, list) => {
+      if(!list.length) return '';
+      const subCard = list.reduce((s,c)=>s+c.card,0), subCash = list.reduce((s,c)=>s+c.cash,0);
+      const rowsHtml = list.sort((a,b)=>b.total-a.total).map(c => `
+        <div style="display:grid;grid-template-columns:1fr 72px 72px 76px;gap:4px;padding:6px 0;border-bottom:1px solid #F2F4F6;font-size:13px">
+          <span style="color:var(--txt2)">${c.major}</span>
+          <span style="text-align:right;color:${c.card>0?'var(--txt)':'var(--txt3)'}">${c.card>0?won(c.card):'-'}</span>
+          <span style="text-align:right;color:${c.cash>0?'var(--txt)':'var(--txt3)'}">${c.cash>0?won(c.cash):'-'}</span>
+          <span style="text-align:right;font-weight:700">${won(c.total)}</span>
+        </div>`).join('');
+      return `<div style="font-size:12.5px;font-weight:700;color:${color};padding:9px 0 2px">${label} <span style="font-weight:400;color:var(--txt3)">· ${won(subCard+subCash)}</span></div>${rowsHtml}`;
+    };
+    const ccFixed = ccRows.filter(c=>c.fixed);
+    const ccVar = ccRows.filter(c=>!c.fixed);
+    const ccCardTotal = ccRows.reduce((s,c)=>s+c.card,0), ccCashTotal = ccRows.reduce((s,c)=>s+c.cash,0);
+    H += `<div class="card">
+      <div class="card-title"><span>카드·현금 카테고리표</span><span style="font-size:11px;font-weight:400;color:var(--txt3)">고정비/변동비 · 카드 vs 현금·계좌</span></div>
+      <div style="display:grid;grid-template-columns:1fr 72px 72px 76px;gap:4px;padding-bottom:6px;border-bottom:2px solid #E5E8EB;font-size:11px;color:var(--txt3);font-weight:600">
+        <span></span><span style="text-align:right">카드</span><span style="text-align:right">현금·계좌</span><span style="text-align:right">합계</span>
+      </div>
+      ${ccRenderGroup('고정비', 'var(--blue)', ccFixed)}
+      ${ccRenderGroup('변동비', 'var(--warning)', ccVar)}
+      <div style="display:grid;grid-template-columns:1fr 72px 72px 76px;gap:4px;padding-top:9px;margin-top:4px;border-top:2px solid #E5E8EB;font-size:13.5px;font-weight:800">
+        <span>합계</span>
+        <span style="text-align:right">${won(ccCardTotal)}</span>
+        <span style="text-align:right">${won(ccCashTotal)}</span>
+        <span style="text-align:right">${won(ccCardTotal+ccCashTotal)}</span>
+      </div>
+    </div>`;
+  }
+
   // ── 연간 모드: 월별 소계 ──
   if(ANA_MODE === 'year') {
     const allMonths = Array.from(new Set(data.map(t=>String(t.date).slice(0,7)))).sort();
@@ -3340,6 +3410,7 @@ function renderBudgetHome(){
   if(typeof renderCardDueSummary==='function') renderCardDueSummary();
   if(typeof renderCashPlan==='function') renderCashPlan();
   if(typeof renderOverspendTeaser==='function') renderOverspendTeaser();
+  if(typeof renderMonthBudgetBrief==='function') renderMonthBudgetBrief();
   if(typeof renderRptInsight==='function') renderRptInsight();
   if(typeof renderSpendCalendar==='function') renderSpendCalendar();
 }
@@ -3374,6 +3445,14 @@ function renderCardStatus(){
       if(GRP_DEBT.some(c=>a.indexOf(c)>=0) || a.indexOf('카드')>=0 || a.indexOf('카')>=0){
         useThis[a] = (useThis[a]||0) + (Number(t.amount)||0);
       }
+    });
+    // 카드별 · 카테고리별 지출 집계 — 카드 세부 펼쳤을 때 "이 카드로 뭘 썼는지" 보여주기 위함
+    const catByCard = {};
+    tx.filter(t=>t.type==='지출' && isCardAccount(t.account)).forEach(t=>{
+      const a = t.account;
+      const k = txCatKey(t);
+      catByCard[a] = catByCard[a] || {};
+      catByCard[a][k] = (catByCard[a][k]||0) + (Number(t.amount)||0);
     });
     // 이번달에 납부된 카드비 (이동 타입 중 카드납부 대분류)
     const paidThis = {};
@@ -3415,7 +3494,7 @@ function renderCardStatus(){
       cardUnifiedEl.innerHTML = `<div id="budcard-inner"></div>${warnBox}`;
       const budcardBtn = document.getElementById('budcard-toggleall');
       if(budcardBtn) budcardBtn.textContent = CARD_GRP_OPEN['budcard'] ? '모두 접기' : '모두 펼치기';
-      renderCardList(document.getElementById('budcard-inner'), useThis, cardBudget, 'budcard');
+      renderCardList(document.getElementById('budcard-inner'), useThis, cardBudget, 'budcard', catByCard);
     }
   }
   renderCardPerf();
@@ -4354,8 +4433,14 @@ function buildCashEvents(plan, offset){
     const dd=cur.getDate();
     const monLast=ldom(cur.getFullYear(),cur.getMonth());
     (plan.items||[]).forEach(it=>{
-      const eff=Math.min(Number(it.day)||1, monLast);
-      if(eff===dd) events.push({date:new Date(cur), name:it.name, amount:Number(it.amount)||0, source:it.source||'bank'});
+      // 월별 예외: 고정 템플릿(매달 반복)은 그대로 두고, 특정 달(ym)만 금액을 다르게(0원 포함) 표시할 수 있음.
+      // 0원으로 바꿔도 항목 자체는 타임라인에 그대로 남아있어야 하므로 여기서 항목을 지우지(return) 않음.
+      const ym = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0');
+      const ov = (it.overrides||{})[ym];
+      const day = (ov && ov.day!=null) ? ov.day : (Number(it.day)||1);
+      const amount = (ov && ov.amount!=null) ? ov.amount : (Number(it.amount)||0);
+      const eff=Math.min(day, monLast);
+      if(eff===dd) events.push({date:new Date(cur), name:it.name, amount, source:it.source||'bank', ym, overridden: !!ov});
     });
     Object.entries(plan.cardPayDays||{}).forEach(([issuer,payDay])=>{
       const eff=Math.min(Number(payDay)||14, monLast);
@@ -4466,10 +4551,15 @@ function renderCashPlan(){
           const amtHtml = paid
             ? `<span style="color:var(--txt3);text-decoration:line-through;font-size:12px">${won(e.amount)}</span> <span style="color:var(--txt2)">− ${won(actualAmt)}</span>`
             : `<span>− ${won(e.amount)}</span>`;
+          const ovTag = e.overridden ? ' <span style="font-size:9.5px;color:var(--blue);font-weight:600">이번달만</span>' : '';
+          // 카드결제(자동 계산)·이미 납부완료 항목은 수정 아이콘 제외 — 고정 템플릿 항목만 이번 달치를 예외 처리 가능
+          const editIcon = (e.source==='bank' && !e.isCard && !paid)
+            ? `<span onclick="cashOverridePrompt('${String(e.name).replace(/'/g,"\\'")}','${e.ym}',${e.amount})" style="font-size:12px;color:var(--txt3);cursor:pointer;padding:2px 4px" title="이번 달만 금액 변경/건너뛰기">✎</span>`
+            : '';
           return `<div style="display:flex;align-items:center;gap:8px;font-size:14px;padding:4px 0">
             ${icon}
-            <span style="flex:1;${nameStyle}">${e.name}${tag}${doneTag}</span>
-            <span style="font-weight:600">${amtHtml}</span></div>`;
+            <span style="flex:1;${nameStyle}">${e.name}${tag}${doneTag}${ovTag}</span>
+            <span style="font-weight:600">${amtHtml}</span>${editIcon}</div>`;
         }).join('');
         return `<div style="margin-bottom:14px;padding:12px 14px;border-radius:14px;background:${isPay?'var(--green-bg)':'var(--card2)'};${isAfter?'opacity:0.6':isPast?'opacity:0.75':''}">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
@@ -4521,7 +4611,25 @@ function renderCashEdit(){
     <div style="display:flex;gap:8px;margin-top:12px">
       <button onclick="cashAddItem()" style="flex:1;padding:11px;border:1px dashed var(--blue);border-radius:12px;background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:700;cursor:pointer">+ 항목 추가</button>
       <button onclick="cashResetPlan()" style="padding:11px 14px;border:1px solid #E5E8EB;border-radius:12px;background:#FFF;color:var(--txt2);font-size:13px;cursor:pointer">기본값 복원</button>
-    </div>`;
+    </div>
+    ${(()=>{
+      // 특정 달만 다르게 설정된(overrides) 항목 모아보기 — 타임라인에서 ✎로 걸어둔 예외를 한눈에 확인·해제
+      const list = [];
+      p.items.forEach(it => Object.entries(it.overrides||{}).forEach(([ym,ov]) => list.push({name:it.name, ym, ov})));
+      if(!list.length) return '';
+      list.sort((a,b)=>a.ym.localeCompare(b.ym));
+      const rows = list.map(o => {
+        const label = (Number(o.ov.amount)||0) === 0 ? '<span style="color:var(--warning)">0원</span>' : won(o.ov.amount);
+        const oName = o.name.replace(/'/g,"\\'");
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid #F2F4F6;font-size:12.5px">
+          <span>${parseInt(o.ym.slice(5,7))}월 · ${o.name} <span style="color:var(--txt3)">→ ${label}</span></span>
+          <button onclick="cashClearOverride('${oName}','${o.ym}')" style="border:none;background:none;color:var(--txt3);font-size:14px;cursor:pointer;padding:2px" title="원래 금액으로 되돌리기">✕</button>
+        </div>`;
+      }).join('');
+      return `<div style="font-size:13px;font-weight:700;margin:18px 0 2px">📌 이번 달만 다르게 설정된 항목</div>
+        <div style="font-size:11px;color:var(--txt3);margin-bottom:4px">타임라인의 ✎ 아이콘으로 걸어둔 예외예요. 다른 달 템플릿에는 영향 없어요.</div>
+        ${rows}`;
+    })()}`;
 }
 function cashEditField(i,key,val){
   if(key==='amount'||key==='day') val=parseInt(String(val).replace(/[^0-9-]/g,''))||0;
@@ -4532,6 +4640,34 @@ function cashEditField(i,key,val){
 function cashEditPayday(val){ CASH_PLAN.payday=parseInt(val)||21; saveCashPlanObj(CASH_PLAN); renderCashPlan(); }
 function cashAddItem(){ CASH_PLAN.items.push({name:'새 항목', amount:0, day:1, source:'bank'}); saveCashPlanObj(CASH_PLAN); renderCashEdit(); }
 function cashDeleteItem(i){ CASH_PLAN.items.splice(i,1); saveCashPlanObj(CASH_PLAN); renderCashPlan(); renderCashEdit(); }
+// ── 이번 달만 다르게(월별 예외) ──
+// 고정 지출 템플릿(CASH_PLAN.items)은 매달 반복되는 값이라, 여기서 금액을 바꾸면 앞으로 계속 그 금액이 적용됨.
+// "이번 달만 0원으로" 같은 일시적 변경은 항목 자체가 아니라 items[i].overrides[ym]에 별도로 저장해서
+// 해당 달의 이벤트 계산(buildCashEvents)에서만 반영되고 템플릿과 다른 달은 그대로 유지되게 함.
+function cashOverridePrompt(name, ym, curAmount){
+  const idx = CASH_PLAN.items.findIndex(it=>it.name===name);
+  if(idx<0) return;
+  const mLabel = parseInt(ym.slice(5,7))+'월';
+  const input = prompt(`${mLabel} "${name}"만 다른 금액으로 바꿉니다. 다른 달에는 영향 없어요.\n0을 입력하면 이번 달만 0원으로 표시돼요(항목은 그대로 남아있어요).\n원래 금액(${curAmount.toLocaleString('ko-KR')}원)으로 되돌리려면 -1을 입력하세요.`, curAmount);
+  if(input===null) return; // 취소
+  const val = parseInt(String(input).replace(/[^0-9-]/g,''));
+  if(isNaN(val)) return;
+  const it = CASH_PLAN.items[idx];
+  it.overrides = it.overrides || {};
+  if(val < 0) delete it.overrides[ym];
+  else it.overrides[ym] = { amount: val }; // 0원도 여기 포함 — 항목이 사라지지 않고 0원으로 유지됨
+  saveCashPlanObj(CASH_PLAN);
+  renderCashPlan();
+  const eb=document.getElementById('cash-edit-body');
+  if(eb && eb.style.display!=='none') renderCashEdit();
+}
+function cashClearOverride(name, ym){
+  const idx = CASH_PLAN.items.findIndex(it=>it.name===name);
+  if(idx<0 || !CASH_PLAN.items[idx].overrides) return;
+  delete CASH_PLAN.items[idx].overrides[ym];
+  saveCashPlanObj(CASH_PLAN);
+  renderCashPlan(); renderCashEdit();
+}
 function cashResetPlan(){
   if(!confirm('고정 지출 일정을 기본값으로 되돌릴까요?')) return;
   CASH_PLAN=JSON.parse(JSON.stringify(DEFAULT_CASH_PLAN));
@@ -5043,6 +5179,48 @@ function renderOverspendTeaser(){
       전체 랭킹 보기 · 메모 남기기
     </button>`;
 }
+
+// ── 예산 카테고리 기반 이번달 항목별 브리핑 ──
+// "돈 새는 곳"(renderOverspendTeaser)이 최근 6개월 평균과 비교하는 것과 달리,
+// 이건 buildOutCats()가 쓰는 것과 동일한 '예산' 기준으로 전체 지출 카테고리를 빠짐없이 순회해서 보여줌
+// (top1 + "외 N건"으로 뭉개지 않고, 초과/예산내/예산미설정 그룹으로 나눠 항목 전부를 나열)
+function renderMonthBudgetBrief(){
+  const el = document.getElementById('mo-budget-brief');
+  if(!el) return;
+  const ym = (typeof BUD_MONTH!=='undefined' && BUD_MONTH) || currentMonthStr();
+  const tx = (typeof budTx==='function') ? budTx() : (STATE.transactions.length ? STATE.transactions : DEMO).filter(t=>String(t.date).slice(0,7)===ym && !isRemovedTx(t));
+  const cats = buildOutCats(ym, tx).filter(c => c.bud>0 || c.spend>0);
+  if(!cats.length){ el.innerHTML = '<div style="text-align:center;color:var(--txt3);padding:10px;font-size:12.5px">이번 달 지출·예산 데이터가 없어요</div>'; return; }
+
+  const withBud = cats.filter(c=>c.bud>0);
+  const overs  = withBud.filter(c=>c.diff>0).sort((a,b)=>b.diff-a.diff);
+  const unders = withBud.filter(c=>c.diff<=0).sort((a,b)=>a.diff-b.diff); // 여유 큰 순
+  const noBud  = cats.filter(c=>c.bud<=0 && c.spend>0).sort((a,b)=>b.spend-a.spend);
+
+  const line = c => {
+    const label = CAT_OUT_LABELS[c.major] || c.major;
+    const tag = c.fixed ? '<span style="font-size:9.5px;color:var(--blue);font-weight:600;margin-left:4px">고정</span>' : '';
+    let right;
+    if(c.bud>0){
+      right = c.diff>0
+        ? `<span style="color:var(--red);font-weight:600">+${won(c.diff)} 초과</span>`
+        : `<span style="color:var(--green);font-weight:600">${won(-c.diff)} 남음</span>`;
+    } else {
+      right = `<span style="color:var(--txt3)">예산 미설정</span>`;
+    }
+    return `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 0;border-top:1px solid #F2F4F6;font-size:13px">
+      <span style="color:var(--txt2)">${label}${tag}</span>
+      <span style="text-align:right;flex:none">${won(c.spend)}${c.bud>0?`<span style="font-size:10px;color:var(--txt3);font-weight:400"> / ${won(c.bud)}</span>`:''} · ${right}</span>
+    </div>`;
+  };
+
+  let H = '';
+  if(overs.length)  H += `<div style="font-size:12.5px;font-weight:700;color:var(--red);margin:8px 0 0">⚠️ 예산 초과 (${overs.length}건)</div>${overs.map(line).join('')}`;
+  if(unders.length) H += `<div style="font-size:12.5px;font-weight:700;color:var(--green);margin:12px 0 0">✅ 예산 내 (${unders.length}건)</div>${unders.map(line).join('')}`;
+  if(noBud.length)  H += `<div style="font-size:12.5px;font-weight:700;color:var(--txt3);margin:12px 0 0">➖ 예산 미설정 지출 (${noBud.length}건)</div>${noBud.map(line).join('')}`;
+  el.innerHTML = H;
+}
+
 
 function rptToggleCompareTable(){
   const wrap = document.getElementById('rpt-compare-wrap');
